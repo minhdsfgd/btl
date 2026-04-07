@@ -5,6 +5,5 @@ public class Main{
         System.out.println(sl.gcd(-8,20));
         System.out.println(sl.gcd(-10,-55));
         System.out.println(sl.gcd(90,0));
-        System.out.println(sl.gcd(-5,0));
     }
 }
