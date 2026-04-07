@@ -45,5 +45,8 @@ public class BankAccount {
     public double getBalance(){
         return this.balance;
     }
+    public void HelloWorld(){
+        System.out.println("Hello World");
+    }
 }
 
