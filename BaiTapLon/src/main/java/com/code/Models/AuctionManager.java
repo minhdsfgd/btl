@@ -1,4 +1,4 @@
-package com.code;
+package com.code.Models;
 public class AuctionManager{
     private static AuctionManager instance;
     private AuctionManager(){}

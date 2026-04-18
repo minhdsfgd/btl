@@ -1,4 +1,4 @@
-package com.code;
+package com.code.Models;
 public abstract class Item{
     protected String id;
     protected String name;

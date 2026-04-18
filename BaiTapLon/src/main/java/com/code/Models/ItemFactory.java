@@ -1,4 +1,4 @@
-package com.code;
+package com.code.Models;
 public class ItemFactory{
     public static Item createItem(String type){
         if (type.equals("electronics")){

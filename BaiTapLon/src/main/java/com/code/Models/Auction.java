@@ -1,4 +1,4 @@
-package com.code;
+package com.code.Models;
 import java.util.List;
 
 public class Auction{

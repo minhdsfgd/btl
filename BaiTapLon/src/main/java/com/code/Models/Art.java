@@ -1,4 +1,4 @@
-package com.code;
+package com.code.Models;
 public class Art extends Item {
 
 }

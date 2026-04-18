@@ -1,4 +1,4 @@
-package com.code;
+package com.code.Models;
 public abstract class User {
     protected String name,id,email,password;
     protected boolean isActive;
