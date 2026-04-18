@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+
+<AnchorPane prefHeight="499.0" prefWidth="616.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="CONTROLLER_NAME">
+   <children>
+      <VBox layoutY="-13.0" prefHeight="571.0" prefWidth="635.0" spacing="20.0" style="-fx-background-color: #2b2b2b;">
+         <padding>
+            <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+         </padding>
+         <children>
+            <HBox prefHeight="100.0" prefWidth="548.0" spacing="8.0">
+               <children>
+                  <Label prefHeight="39.0" prefWidth="178.0" text="Auction System — Đăng nhập" textFill="#aaaaaa" />
+               </children>
+            </HBox>
+            <Label prefHeight="28.0" prefWidth="156.0" text="Chào mừng quay trở lại" textFill="WHITE">
+               <font>
+                  <Font name="System Bold" size="14.0" />
+               </font>
+            </Label>
+            <VBox prefHeight="200.0" prefWidth="100.0" spacing="5.0">
+               <children>
+                  <Label text="Tên đăng nhập" textFill="#aaaaaa">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <TextField maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="15.0" prefWidth="300.0" promptText="user123" style="-fx-background-color: #333333; -fx-text-fill: white; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8;">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </TextField>
+                  <VBox prefHeight="200.0" prefWidth="100.0" spacing="5.0">
+                     <children>
+                        <Label text="Mật khẩu" textFill="#aaaaaa">
+                           <font>
+                              <Font size="13.0" />
+                           </font>
+                        </Label>
+                        <PasswordField maxWidth="300.0" style="-fx-background-color: #333333; -fx-text-fill: white; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8;" />
+                     </children>
+                  </VBox>
+               </children>
+            </VBox>
+            <HBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+               <children>
+                  <Label text="Vai trò" textFill="#aaaaaa" />
+                  <Hyperlink text="Bidder" />
+                  <Hyperlink text="Seller" />
+                  <Hyperlink text="Admin" />
+               </children>
+            </HBox>
+            <Button alignment="CENTER" mnemonicParsing="false" prefHeight="16.0" prefWidth="121.0" style="-fx-background-color: #007bff;; -fx-border-color: #555555; -fx-border-radius: 8; -fx-background-radius: 8; -fx-cursor: hand; -fx-cursor: hand;" text="Đăng nhập" textFill="WHITE">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </Button>
+            <HBox alignment="CENTER" prefHeight="100.0" prefWidth="528.0">
+               <children>
+                  <Label text="Chưa có tài khoản" textFill="#aaaaaa" />
+                  <Hyperlink text="Đăng ký" textFill="#58a6ff" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </children>
+</AnchorPane>
