@@ -1,4 +1,4 @@
-package com.code;
+package com.code.models;
 public class Seller extends User {
     private double balance;
     public Seller(String name, String email,String id, String password) {

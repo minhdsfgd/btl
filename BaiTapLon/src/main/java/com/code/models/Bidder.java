@@ -1,4 +1,4 @@
-package com.code;
+package com.code.models;
 public class Bidder extends User {
     private double balance;
     public Bidder(String name, String email,String id, String password) {

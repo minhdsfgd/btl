@@ -1,4 +1,4 @@
-package com.code;
+package com.code.models;
 public class Vehicle extends Item {
 
 }
