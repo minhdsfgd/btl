@@ -1,4 +1,5 @@
-public class Itemfactory{
+package com.code;
+public class ItemFactory{
     public static Item createItem(String type){
         if (type.equals("electronics")){
             return new Electronics();

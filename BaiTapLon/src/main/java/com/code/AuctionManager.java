@@ -1,6 +1,7 @@
+package com.code;
 public class AuctionManager{
     private static AuctionManager instance;
-    priate AuctionManager(){}
+    private AuctionManager(){}
     public static AuctionManager getInstance(){
         if (instance == null){
             instance = new AuctionManager();
