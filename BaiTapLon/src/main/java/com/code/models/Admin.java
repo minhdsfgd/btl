@@ -1,5 +1,6 @@
 package com.code.models;
 public class Admin extends User {
+    /*
     public Admin(String name, String email,String id, String password) {
         super(name, email, id, password);
     }
@@ -8,5 +9,6 @@ public class Admin extends User {
     }
     public void unbanUser(User user) {
         user.isActive = true;
-    }   
+    }
+     */
 }

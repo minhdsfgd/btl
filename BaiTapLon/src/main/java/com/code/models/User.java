@@ -1,5 +1,6 @@
 package com.code.models;
 public abstract class User {
+    /*
     protected String name,id,email,password;
     protected boolean isActive;
 
@@ -35,4 +36,5 @@ public abstract class User {
             System.out.println("Invalid password.");
         }
     }
+     */
 }

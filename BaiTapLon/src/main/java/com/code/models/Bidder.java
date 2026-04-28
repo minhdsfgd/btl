@@ -1,5 +1,6 @@
 package com.code.models;
 public class Bidder extends User {
+    /*
     private double balance;
     public Bidder(String name, String email,String id, String password) {
         super(name, email, id, password);
@@ -12,4 +13,6 @@ public class Bidder extends User {
     public void addBalance(double amount) {
         this.balance += amount;
     }
+
+     */
 }

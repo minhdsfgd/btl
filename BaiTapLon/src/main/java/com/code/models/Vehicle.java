@@ -1,5 +1,6 @@
 package com.code.models;
 public class Vehicle extends Item {
+    /*
     private String make;
     private int year;
     private int mileage;
@@ -38,4 +39,6 @@ public class Vehicle extends Item {
     public String getMake() { return make; }
     public int getYear() { return year; }
     public int getMileage() { return mileage; }
+
+     */
 }

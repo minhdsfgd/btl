@@ -1,5 +1,6 @@
 package com.code.models;
 public class Seller extends User {
+    /*
     private double balance;
     public Seller(String name, String email,String id, String password) {
         super(name, email, id, password);
@@ -13,7 +14,6 @@ public class Seller extends User {
     }
     public void sell(){}
 
-
-
+*/
 
 }

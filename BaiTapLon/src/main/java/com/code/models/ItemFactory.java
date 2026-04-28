@@ -3,11 +3,12 @@ import java.util.Map;
 
 public class ItemFactory {
 
-    /**
+
+    /*
      * General-purpose factory method that dispatches based on type string.
      * @param type     one of "electronics", "art", "vehicle"
      * @param params   key-value map of item fields
-     */
+
     public static Item createItem(String type, Map<String, Object> params) {
         return switch (type.toLowerCase()) {
             case "electronics" -> createElectronics(params);
@@ -17,10 +18,10 @@ public class ItemFactory {
         };
     }
 
-    /**
+
      * Creates an Electronics item.
      * Required params: name, description, startingPrice, owner, brand, model, warranty
-     */
+
     public static Electronics createElectronics(Map<String, Object> params) {
         return new Electronics(
                 (String)  params.get("name"),
@@ -56,4 +57,5 @@ public class ItemFactory {
                 (int)     params.get("mileage")
         );
     }
+    */
 }

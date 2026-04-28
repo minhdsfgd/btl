@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Auction {
+    /*
     private String auctionId;
     private Item item;
     private AuctionStatus status;
@@ -101,4 +102,5 @@ public class Auction {
     public LocalDateTime getStartTime() { return startTime; }
     public LocalDateTime getEndTime() { return endTime; }
     public List<Bid> getBids() { return bids; }
+     */
 }

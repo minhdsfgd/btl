@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class AuctionManager{
+    /*
     private static AuctionManager instance;
     private Map<String, Auction> auctionMap;
     private ReentrantLock managerLock;
@@ -62,4 +63,6 @@ public class AuctionManager{
             managerLock.unlock();
         }
     }
+
+     */
 }

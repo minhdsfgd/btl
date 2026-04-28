@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class Bid {
+    /*
     private String bidId;
     private Bidder bidder;
     private Auction auction;
@@ -30,4 +31,6 @@ public class Bid {
     public Auction getAuction() { return auction; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public boolean isAutoBid() { return isAutoBid; }
+
+     */
 }

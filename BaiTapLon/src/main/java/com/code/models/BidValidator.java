@@ -2,7 +2,7 @@ package com.code.models;
 
 public class BidValidator {
 
-
+    /*
     public static boolean validate(Bid bid, Auction auction) {
         return bid.isValid()
                 && isAmountValid(bid.getAmount(), auction)
@@ -23,4 +23,6 @@ public class BidValidator {
     public static boolean isBidderEligible(Bidder bidder) {
         return bidder != null && bidder.getBalance() > 0;
     }
+
+     */
 }
