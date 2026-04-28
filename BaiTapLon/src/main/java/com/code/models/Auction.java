@@ -5,19 +5,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Auction is the core domain class.
- *
- * Design patterns used:
- * - Observer Pattern: Auction is the "Subject". It maintains a list of
- *   AuctionObserver instances and notifies them on state changes.
- * - State Pattern (lightweight): AuctionStatus drives what operations are allowed.
- *
- * Thread safety:
- * - ReentrantLock ensures that concurrent bids don't corrupt the auction state.
- *   This is critical in a real-time bidding system where multiple users may
- *   bid simultaneously.
- */
 public class Auction {
     private String auctionId;
     private Item item;
@@ -42,12 +29,6 @@ public class Auction {
         this.observers = new ArrayList<>();
     }
 
-    // ─── Lifecycle Methods ────────────────────────────────────────────────────
-
-    /**
-     * Transition from OPEN → RUNNING.
-     * Notifies all observers that the auction has started.
-     */
     public void start() {
         transitionState(AuctionStatus.RUNNING);
         notifyObservers(bid -> {
@@ -55,10 +36,6 @@ public class Auction {
         });
     }
 
-    /**
-     * Transition from RUNNING → FINISHED.
-     * Notifies all observers that the auction is over.
-     */
     public void finish() {
         transitionState(AuctionStatus.FINISHED);
         notifyObservers(bid -> {
@@ -66,16 +43,6 @@ public class Auction {
         });
     }
 
-    // ─── Bidding ──────────────────────────────────────────────────────────────
-
-    /**
-     * Attempts to place a bid on behalf of a bidder.
-     *
-     * Thread-safe: wrapped in ReentrantLock so two simultaneous bids
-     * can't both "win" by reading the same currentPrice before either updates it.
-     *
-     * @return true if the bid was accepted, false otherwise
-     */
     public boolean placeBid(Bidder bidder, double amount) {
         lock.lock();
         try {
@@ -92,11 +59,10 @@ public class Auction {
             });
             return true;
         } finally {
-            lock.unlock(); // Always release, even if an exception occurs
+            lock.unlock();
         }
     }
 
-    // ─── Observer Management ──────────────────────────────────────────────────
 
     public void addObserver(AuctionObserver observer) {
         observers.add(observer);
@@ -106,10 +72,7 @@ public class Auction {
         observers.remove(observer);
     }
 
-    /**
-     * Notifies all observers using the provided notification action.
-     * Extracted as a helper to avoid code duplication.
-     */
+
     private void notifyObservers(java.util.function.Consumer<Void> action) {
         action.accept(null);
     }
@@ -120,14 +83,8 @@ public class Auction {
         }
     }
 
-    // ─── State Transition ─────────────────────────────────────────────────────
 
-    /**
-     * Validates and applies a state transition.
-     * Throws IllegalStateException if the transition is not allowed.
-     */
     public void transitionState(AuctionStatus newStatus) {
-        // Simple guard — can be extended with a full state machine
         if (this.status == AuctionStatus.CANCELED || this.status == AuctionStatus.PAID) {
             throw new IllegalStateException("Cannot transition from terminal state: " + this.status);
         }
@@ -135,7 +92,6 @@ public class Auction {
         System.out.println("Auction [" + auctionId + "] transitioned to: " + newStatus);
     }
 
-    // ─── Getters ──────────────────────────────────────────────────────────────
 
     public AuctionStatus getStatus() { return status; }
     public String getAuctionId() { return auctionId; }
