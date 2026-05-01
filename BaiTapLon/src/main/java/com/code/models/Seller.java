@@ -1,5 +1,9 @@
 package com.code.models;
 
+import com.code.util.IdGenerator;
+import com.code.util.ItemFactory;
+import com.code.util.ItemType;
+
 import java.time.LocalDateTime;
 
 public class Seller extends User {
@@ -10,11 +14,12 @@ public class Seller extends User {
     }
 
 
-    public Item createItem(String name, String description, double price){
-        return Item(itemId, name, description, price);
+    public Item createItem(ItemType type, String name, String description, double price){
+        int itemId = IdGenerator.getId();
+        return ItemFactory.createItem(itemId, type, name, description, price);
     }
 
-    public void createAuction(int auctionId, String title, String description, double price) {
+    public void createAuction() {
         Auction auction = new Auction(
                 auctionId,
                 title,
