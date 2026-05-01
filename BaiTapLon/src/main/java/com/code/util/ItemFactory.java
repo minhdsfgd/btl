@@ -4,9 +4,6 @@ import com.code.models.Electronics;
 import com.code.models.Art;
 import com.code.models.Vehicle;
 import com.code.models.Item;
-import com.code.models.Seller;
-
-import java.util.Map;
 
 public class ItemFactory {
     public static Item createItem(int itemId, ItemType itemType, String name, String description, double price) {

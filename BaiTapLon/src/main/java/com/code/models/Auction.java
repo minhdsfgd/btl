@@ -6,23 +6,24 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Auction {
-    private int auctionId;
+    private final int auctionId;
     private String title;
     private String description;
     private double currentPrice;
     private double bidIncrement;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Seller seller;
+    private User seller;
     private boolean isBanned = false;
     private List<Bid> bids = new ArrayList<>();
     private ReentrantLock lock = new ReentrantLock();
 
-    public Auction(Item item,
+    public Auction(int auctionId,
+                   Item item,
                    double bidIncrement,
                    LocalDateTime startTime,
                    LocalDateTime endTime,
-                   Seller seller
+                   User seller
                    ) {
         this.auctionId = auctionId;
         this.title = title;

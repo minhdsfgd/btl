@@ -1,17 +1,33 @@
 package com.code.models;
+
+import java.util.HashSet;
+import java.util.Set;
+
 public abstract class User {
-    private int userId;
+    private final int userId;
     private String username;
     private String password;
     private double balance;
     private boolean isActive;
     private boolean isBanned = false;
+    Set<Role> roles;
 
-    public User(int userId, String username, String password, double balance) {
+    public User(int userId, String username, String password, double balance, Set<Role> roles) {
         this.userId = userId;
         this.username = username;
         this.password = password;
         this.balance = balance;
+        this.roles = roles;
+    }
+
+    boolean hasRole(Role role) {
+        return roles.contains(role);
+    }
+    void addRole(Role role) {
+        roles.add(role);
+    }
+    void removeRole(Role role) {
+        roles.remove(role);
     }
     // Setters
     public void setUsername(String username) {this.username = username;}
@@ -25,4 +41,8 @@ public abstract class User {
     public String getPassword() {return password;}
     public double getBalance() {return balance;}
     public boolean isIsBanned() {return isBanned;}
+}
+
+enum Role{
+    ADMIN, SELLER, BIDDER
 }
