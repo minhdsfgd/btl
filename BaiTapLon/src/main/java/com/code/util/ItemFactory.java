@@ -6,11 +6,11 @@ import com.code.models.Vehicle;
 import com.code.models.Item;
 
 public class ItemFactory {
-    public static Item createItem(int itemId, ItemType itemType, String name, String description, double price) {
+    public static Item createItem(int itemId, ItemType itemType, String name, String description) {
         return switch (itemType) {
-            case VEHICLE -> new Vehicle(itemId, name, description, price);
-            case ELECTRONICS -> new Electronics(itemId, name, description, price);
-            case ART -> new Art(itemId, name, description, price);
+            case VEHICLE -> new Vehicle(itemId, name, description);
+            case ELECTRONICS -> new Electronics(itemId, name, description);
+            case ART -> new Art(itemId, name, description);
             default -> throw new IllegalArgumentException();
         };
     }
