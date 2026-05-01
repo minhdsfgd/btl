@@ -1,6 +1,14 @@
 package com.code.models;
 public abstract class Item{
-    protected String id;
-    protected String name;
-    protected double price;
+    private String itemId;
+    private String name;
+    private String description;
+    private double price;
+
+    Item(int itemId, String name, String description, double price){
+        this.itemId = itemId;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+    }
 }

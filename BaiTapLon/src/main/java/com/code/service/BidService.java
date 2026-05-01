@@ -1,6 +1,6 @@
-package com.code.models;
+package com.code.service;
 
-public class BidValidator {
+public class BidService {
 
     /*
     public static boolean validate(Bid bid, Auction auction) {

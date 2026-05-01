@@ -1,14 +1,14 @@
 package com.code.models;
 public abstract class User {
-    private int id;
+    private int userId;
     private String username;
     private String password;
     private double balance;
     private boolean isActive;
     private boolean isBanned = false;
 
-    public User(int id, String username, String password, double balance) {
-        this.id = id;
+    public User(int userId, String username, String password, double balance) {
+        this.userId = userId;
         this.username = username;
         this.password = password;
         this.balance = balance;
@@ -20,7 +20,7 @@ public abstract class User {
     public void setIsBanned(boolean isBanned) {this.isBanned = isBanned;}
 
     // Getters
-    public int getId() {return id;}
+    public int getUserId() {return userId;}
     public String getUsername() {return username;}
     public String getPassword() {return password;}
     public double getBalance() {return balance;}
