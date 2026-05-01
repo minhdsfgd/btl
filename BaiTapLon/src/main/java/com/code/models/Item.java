@@ -1,6 +1,6 @@
 package com.code.models;
 public abstract class Item{
-    private String itemId;
+    private int itemId;
     private String name;
     private String description;
     private double price;
