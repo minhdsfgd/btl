@@ -25,7 +25,7 @@ public class Auction {
                    LocalDateTime startTime,
                    LocalDateTime endTime,
                    User seller
-                   ) {
+    ) {
         this.auctionId = auctionId;
         this.item= item;
         this.currentPrice = currentPrice;
