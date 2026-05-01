@@ -6,4 +6,5 @@ module com.code {
 
     opens com.code.controllers to javafx.fxml;
     exports com.code.models;
+    exports com.code.service;
 }

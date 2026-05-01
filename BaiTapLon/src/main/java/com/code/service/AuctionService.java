@@ -1,13 +1,6 @@
-package com.code.models;
+package com.code.service;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-
-public class AuctionManager{
+public class AuctionService {
     /*
     private static AuctionManager instance;
     private Map<String, Auction> auctionMap;
@@ -28,7 +21,7 @@ public class AuctionManager{
         managerLock.lock();
         try{
             Auction auction = new Auction(item, seller);
-            auctionMap.put(auction.getAuctionId(), auction);
+            auctionMap.put(auction.getId(), auction);
             return auction;
         }
         finally {
@@ -63,6 +56,6 @@ public class AuctionManager{
             managerLock.unlock();
         }
     }
-
      */
+
 }
