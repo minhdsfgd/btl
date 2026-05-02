@@ -1,14 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
+<AnchorPane prefWidth="800" prefHeight="500"
+            xmlns="http://javafx.com/javafx/17"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.code.controllers.AuctionListController">
-            prefHeight="400.0" prefWidth="600.0">
+            fx:controller="com.code.controllers.SellerDashboardController">
+
+    <VBox prefWidth="800" prefHeight="500"
+          style="-fx-background-color: #003b22;">
+
+        <!-- HEADER -->
+        <HBox style="-fx-background-color:#065f3b; -fx-padding:10;">
+            <Label text="DANH SÁCH PHIÊN"
+                   style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <Label text="username" style="-fx-text-fill:#c8f5e1;"/>
+            <Button text="Đăng xuất"
+                    style="-fx-background-color:transparent; -fx-border-color:#c8f5e1; -fx-text-fill:white;"/>
+        </HBox>
+
+        <!-- SEARCH -->
+        <HBox spacing="10" style="-fx-padding:10;">
+            <TextField promptText="Tìm kiếm theo tên sản phẩm..."
+                       HBox.hgrow="ALWAYS"
+                       style="-fx-background-radius:8; -fx-padding:8;"/>
+
+            <Button text="🔍"
+                    style="-fx-background-color:#16a34a; -fx-text-fill:white; -fx-background-radius:8;"/>
+        </HBox>
+
+        <!-- FILTER -->
+        <HBox spacing="10" style="-fx-padding:0 10 10 10;">
+            <Button text="Tất cả" styleClass="filter-active"/>
+            <Button text="Đang diễn ra" styleClass="filter"/>
+            <Button text="Sắp mở" styleClass="filter"/>
+            <Button text="Kết thúc" styleClass="filter"/>
+        </HBox>
+
+        <!-- LIST -->
+        <VBox spacing="10" style="-fx-padding:10;" VBox.vgrow="ALWAYS">
+
+            <!-- CARD ITEM -->
+            <HBox styleClass="card">
+
+                <!-- LEFT INFO -->
+                <VBox spacing="5" HBox.hgrow="ALWAYS">
+                    <Label text="Tên sản phẩm"
+                           style="-fx-text-fill:white; -fx-font-size:14; -fx-font-weight:bold;"/>
+
+                    <Label text="Loại sản phẩm"
+                           style="-fx-text-fill:#9fe6c8;"/>
+
+                    <Label text="Giá hiện tại"
+                           style="-fx-text-fill:#22c55e;"/>
+
+                    <Label text="⏱ Thời gian còn lại"
+                           style="-fx-text-fill:#9fe6c8;"/>
+                </VBox>
+
+                <!-- RIGHT -->
+                <VBox spacing="10" alignment="CENTER_RIGHT">
+
+                    <Label text="Trạng thái"
+                           style="-fx-background-color:#d1fae5; -fx-text-fill:#065f3b; -fx-padding:4 10; -fx-background-radius:20;"/>
+
+                    <Button text="Hành động"
+                            style="-fx-background-color:#16a34a; -fx-text-fill:white; -fx-background-radius:8;"/>
+                </VBox>
+
+            </HBox>
+
+        </VBox>
+
+    </VBox>
 
 </AnchorPane>

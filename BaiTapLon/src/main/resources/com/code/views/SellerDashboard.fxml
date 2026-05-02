@@ -1,14 +1,206 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.code.controllers.SellerDashboardController">
-            prefHeight="400.0" prefWidth="600.0">
+<AnchorPane maxHeight="500.0" maxWidth="800.0" minHeight="500.0" minWidth="800.0" prefHeight="500.0" prefWidth="800.0" style="-fx-background-color: #012b18;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.SellerDashboardController">
+    <children>
+        <HBox prefHeight="500.0" prefWidth="800.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
 
+                <!-- ================= SIDEBAR MENU ================= -->
+                <VBox prefWidth="160.0" spacing="10.0" style="-fx-background-color: #012414; -fx-border-color: #054529; -fx-border-width: 0 1 0 0;">
+                    <children>
+                        <Label text="MENU" textFill="#4caf50">
+                            <font>
+                                <Font name="System Bold" size="10.0" />
+                            </font>
+                            <VBox.margin>
+                                <Insets bottom="5.0" />
+                            </VBox.margin>
+                        </Label>
+                        <Button maxWidth="1.7976931348623157E308" style="-fx-background-color: #00a551; -fx-text-fill: white;" text="Tổng quan" />
+                        <Button maxWidth="1.7976931348623157E308" style="-fx-background-color: transparent; -fx-text-fill: #a0a0a0;" text="Quản lý lô nền" />
+                        <Button maxWidth="1.7976931348623157E308" style="-fx-background-color: transparent; -fx-text-fill: #a0a0a0;" text="Danh sách phiên" />
+                        <Button maxWidth="1.7976931348623157E308" style="-fx-background-color: transparent; -fx-text-fill: #a0a0a0;" text="Thông báo" />
+
+                        <!-- Region để đẩy nút Đăng xuất xuống dưới cùng -->
+                        <Region VBox.vgrow="ALWAYS" />
+
+                        <!-- Nút Đăng xuất: Nền đỏ tươi, chữ trắng -->
+                        <HBox alignment="CENTER">
+                            <children>
+                                <Button fx:id="btnLogout" onAction="#handleLogout" style="-fx-background-color: #ff3b3b; -fx-background-radius: 5; -fx-text-fill: white; -fx-padding: 5 15;" text="Đăng xuất">
+                                    <font>
+                                        <Font name="System Bold" size="12.0" />
+                                    </font>
+                                </Button>
+                            </children>
+                        </HBox>
+                    </children>
+                    <padding>
+                        <Insets bottom="15.0" left="10.0" right="10.0" top="20.0" />
+                    </padding>
+                </VBox>
+
+                <!-- ================= MAIN CONTENT ================= -->
+                <VBox spacing="15.0" HBox.hgrow="ALWAYS">
+                    <padding>
+                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                    </padding>
+                    <children>
+
+                        <!-- Header: Title & Username -->
+                        <HBox alignment="CENTER_LEFT">
+                            <children>
+                                <Label text="Seller Dashboard" textFill="#49d66c">
+                                    <font>
+                                        <Font name="Segoe UI Bold" size="18.0" />
+                                    </font>
+                                </Label>
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Label fx:id="lblUsername" text="username" textFill="#a0a0a0" />
+                            </children>
+                        </HBox>
+
+                        <!-- 3 Summary Cards -->
+                        <HBox spacing="10.0">
+                            <children>
+                                <VBox alignment="CENTER" prefWidth="150.0" style="-fx-background-color: #023d22; -fx-background-radius: 5;" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Tổng số lô" textFill="#a0a0a0">
+                                            <font>
+                                                <Font size="10.0" />
+                                            </font>
+                                        </Label>
+                                        <Label fx:id="lblTotalLots" text="0" textFill="WHITE">
+                                            <font>
+                                                <Font name="System Bold" size="16.0" />
+                                            </font>
+                                        </Label>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="10.0" top="10.0" />
+                                    </padding>
+                                </VBox>
+                                <VBox alignment="CENTER" prefWidth="150.0" style="-fx-background-color: #023d22; -fx-background-radius: 5;" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Đang đấu" textFill="#a0a0a0">
+                                            <font>
+                                                <Font size="10.0" />
+                                            </font>
+                                        </Label>
+                                        <Label fx:id="lblActiveLots" text="0" textFill="#4caf50">
+                                            <font>
+                                                <Font name="System Bold" size="16.0" />
+                                            </font>
+                                        </Label>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="10.0" top="10.0" />
+                                    </padding>
+                                </VBox>
+                                <VBox alignment="CENTER" prefWidth="150.0" style="-fx-background-color: #023d22; -fx-background-radius: 5;" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Đã bán" textFill="#a0a0a0">
+                                            <font>
+                                                <Font size="10.0" />
+                                            </font>
+                                        </Label>
+                                        <Label fx:id="lblSoldLots" text="0" textFill="#ff9800">
+                                            <font>
+                                                <Font name="System Bold" size="16.0" />
+                                            </font>
+                                        </Label>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="10.0" top="10.0" />
+                                    </padding>
+                                </VBox>
+                            </children>
+                        </HBox>
+
+                        <!-- Bottom Area: Table & Charts -->
+                        <HBox spacing="15.0" VBox.vgrow="ALWAYS">
+                            <children>
+
+                                <!-- Left Panel: Search & Table -->
+                                <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <HBox spacing="10.0">
+                                            <children>
+                                                <TextField fx:id="txtSearch" promptText="Tìm kiếm..." style="-fx-background-color: #023d22; -fx-text-fill: white; -fx-border-color: #054529;" HBox.hgrow="ALWAYS" />
+                                                <Button onAction="#handleSearch" style="-fx-background-color: #00a551; -fx-text-fill: white;" text="Tìm" />
+                                            </children>
+                                        </HBox>
+                                        <TableView fx:id="tableLots" prefHeight="200.0" style="-fx-background-color: #023d22; -fx-control-inner-background: #023d22;" VBox.vgrow="ALWAYS">
+                                            <columns>
+                                                <TableColumn fx:id="colId" prefWidth="60.0" text="Mã lô" />
+                                                <TableColumn fx:id="colProject" prefWidth="130.0" text="Dự án" />
+                                                <TableColumn fx:id="colPrice" prefWidth="100.0" text="Giá" />
+                                                <TableColumn fx:id="colStatus" prefWidth="80.0" text="Trạng thái" />
+                                            </columns>
+                                        </TableView>
+                                    </children>
+                                </VBox>
+
+                                <!-- Right Panel: Revenue Chart & Activities -->
+                                <VBox prefWidth="220.0" spacing="10.0" style="-fx-background-color: #023d22; -fx-background-radius: 5;">
+                                    <children>
+                                        <Label text="DOANH THU" textFill="WHITE">
+                                            <font>
+                                                <Font name="System Bold" size="11.0" />
+                                            </font>
+                                        </Label>
+                                        <LineChart fx:id="chartRevenue" createSymbols="false" horizontalGridLinesVisible="false" legendVisible="false" prefHeight="150.0" verticalGridLinesVisible="false">
+                                            <xAxis>
+                                                <CategoryAxis side="BOTTOM" tickLabelFill="TRANSPARENT" />
+                                            </xAxis>
+                                            <yAxis>
+                                                <NumberAxis side="LEFT" tickLabelFill="TRANSPARENT" />
+                                            </yAxis>
+                                        </LineChart>
+
+                                        <Label text="Hoạt động gần đây" textFill="#a0a0a0">
+                                            <font>
+                                                <Font size="10.0" />
+                                            </font>
+                                        </Label>
+
+                                        <!-- ScrollPane bọc lấy vboxActivities -->
+                                        <ScrollPane fitToWidth="true" prefHeight="150.0" style="-fx-background: #023d22; -fx-background-color: transparent; -fx-border-color: transparent;" VBox.vgrow="ALWAYS">
+                                            <content>
+                                                <VBox fx:id="vboxActivities" spacing="10.0">
+                                                    <!-- Dữ liệu Hoạt động sẽ được Controller nhét vào đây -->
+                                                </VBox>
+                                            </content>
+                                        </ScrollPane>
+
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                    </padding>
+                                </VBox>
+
+                            </children>
+                        </HBox>
+
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
 </AnchorPane>
