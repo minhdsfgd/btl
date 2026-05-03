@@ -1,28 +1,22 @@
 package com.code.service;
 
+import com.code.models.*;
+import com.code.util.IdGenerator;
+import java.time.LocalDateTime;
+
 public class BidService {
+    private final LocalDateTime timestamp =  LocalDateTime.now();
+    
+    public void placeBid(User user, Auction auction, double amount) {
+        // validate
+        // update giá
 
-    /*
-    public static boolean validate(Bid bid, Auction auction) {
-        return bid.isValid()
-                && isAmountValid(bid.getAmount(), auction)
-                && isAuctionOpen(auction)
-                && isBidderEligible(bid.getBidder());
+        Bid bid = new Bid(IdGenerator.getId(),
+                auction.getAuctionId(),
+                user.getUserId(),
+                amount,
+                timestamp);
+
+        auction.notifyObservers(bid);
     }
-
-    public static boolean isAmountValid(double amount, Auction auction) {
-        return amount > auction.getCurrentPrice();
-    }
-
-
-    public static boolean isAuctionOpen(Auction auction) {
-        return auction.getStatus() == AuctionStatus.RUNNING;
-    }
-
-
-    public static boolean isBidderEligible(Bidder bidder) {
-        return bidder != null && bidder.getBalance() > 0;
-    }
-
-     */
 }

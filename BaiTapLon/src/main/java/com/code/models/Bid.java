@@ -20,10 +20,9 @@ public class Bid {
 
     // Getters
     public int getUserId() { return userId; }
-    public double getAmount(){
-        return amount;
-    }
-    LocalDateTime getTimestamp(){
+    public int getBidId() {return bidId;}
+    public double getAmount(){return amount;}
+    public LocalDateTime getTimestamp(){
         return timestamp;
     }
 }

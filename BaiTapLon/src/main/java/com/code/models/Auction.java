@@ -18,6 +18,9 @@ public class Auction {
     private Item item;
     private AuctionStatus status;
 
+    private List<BidObserver> observers = new ArrayList<>();
+
+
     public Auction(int auctionId,
                    Item item,
                    double currentPrice,
@@ -36,6 +39,18 @@ public class Auction {
         this.status=AuctionStatus.OPEN; // mặc định khi tạo là open
     }
 
+    // Observer
+    public void addObserver(BidObserver obs) {
+        observers.add(obs);
+    }
+    public void removeObserver(BidObserver obs) {
+        observers.remove(obs);
+    }
+    public void notifyObservers(Bid bid) {
+        for (BidObserver obs : observers) {
+            obs.onNewBid(bid);
+        }
+    }
 
     // Setters
     public void setCurrentPrice(double currentPrice) {this.currentPrice = currentPrice;}
@@ -45,6 +60,7 @@ public class Auction {
     public void setIsBanned(boolean isBanned) {this.isBanned = isBanned;}
 
     // Getters
+    public double getBidIncrement() {return bidIncrement;}
     public int getAuctionId() {return auctionId;}
     public double getCurrentPrice() {return currentPrice;}
     public LocalDateTime getStartTime() {return startTime;}
@@ -52,4 +68,8 @@ public class Auction {
     public boolean isBanned() {return isBanned;}
     public List<Bid> getBids() {return bids;}
     public ReentrantLock getLock() {return lock;}
+
+    interface BidObserver {
+        void onNewBid(Bid bid);
+    }
 }
