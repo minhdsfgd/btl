@@ -9,6 +9,7 @@ public class Bid {
     private int userId;
     private double amount;
     private LocalDateTime timestamp;
+
     public Bid(int bidId, int auctionId, int userId, double amount, LocalDateTime timestamp) {
         this.bidId = bidId;
         this.auctionId = auctionId;
@@ -17,12 +18,10 @@ public class Bid {
         this.timestamp = timestamp;
     }
 
-
     // Getters
-    public int getUserId() { return userId; }
+    public int getUserId() {return userId;}
+    public int getAuctionId() {return auctionId;}
     public int getBidId() {return bidId;}
     public double getAmount(){return amount;}
-    public LocalDateTime getTimestamp(){
-        return timestamp;
-    }
+    public LocalDateTime getTimestamp(){return timestamp;}
 }
