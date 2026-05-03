@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="500.0" prefWidth="800.0" style="-fx-background-color: #012b18;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="CONTROLLER_NAME">
+   <children>
+      <VBox prefWidth="350.0" spacing="20.0" AnchorPane.bottomAnchor="50.0" AnchorPane.leftAnchor="225.0" AnchorPane.rightAnchor="225.0" AnchorPane.topAnchor="50.0">
+         <padding>
+            <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+         </padding>
+         <children>
+            <HBox prefHeight="100.0" prefWidth="548.0" spacing="8.0">
+               <children>
+                  <Label contentDisplay="CENTER" prefHeight="35.0" prefWidth="290.0" text="         Auction System" textFill="#64f06e">
+                     <font>
+                        <Font name="System Bold" size="24.0" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
+            <VBox prefHeight="200.0" prefWidth="100.0" spacing="5.0">
+               <children>
+                  <Label text="Tên đăng nhập" textFill="#aaaaaa">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="usernameField" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="15.0" prefWidth="300.0" promptText="user123" style="-fx-background-color: #333333; -fx-text-fill: white; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8;">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </TextField>
+                  <VBox prefHeight="200.0" prefWidth="100.0" spacing="5.0">
+                     <children>
+                        <Label text="Mật khẩu" textFill="#aaaaaa">
+                           <font>
+                              <Font size="13.0" />
+                           </font>
+                        </Label>
+                        <PasswordField fx:id="passwordField" maxWidth="300.0" style="-fx-background-color: #333333; -fx-text-fill: white; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8;" />
+                     </children>
+                  </VBox>
+               </children>
+            </VBox>
+            <HBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+               <children>
+                  <Label text="Vai trò" textFill="#aaaaaa">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+                  <Hyperlink fx:id="linkBidder" text="Bidder" textFill="#0b8dff" />
+                  <Hyperlink fx:id="linkSeller" text="Seller" textFill="#0b8dff" />
+               </children>
+            </HBox>
+            <Button fx:id="loginButton" alignment="CENTER" mnemonicParsing="false" prefHeight="3.0" prefWidth="105.0" style="-fx-background-color: #006633; -fx-border-color: #555555; -fx-border-radius: 8; -fx-background-radius: 8; -fx-cursor: hand;" text="Đăng nhập" textFill="#f0f0f0">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </Button>
+            <HBox alignment="BASELINE_LEFT" prefHeight="100.0" prefWidth="528.0">
+               <children>
+                  <Label contentDisplay="CENTER" prefHeight="19.0" prefWidth="113.0" text="Chưa có tài khoản" textFill="#aaaaaa" />
+                  <Hyperlink fx:id="linkRegister" text="Đăng ký" textFill="#0b8dff" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </children>
+</AnchorPane>
