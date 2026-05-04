@@ -9,7 +9,9 @@ public class ClientApp extends Application {
     private static final double WIDTH = 800;
     private static final double HEIGHT = 600;
 
-    public static void main() {
+    public static void main(String args[]) {
+        launch(args);
+
 
     }
 

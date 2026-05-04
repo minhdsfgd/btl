@@ -45,8 +45,6 @@ public class Auction {
     public void setIsBanned(boolean isBanned) {this.isBanned = isBanned;}
 
     // Getters
-
-    public double getBidIncrement() {return bidIncrement;}
     public int getAuctionId() {return auctionId;}
     public double getCurrentPrice() {return currentPrice;}
     public LocalDateTime getStartTime() {return startTime;}

@@ -21,7 +21,7 @@
         <HBox prefHeight="500.0" prefWidth="800.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
 
-                <!-- ================= SIDEBAR MENU ================= -->
+                <
                 <VBox prefWidth="160.0" spacing="10.0" style="-fx-background-color: #012414; -fx-border-color: #054529; -fx-border-width: 0 1 0 0;">
                     <children>
                         <Label text="MENU" textFill="#4caf50">
@@ -37,10 +37,10 @@
                         <Button maxWidth="1.7976931348623157E308" style="-fx-background-color: transparent; -fx-text-fill: #a0a0a0;" text="Danh sách phiên" />
                         <Button maxWidth="1.7976931348623157E308" style="-fx-background-color: transparent; -fx-text-fill: #a0a0a0;" text="Thông báo" />
 
-                        <!-- Region để đẩy nút Đăng xuất xuống dưới cùng -->
+
                         <Region VBox.vgrow="ALWAYS" />
 
-                        <!-- Nút Đăng xuất: Nền đỏ tươi, chữ trắng -->
+
                         <HBox alignment="CENTER">
                             <children>
                                 <Button fx:id="btnLogout" onAction="#handleLogout" style="-fx-background-color: #ff3b3b; -fx-background-radius: 5; -fx-text-fill: white; -fx-padding: 5 15;" text="Đăng xuất">
@@ -56,14 +56,14 @@
                     </padding>
                 </VBox>
 
-                <!-- ================= MAIN CONTENT ================= -->
+
                 <VBox spacing="15.0" HBox.hgrow="ALWAYS">
                     <padding>
                         <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
                     </padding>
                     <children>
 
-                        <!-- Header: Title & Username -->
+
                         <HBox alignment="CENTER_LEFT">
                             <children>
                                 <Label text="Seller Dashboard" textFill="#49d66c">
@@ -76,7 +76,7 @@
                             </children>
                         </HBox>
 
-                        <!-- 3 Summary Cards -->
+
                         <HBox spacing="10.0">
                             <children>
                                 <VBox alignment="CENTER" prefWidth="150.0" style="-fx-background-color: #023d22; -fx-background-radius: 5;" HBox.hgrow="ALWAYS">
@@ -133,11 +133,11 @@
                             </children>
                         </HBox>
 
-                        <!-- Bottom Area: Table & Charts -->
+
                         <HBox spacing="15.0" VBox.vgrow="ALWAYS">
                             <children>
 
-                                <!-- Left Panel: Search & Table -->
+
                                 <VBox spacing="10.0" HBox.hgrow="ALWAYS">
                                     <children>
                                         <HBox spacing="10.0">
@@ -157,7 +157,7 @@
                                     </children>
                                 </VBox>
 
-                                <!-- Right Panel: Revenue Chart & Activities -->
+
                                 <VBox prefWidth="220.0" spacing="10.0" style="-fx-background-color: #023d22; -fx-background-radius: 5;">
                                     <children>
                                         <Label text="DOANH THU" textFill="WHITE">
@@ -180,11 +180,11 @@
                                             </font>
                                         </Label>
 
-                                        <!-- ScrollPane bọc lấy vboxActivities -->
+
                                         <ScrollPane fitToWidth="true" prefHeight="150.0" style="-fx-background: #023d22; -fx-background-color: transparent; -fx-border-color: transparent;" VBox.vgrow="ALWAYS">
                                             <content>
                                                 <VBox fx:id="vboxActivities" spacing="10.0">
-                                                    <!-- Dữ liệu Hoạt động sẽ được Controller nhét vào đây -->
+                                                    <!
                                                 </VBox>
                                             </content>
                                         </ScrollPane>
