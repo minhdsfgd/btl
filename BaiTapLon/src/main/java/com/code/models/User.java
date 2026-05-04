@@ -42,7 +42,3 @@ public abstract class User {
     public double getBalance() {return balance;}
     public boolean isIsBanned() {return isBanned;}
 }
-
-enum Role{
-    ADMIN, SELLER, BIDDER
-}
