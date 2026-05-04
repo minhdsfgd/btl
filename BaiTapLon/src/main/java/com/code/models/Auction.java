@@ -31,7 +31,7 @@ public class Auction {
                    User seller
     ) {
         this.auctionId = auctionId;
-        this.item= item;
+        this.item = item;
         this.currentPrice = currentPrice;
         this.bidIncrement = bidIncrement;
         this.startTime = startTime;
@@ -94,8 +94,4 @@ public class Auction {
     public List<Bid> getBids() {return bids;}
     public ReentrantLock getLock() {return lock;}
     public AuctionStatus getStatus() {return status;}
-
-    interface BidObserver {
-        void onNewBid(Bid bid);
-    }
 }
