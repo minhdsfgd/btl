@@ -30,7 +30,7 @@ public class AuctionService {
         if (auction == null || bidder == null) {
             throw new Exception("Lỗi hệ thống: Phiên đấu giá hoặc tài khoản không tồn tại.");
         }
-        if (auction.isBanned() || bidder.isIsBanned()) {
+        if (auction.isBanned() || bidder.isBanned()) {
             throw new Exception("Thao tác bị từ chối: Tài khoản hoặc phiên đấu giá đã bị khóa.");
         }
 

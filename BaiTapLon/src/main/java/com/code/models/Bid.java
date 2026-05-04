@@ -1,14 +1,13 @@
 package com.code.models;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class Bid {
-    private int bidId;
-    private int auctionId;
-    private int userId;
-    private double amount;
-    private LocalDateTime timestamp;
+    private final int bidId;
+    private final int auctionId;
+    private final int userId;
+    private final double amount;
+    private final LocalDateTime timestamp;
 
     public Bid(int bidId, int auctionId, int userId, double amount, LocalDateTime timestamp) {
         this.bidId = bidId;
@@ -18,10 +17,23 @@ public class Bid {
         this.timestamp = timestamp;
     }
 
-    // Getters
-    public int getUserId() {return userId;}
-    public int getAuctionId() {return auctionId;}
-    public int getBidId() {return bidId;}
-    public double getAmount(){return amount;}
-    public LocalDateTime getTimestamp(){return timestamp;}
+    public int getUserId() {
+        return userId;
+    }
+
+    public int getAuctionId() {
+        return auctionId;
+    }
+
+    public int getBidId() {
+        return bidId;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
 }
