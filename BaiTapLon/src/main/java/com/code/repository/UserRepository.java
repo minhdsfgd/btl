@@ -2,27 +2,28 @@ package com.code.repository;
 
 import com.code.models.*;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class UserRepository {
-    private final List<Bid> bids = new ArrayList<>();
+    private final Map<Integer, User> users = new HashMap<>();
 
-    public List<Bid> findByAuctionId(int auctionId) {
-        return bids.stream()
-                .filter(b -> b.getAuctionId() == auctionId)
-                .toList();
+    public User findById(int id) {
+        return users.get(id);
     }
 
-    public Bid findHighestBid(int auctionId) {
-        return bids.stream()
-                .filter(b -> b.getAuctionId() == auctionId)
-                .max(Comparator.comparingDouble(Bid::getAmount))
+    public User findByUsername(String username) {
+        return users.values()
+                .stream()
+                .filter(u -> u.getUsername().equals(username))
+                .findFirst()
                 .orElse(null);
     }
 
-    public void save(Bid bid) {
-        bids.add(bid);
+    public void save(User user) {
+        users.put(user.getUserId(), user);
+    }
+
+    public void update(User user) {
+        users.put(user.getUserId(), user);
     }
 }
