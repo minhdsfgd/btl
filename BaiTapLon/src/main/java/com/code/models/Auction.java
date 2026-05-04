@@ -95,7 +95,5 @@ public class Auction {
     public ReentrantLock getLock() {return lock;}
     public AuctionStatus getStatus() {return status;}
 
-    interface BidObserver {
-        void onNewBid(Bid bid);
-    }
+
 }

@@ -3,6 +3,8 @@ package com.code.service;
 import com.code.models.Auction;
 import com.code.models.Bid;
 import com.code.models.User;
+import com.code.util.IdGenerator;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -68,8 +70,10 @@ public class AuctionService {
             auction.setCurrentPrice(bidAmount);
 
             // Lưu lịch sử Bid (Lưu ý: Cần tạo thêm Constructor cho class Bid)
-            Bid newBid = new Bid(bidCounter++, auctionId, userId, bidAmount, now);
+            Bid newBid = new Bid(IdGenerator.getId(), auctionId, userId, bidAmount, now);
             auction.getBids().add(newBid);
+
+            auction.notifyObservers(newBid);
 
         } finally {
             // Luôn unlock trong finally để tránh Deadlock
