@@ -11,19 +11,17 @@ public abstract class User implements Serializable {
 
     private final int userId;
     private String username;
-    private String email;
     private String password;
     private double balance;
     private boolean active = true;
     private boolean banned;
     private final Set<Role> roles;
 
-    protected User(int userId, String username, String email,
+    protected User(int userId, String username,
                    String password, double balance, Set<Role> roles) {
         if (balance < 0) throw new IllegalArgumentException("balance không được âm");
         this.userId   = userId;
         this.username = Objects.requireNonNull(username, "username");
-        this.email    = email;
         this.password = Objects.requireNonNull(password, "password");
         this.balance  = balance;
         this.roles    = (roles == null || roles.isEmpty())
@@ -90,7 +88,6 @@ public abstract class User implements Serializable {
     public void setUsername(String username) {
         this.username = Objects.requireNonNull(username, "username");
     }
-    public void setEmail(String email)       { this.email    = email; }
     public void setPassword(String password) {
         this.password = Objects.requireNonNull(password, "password");
     }
@@ -101,7 +98,6 @@ public abstract class User implements Serializable {
 
     public int    getUserId()   { return userId; }
     public String getUsername() { return username; }
-    public String getEmail()    { return email; }
     public String getPassword() { return password; }
     public double getBalance()  { return balance; }
     public boolean isActive()   { return active; }

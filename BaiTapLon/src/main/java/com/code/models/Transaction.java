@@ -9,22 +9,15 @@ public class Transaction {
     private int toUserId;
     private double amount;
     private int auctionId;
-    private TransactionType type;
     private LocalDateTime createdAt;
 
-    public Transaction(int id, int fromUserId, int toUserId, double amount, int auctionId, TransactionType type) {
+    public Transaction(int id, int fromUserId, int toUserId, double amount, int auctionId) {
         this.id = id;
         this.fromUserId = fromUserId;
         this.toUserId = toUserId;
         this.amount = amount;
         this.auctionId = auctionId;
-        this.type = Objects.requireNonNullElse(type, TransactionType.AUCTION_PAYMENT);
         this.createdAt = LocalDateTime.now();
-    }
-
-    /** Tương thích constructor cũ: mặc định {@link TransactionType#AUCTION_PAYMENT}. */
-    public Transaction(int id, int fromUserId, int toUserId, double amount, int auctionId) {
-        this(id, fromUserId, toUserId, amount, auctionId, TransactionType.AUCTION_PAYMENT);
     }
 
     public int getTransactionId() {
@@ -47,9 +40,6 @@ public class Transaction {
         return auctionId;
     }
 
-    public TransactionType getType() {
-        return type;
-    }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
@@ -73,10 +63,6 @@ public class Transaction {
 
     public void setAuctionId(int auctionId) {
         this.auctionId = auctionId;
-    }
-
-    public void setType(TransactionType type) {
-        this.type = Objects.requireNonNullElse(type, TransactionType.AUCTION_PAYMENT);
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
