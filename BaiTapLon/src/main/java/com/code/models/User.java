@@ -51,7 +51,7 @@ public abstract class User implements Serializable {
      * CHỈ dùng nội bộ (DAO load từ DB).
      * protected — không expose ra ngoài để tránh bypass deposit/deduct.
      */
-    protected void setBalance(double balance) {
+    public void setBalance(double balance) {
         if (balance < 0) throw new IllegalArgumentException("balance không được âm");
         this.balance = balance;
     }
