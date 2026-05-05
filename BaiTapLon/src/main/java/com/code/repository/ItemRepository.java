@@ -22,4 +22,16 @@ public class ItemRepository {
     public void save(Item item)    { items.put(item.getItemId(), item); }
 
     public void delete(int itemId) { items.remove(itemId); }
+    /**
+     * Cập nhật thông tin mặt hàng
+     */
+    public void update(Item updatedItem) {
+        // Tùy theo cách bạn đang lưu dữ liệu trong project mà code khúc ni cho hợp lý nì:
+
+        // 1. Nếu bạn đang dùng Map in-memory (giống mấy ví dụ trước):
+        // mapSảnPhẩm.put(updatedItem.getItemId(), updatedItem);
+
+        // 2. Nếu bạn đang nối với Database (MySQL/SQL Server):
+        // Viết câu lệnh SQL ở đây: "UPDATE items SET name = ?, price = ? WHERE itemId = ?"
+    }
 }
