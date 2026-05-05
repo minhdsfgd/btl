@@ -29,54 +29,40 @@ public abstract class User implements Serializable {
                 : EnumSet.copyOf(roles);
     }
 
-    // ── Balance ──────────────────────────────────────────────────────────────
+    // ── Balance ───────────────────────────────────────────────────────────────
 
-    /**
-     * Nạp tiền vào tài khoản. amount phải > 0.
-     */
+    /** Nạp tiền — amount phải > 0. */
     public synchronized void deposit(double amount) {
         if (amount <= 0) throw new IllegalArgumentException("Số tiền nạp phải > 0");
         this.balance += amount;
     }
 
-    /**
-     * Trừ tiền khi thắng đấu giá hoặc Admin điều chỉnh.
-     * Ném InsufficientBalanceException nếu không đủ số dư.
-     */
+    /** Trừ tiền — ném InsufficientBalanceException nếu không đủ. */
     public synchronized void deductBalance(double amount)
             throws com.code.exception.InsufficientBalanceException {
         if (amount <= 0) throw new IllegalArgumentException("Số tiền trừ phải > 0");
-        if (this.balance < amount) {
+        if (this.balance < amount)
             throw new com.code.exception.InsufficientBalanceException(
-                    "Số dư không đủ: cần " + amount + " VNĐ, hiện có " + this.balance + " VNĐ");
-        }
+                    String.format("Số dư không đủ: cần %,.0f VNĐ, hiện có %,.0f VNĐ.", amount, balance));
         this.balance -= amount;
     }
 
     /**
-     * Chỉ dùng nội bộ (DAO load từ DB). Không expose ra ngoài để tránh
-     * bypass logic deposit/deduct.
+     * CHỈ dùng nội bộ (DAO load từ DB).
+     * protected — không expose ra ngoài để tránh bypass deposit/deduct.
      */
-    public void setBalance(double balance) {
+    protected void setBalance(double balance) {
         if (balance < 0) throw new IllegalArgumentException("balance không được âm");
         this.balance = balance;
     }
 
-    // ── Role ─────────────────────────────────────────────────────────────────
+    // ── Role ──────────────────────────────────────────────────────────────────
 
-    public boolean hasRole(Role role) { return roles.contains(role); }
+    public boolean hasRole(Role role)  { return roles.contains(role); }
+    public void addRole(Role role)     { if (role != null) roles.add(role); }
+    public void removeRole(Role role)  { if (role != null) roles.remove(role); }
+    public Set<Role> getRoles()        { return Collections.unmodifiableSet(roles); }
 
-    public void addRole(Role role) {
-        if (role != null) roles.add(role);
-    }
-
-    public void removeRole(Role role) {
-        if (role != null) roles.remove(role);
-    }
-
-    public Set<Role> getRoles() { return Collections.unmodifiableSet(roles); }
-
-    /** Dùng chung bởi subclass để merge role chính + role phụ. */
     protected static Set<Role> mergeRoles(Role primary, Set<Role> extra) {
         EnumSet<Role> set = EnumSet.of(primary);
         if (extra != null) set.addAll(extra);
@@ -85,21 +71,17 @@ public abstract class User implements Serializable {
 
     // ── Setters ───────────────────────────────────────────────────────────────
 
-    public void setUsername(String username) {
-        this.username = Objects.requireNonNull(username, "username");
-    }
-    public void setPassword(String password) {
-        this.password = Objects.requireNonNull(password, "password");
-    }
-    public void setActive(boolean active)    { this.active   = active; }
-    public void setBanned(boolean banned)    { this.banned   = banned; }
+    public void setUsername(String u)  { this.username = Objects.requireNonNull(u); }
+    public void setPassword(String p)  { this.password = Objects.requireNonNull(p); }
+    public void setActive(boolean a)   { this.active = a; }
+    public void setBanned(boolean b)   { this.banned = b; }
 
     // ── Getters ───────────────────────────────────────────────────────────────
 
-    public int    getUserId()   { return userId; }
-    public String getUsername() { return username; }
-    public String getPassword() { return password; }
-    public double getBalance()  { return balance; }
-    public boolean isActive()   { return active; }
-    public boolean isBanned()   { return banned; }
+    public int     getUserId()   { return userId; }
+    public String  getUsername() { return username; }
+    public String  getPassword() { return password; }
+    public double  getBalance()  { return balance; }
+    public boolean isActive()    { return active; }
+    public boolean isBanned()    { return banned; }
 }

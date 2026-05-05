@@ -8,8 +8,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
-
 import static com.code.models.AuctionStatus.*;
+
+
 
 public class Auction implements Serializable {
     private static final long serialVersionUID = 1L;
