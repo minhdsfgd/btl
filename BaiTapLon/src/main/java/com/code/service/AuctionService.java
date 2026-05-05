@@ -1,84 +1,251 @@
 package com.code.service;
 
-import com.code.models.Auction;
-import com.code.models.Bid;
-import com.code.models.User;
+import com.code.exception.AuctionClosedException;
+import com.code.exception.UserBannedException;
+import com.code.models.*;
+import com.code.repository.AuctionRepository;
 import com.code.util.IdGenerator;
-import com.code.repository.*;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Quản lý vòng đời phiên đấu giá — Singleton.
+ *
+ * <p><b>Vai trò:</b>
+ * <ul>
+ *   <li>Tạo / bắt đầu / kết thúc / hủy phiên đấu giá</li>
+ *   <li>Scheduler tự động chuyển OPEN→RUNNING→FINISHED mỗi 30 giây</li>
+ *   <li>Kiểm tra quyền Seller/Admin trước khi cho phép thao tác</li>
+ * </ul>
+ * </p>
+ *
+ * <p><b>Singleton — thread-safe</b> với double-checked locking.</p>
+ *
+ * <p><b>KHÔNG</b> xử lý logic đặt giá — việc đó là của {@link BidService}.</p>
+ */
 public class AuctionService {
-    // Mô phỏng Database
-    private final Map<Integer, Auction> auctionDatabase;
-    private final Map<Integer, User> userDatabase;
-    private int bidCounter = 1;
 
-    public AuctionService(Map<Integer, Auction> auctionDatabase, Map<Integer, User> userDatabase) {
-        this.auctionDatabase = auctionDatabase;
-        this.userDatabase = userDatabase;
+    // ── Singleton ─────────────────────────────────────────────────────────────
+
+    private static volatile AuctionService instance;
+
+    public static AuctionService getInstance() {
+        if (instance == null) {
+            synchronized (AuctionService.class) {
+                if (instance == null) instance = new AuctionService();
+            }
+        }
+        return instance;
+    }
+
+    private AuctionService() {
+        this.auctionRepository = new AuctionRepository();
+        startScheduler();
+    }
+
+    // ── Fields ────────────────────────────────────────────────────────────────
+
+    private final AuctionRepository     auctionRepository;
+    private final ReentrantLock         managerLock = new ReentrantLock();
+    private final ScheduledExecutorService scheduler =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "auction-scheduler");
+                t.setDaemon(true); // tự tắt khi JVM tắt
+                return t;
+            });
+
+    // ── Tạo phiên ─────────────────────────────────────────────────────────────
+
+    /**
+     * Seller tạo phiên đấu giá mới (OPEN).
+     *
+     * @param item         sản phẩm đấu giá
+     * @param seller       người tạo phiên — phải có role SELLER, không bị ban
+     * @param bidIncrement bước giá tối thiểu mỗi lần đặt
+     * @param startTime    thời điểm bắt đầu nhận bid
+     * @param endTime      thời điểm kết thúc
+     */
+    public Auction createAuction(Item item, User seller,
+                                 double bidIncrement,
+                                 LocalDateTime startTime,
+                                 LocalDateTime endTime)
+            throws UserBannedException, AuctionClosedException {
+
+        if (seller.isBanned())
+            throw new UserBannedException(seller.getUsername());
+        if (!seller.hasRole(Role.SELLER))
+            throw new AuctionClosedException(
+                    "Tài khoản không có quyền tạo phiên. Cần vai trò SELLER.");
+
+        managerLock.lock();
+        try {
+            Auction auction = new Auction(
+                    IdGenerator.getId(), item, seller.getUserId(),
+                    item.getStartingPrice(), bidIncrement, startTime, endTime
+            );
+            auctionRepository.save(auction);
+            return auction;
+        } finally {
+            managerLock.unlock();
+        }
+    }
+
+    // ── Truy vấn ─────────────────────────────────────────────────────────────
+
+    /**
+     * Lấy phiên theo ID. Ném IllegalArgumentException nếu không tìm thấy.
+     */
+    public Auction getAuction(int auctionId) {
+        Auction a = auctionRepository.findAuctionById(auctionId);
+        if (a == null)
+            throw new IllegalArgumentException("Không tìm thấy phiên #" + auctionId);
+        return a;
+    }
+
+    /** OPEN + RUNNING — Bidder xem danh sách. */
+    public List<Auction> getActiveAuctions() {
+        return auctionRepository.findActiveAuctions();
+    }
+
+    /** Tất cả phiên — Admin quản lý. */
+    public List<Auction> getAllAuctions() {
+        return auctionRepository.findAll();
+    }
+
+    /** Phiên của một Seller cụ thể — Seller dashboard. */
+    public List<Auction> getAuctionsBySeller(int sellerId) {
+        return auctionRepository.findBySellerId(sellerId);
+    }
+
+    // ── Thay đổi trạng thái ──────────────────────────────────────────────────
+
+    /**
+     * Bắt đầu phiên sớm (OPEN → RUNNING).
+     * Chỉ chủ phiên (Seller) hoặc Admin.
+     */
+    public void startAuction(int auctionId, User requester)
+            throws UserBannedException, AuctionClosedException {
+        if (requester.isBanned()) throw new UserBannedException(requester.getUsername());
+        Auction auction = getAuction(auctionId);
+        requireOwnerOrAdmin(auction, requester, "bắt đầu");
+
+        managerLock.lock();
+        try { auction.updateStatus(AuctionStatus.RUNNING); }
+        finally { managerLock.unlock(); }
     }
 
     /**
-     * Hàm đặt giá (Bid) - Trả về void nhưng sẽ ném Exception nếu có lỗi
+     * Kết thúc phiên (RUNNING → FINISHED) — gọi bởi scheduler hoặc Admin.
+     * Sau FINISHED: leadingBidderId là người thắng.
      */
-    public void placeBid(int auctionId, int userId, double bidAmount) throws Exception {
-        Auction auction = auctionDatabase.get(auctionId);
-        User bidder = userDatabase.get(userId);
+    public void finishAuction(int auctionId) {
+        Auction auction = auctionRepository.findAuctionById(auctionId);
+        if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) return;
 
-        // 1. Kiểm tra tính hợp lệ cơ bản
-        if (auction == null || bidder == null) {
-            throw new Exception("Lỗi hệ thống: Phiên đấu giá hoặc tài khoản không tồn tại.");
-        }
-        if (auction.isBanned() || bidder.isBanned()) {
-            throw new Exception("Thao tác bị từ chối: Tài khoản hoặc phiên đấu giá đã bị khóa.");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
-            throw new Exception("Phiên đấu giá chưa mở hoặc đã kết thúc.");
-        }
-
-        // 2. KHÓA AUCTION (Thread-safe) để xử lý logic trừ tiền/cộng tiền
-        auction.getLock().lock();
+        managerLock.lock();
         try {
-            double currentPrice = auction.getCurrentPrice();
-            double minValidBid = currentPrice + auction.getBidIncrement();
-
-            if (bidAmount < minValidBid) {
-                throw new Exception("Số tiền đấu giá phải lớn hơn hoặc bằng " + minValidBid);
-            }
-
-            if (bidder.getBalance() < bidAmount) {
-                throw new Exception("Số dư trong ví không đủ. Vui lòng nạp thêm tiền.");
-            }
-
-            // Hoàn tiền cho người đang giữ giá cao nhất trước đó (nếu có)
-            if (!auction.getBids().isEmpty()) {
-                Bid highestPreviousBid = auction.getBids().get(auction.getBids().size() - 1);
-                // Lưu ý: Cần bổ sung getUserId() vào class Bid của bạn
-                User previousBidder = userDatabase.get(highestPreviousBid.getUserId());
-                if (previousBidder != null) {
-                    previousBidder.setBalance(previousBidder.getBalance() + highestPreviousBid.getAmount());
-                }
-            }
-
-            // Trừ tiền người bid mới
-            bidder.setBalance(bidder.getBalance() - bidAmount);
-
-            // Cập nhật giá mới cho Auction
-            auction.setCurrentPrice(bidAmount);
-
-            // Lưu lịch sử Bid (Lưu ý: Cần tạo thêm Constructor cho class Bid)
-            Bid newBid = new Bid(IdGenerator.getId(), auctionId, userId, bidAmount, now);
-            auction.getBids().add(newBid);
-
-            auction.notifyObservers(newBid);
-
+            auction.updateStatus(AuctionStatus.FINISHED);
+            // Notify client biết phiên kết thúc (dùng bid giả với bidId = -1)
+            Bid endSignal = new Bid(-1, auctionId,
+                    auction.getLeadingBidderId(),
+                    auction.getCurrentPrice(),
+                    LocalDateTime.now());
+            auction.notifyObservers(endSignal);
         } finally {
-            // Luôn unlock trong finally để tránh Deadlock
-            auction.getLock().unlock();
+            managerLock.unlock();
         }
+    }
+
+    /**
+     * Hủy phiên (OPEN/RUNNING → CANCELED).
+     * Chỉ chủ phiên hoặc Admin.
+     */
+    public void cancelAuction(int auctionId, User requester)
+            throws UserBannedException, AuctionClosedException {
+        if (requester.isBanned()) throw new UserBannedException(requester.getUsername());
+        Auction auction = getAuction(auctionId);
+        requireOwnerOrAdmin(auction, requester, "hủy");
+
+        managerLock.lock();
+        try { auction.updateStatus(AuctionStatus.CANCELED); }
+        finally { managerLock.unlock(); }
+    }
+
+    /**
+     * Xác nhận thanh toán (FINISHED → PAID). Chỉ Admin.
+     */
+    public void markAsPaid(int auctionId, User admin)
+            throws UserBannedException, AuctionClosedException {
+        if (admin.isBanned()) throw new UserBannedException(admin.getUsername());
+        if (!admin.hasRole(Role.ADMIN))
+            throw new AuctionClosedException("Chỉ Admin được xác nhận thanh toán.");
+        managerLock.lock();
+        try { getAuction(auctionId).updateStatus(AuctionStatus.PAID); }
+        finally { managerLock.unlock(); }
+    }
+
+    /**
+     * Admin ban phiên đấu giá — phiên bị lock, không nhận bid mới.
+     */
+    public void banAuction(int auctionId, User admin)
+            throws UserBannedException, AuctionClosedException {
+        if (admin.isBanned()) throw new UserBannedException(admin.getUsername());
+        if (!admin.hasRole(Role.ADMIN))
+            throw new AuctionClosedException("Chỉ Admin được ban phiên đấu giá.");
+        getAuction(auctionId).setBanned(true);
+    }
+
+    // ── Scheduler ────────────────────────────────────────────────────────────
+
+    /**
+     * Quét mỗi 30 giây, tự động chuyển trạng thái theo thời gian:
+     * OPEN → RUNNING (khi đến startTime)
+     * RUNNING → FINISHED (khi qua endTime)
+     */
+    private void startScheduler() {
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                LocalDateTime now = LocalDateTime.now();
+                for (Auction a : auctionRepository.findAll()) {
+                    // OPEN → RUNNING
+                    if (a.getStatus() == AuctionStatus.OPEN
+                            && !a.isBanned()
+                            && a.getStartTime() != null
+                            && !now.isBefore(a.getStartTime())) {
+                        managerLock.lock();
+                        try { a.updateStatus(AuctionStatus.RUNNING); }
+                        catch (Exception ignored) {}
+                        finally { managerLock.unlock(); }
+                    }
+                    // RUNNING → FINISHED
+                    if (a.getStatus() == AuctionStatus.RUNNING
+                            && a.getEndTime() != null
+                            && now.isAfter(a.getEndTime())) {
+                        finishAuction(a.getAuctionId());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[Scheduler] " + e.getMessage());
+            }
+        }, 0, 30, TimeUnit.SECONDS);
+    }
+
+    /** Dừng scheduler khi server shutdown. */
+    public void shutdown() { scheduler.shutdownNow(); }
+
+    // ── Helper ───────────────────────────────────────────────────────────────
+
+    private void requireOwnerOrAdmin(Auction auction, User user, String action)
+            throws AuctionClosedException {
+        boolean isOwner = auction.getSellerId() == user.getUserId();
+        boolean isAdmin = user.hasRole(Role.ADMIN);
+        if (!isOwner && !isAdmin)
+            throw new AuctionClosedException(
+                    "Không có quyền " + action + " phiên #" + auction.getAuctionId() + ".");
     }
 }
