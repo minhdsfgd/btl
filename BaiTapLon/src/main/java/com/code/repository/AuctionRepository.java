@@ -1,26 +1,26 @@
+// ── AuctionRepository.java ───────────────────────────────────────────────────
 package com.code.repository;
 
 import com.code.models.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/** FIX: Dùng ConcurrentHashMap thay vì HashMap — thread-safe cho multi-client server. */
 public class AuctionRepository {
-    private final Map<Integer, Auction> auctions = new HashMap<>();
+    private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 
     public Auction findAuctionById(int id) { return auctions.get(id); }
 
-    /** OPEN + RUNNING — hiển thị cho Bidder. */
+    /** OPEN + RUNNING — Bidder xem danh sách. */
     public List<Auction> findActiveAuctions() {
         return auctions.values().stream()
-                .filter(a -> a.getStatus() == AuctionStatus.OPEN
-                        || a.getStatus() == AuctionStatus.RUNNING)
+                .filter(a -> a.getStatus().isActive())   // dùng isActive() mới
                 .collect(Collectors.toList());
     }
 
-    /** Tất cả — Admin quản lý và scheduler dùng. */
     public List<Auction> findAll() { return new ArrayList<>(auctions.values()); }
 
-    /** Phiên của một Seller — Seller dashboard. */
     public List<Auction> findBySellerId(int sellerId) {
         return auctions.values().stream()
                 .filter(a -> a.getSellerId() == sellerId)
@@ -29,8 +29,6 @@ public class AuctionRepository {
 
     public void save(Auction auction) { auctions.put(auction.getAuctionId(), auction); }
 
-    public void updateStatus(int auctionId, AuctionStatus status) {
-        Auction a = auctions.get(auctionId);
-        if (a != null) a.updateStatus(status);
-    }
+    // FIX: Xóa updateStatus() — việc đổi trạng thái phải qua AuctionService (có lock)
+    // Nếu repository gọi trực tiếp sẽ bypass managerLock → race condition
 }
