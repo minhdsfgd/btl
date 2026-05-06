@@ -44,6 +44,12 @@ public class UserService {
             throw new IllegalArgumentException("Username không được để trống.");
         if (password == null || password.length() < 6)
             throw new IllegalArgumentException("Password phải ít nhất 6 ký tự.");
+
+        // FIX: Bảo mật — không cho tự đăng ký thành Admin
+        if (primaryRole == Role.ADMIN)
+            throw new AuthenticationException(
+                    "Không thể tự đăng ký tài khoản Admin. Liên hệ quản trị viên.");
+
         if (userRepository.existsByUsername(username))
             throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
 
@@ -52,6 +58,24 @@ public class UserService {
         );
         userRepository.save(user);
         return user;
+    }
+
+    /**
+     * Chỉ Admin hiện tại mới được tạo tài khoản Admin mới.
+     */
+    public Admin createAdmin(User currentAdmin, String username, String password)
+            throws AuthenticationException, UserBannedException {
+        requireAdmin(currentAdmin);
+        if (username == null || username.isBlank())
+            throw new IllegalArgumentException("Username không được để trống.");
+        if (password == null || password.length() < 6)
+            throw new IllegalArgumentException("Password phải ít nhất 6 ký tự.");
+        if (userRepository.existsByUsername(username))
+            throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
+
+        Admin admin = new Admin(IdGenerator.getId(), username, password, 0.0);
+        userRepository.save(admin);
+        return admin;
     }
 
     // ── Đăng nhập ────────────────────────────────────────────────────────────
@@ -65,6 +89,7 @@ public class UserService {
             throws AuthenticationException, UserBannedException {
         User user = userRepository.findByUsername(username);
 
+        // FIX: cùng message để tránh timing attack (không lộ username có tồn tại không)
         if (user == null || !user.getPassword().equals(password))
             throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu.");
 
@@ -89,6 +114,8 @@ public class UserService {
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
         User target = getOrThrow(userId);
+        if (target.hasRole(Role.ADMIN))
+            throw new AuthenticationException("Không thể ban tài khoản Admin khác.");
         target.setBanned(true);
         userRepository.update(target);
     }
@@ -99,9 +126,8 @@ public class UserService {
     public void unbanUser(User admin, int userId)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        User target = getOrThrow(userId);
-        target.setBanned(false);
-        userRepository.update(target);
+        getOrThrow(userId).setBanned(false);
+        userRepository.update(getOrThrow(userId));
     }
 
     /**
@@ -110,6 +136,8 @@ public class UserService {
     public void addRole(User admin, int userId, Role role)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
+        if (role == Role.ADMIN)
+            throw new AuthenticationException("Dùng createAdmin() để tạo Admin mới.");
         getOrThrow(userId).addRole(role);
     }
 
