@@ -27,7 +27,7 @@ public class Auction implements Serializable {
 
     /** userId người dẫn đầu; -1 nếu chưa có bid */
     private int leadingBidderId = -1;
-
+    //danh sách trống để lưu lịch sử các lượt đặt giá
     private final List<Bid> bids = new ArrayList<>();
 
     // transient — không Serializable
@@ -43,9 +43,13 @@ public class Auction implements Serializable {
             throw new IllegalArgumentException("bidIncrement phải > 0");
         if (startingPrice < 0)
             throw new IllegalArgumentException("startingPrice không được âm");
+
+        // ném lỗi ngay lập tức nếu truyền null
         Objects.requireNonNull(item,      "item");
         Objects.requireNonNull(startTime, "startTime");
         Objects.requireNonNull(endTime,   "endTime");
+
+        // kiểm tra logic tgian
         if (!endTime.isAfter(startTime))
             throw new IllegalArgumentException("endTime phải sau startTime");
 
@@ -57,6 +61,7 @@ public class Auction implements Serializable {
         this.startTime    = startTime;
         this.endTime      = endTime;
         this.status       = OPEN;
+        // gọi hàm phụ để khởi tạo khoá lock vào ds observer
         initTransient();
     }
 
@@ -85,6 +90,7 @@ public class Auction implements Serializable {
 
     /** Gửi sự kiện tới tất cả observer. */
     public void notifyObservers(AuctionEvent event) {
+        // lặp qua ds những aoi đang theo dõi
         for (AuctionObserver obs : observers()) {
             obs.onAuctionEvent(event);
         }

@@ -51,28 +51,18 @@
                   </VBox>
                </children>
             </VBox>
-            <HBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="200.0" spacing="5.0">
-               <children>
-                  <Label text="Vai trò" textFill="#aaaaaa">
-                     <font>
-                        <Font size="14.0" />
-                     </font>
-                  </Label>
-                  <Hyperlink fx:id="linkBidder" text="Bidder" textFill="#0b8dff" />
-                  <Hyperlink fx:id="linkSeller" text="Seller" textFill="#0b8dff" />
-               </children>
-            </HBox>
             <Button fx:id="loginButton" alignment="CENTER" mnemonicParsing="false" prefHeight="3.0" prefWidth="105.0" style="-fx-background-color: #006633; -fx-border-color: #555555; -fx-border-radius: 8; -fx-background-radius: 8; -fx-cursor: hand;" text="Đăng nhập" textFill="#f0f0f0">
                <font>
                   <Font size="14.0" />
                </font>
             </Button>
-            <HBox alignment="BASELINE_LEFT" prefHeight="100.0" prefWidth="528.0">
+            <HBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="200.0" spacing="5.0">
                <children>
                   <Label contentDisplay="CENTER" prefHeight="19.0" prefWidth="113.0" text="Chưa có tài khoản" textFill="#aaaaaa" />
                   <Hyperlink fx:id="linkRegister" text="Đăng ký" textFill="#0b8dff" />
                </children>
             </HBox>
+            <HBox alignment="BASELINE_LEFT" prefHeight="100.0" prefWidth="528.0" />
          </children>
       </VBox>
    </children>
