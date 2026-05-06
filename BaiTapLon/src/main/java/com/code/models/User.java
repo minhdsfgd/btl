@@ -6,7 +6,7 @@ import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 
-public abstract class User implements Serializable {
+public class User implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final int userId;
