@@ -117,9 +117,12 @@ public class AuctionService {
         managerLock.lock();
         try {
             auction.updateStatus(AuctionStatus.FINISHED);
+            markAsPaid(auctionId);
             // Gửi event kết thúc — observer phân biệt qua EventType.AUCTION_FINISHED
             auction.notifyObservers(
                     AuctionEvent.auctionFinished(auctionId, auction.getLeadingBidderId()));
+        } catch (AuctionClosedException e) {
+            throw new RuntimeException(e);
         } finally { managerLock.unlock(); }
     }
 
@@ -135,14 +138,23 @@ public class AuctionService {
         } finally { managerLock.unlock(); }
     }
 
-    public void markAsPaid(int auctionId, User admin)
-            throws UserBannedException, AuctionClosedException {
-        if (admin.isBanned()) throw new UserBannedException(admin.getUsername());
-        if (!admin.hasRole(Role.ADMIN))
-            throw new AuctionClosedException("Chỉ Admin được xác nhận thanh toán.");
+    public void markAsPaid(int auctionId)
+            throws AuctionClosedException {
         managerLock.lock();
-        try { getAuction(auctionId).updateStatus(AuctionStatus.PAID); }
-        finally { managerLock.unlock(); }
+        try {
+            Auction auction = getAuction(auctionId);
+
+            if (auction.getStatus() != AuctionStatus.FINISHED) {
+                throw new AuctionClosedException(
+                        "Auction phải ở trạng thái FINISHED."
+                );
+            }
+
+            auction.updateStatus(AuctionStatus.PAID);
+
+        } finally {
+            managerLock.unlock();
+        }
     }
 
     public void banAuction(int auctionId, User admin)
