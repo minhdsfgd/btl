@@ -21,7 +21,7 @@
         <HBox prefHeight="500.0" prefWidth="800.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
 
-                <
+
                 <VBox prefWidth="160.0" spacing="10.0" style="-fx-background-color: #012414; -fx-border-color: #054529; -fx-border-width: 0 1 0 0;">
                     <children>
                         <Label text="MENU" textFill="#4caf50">
@@ -184,7 +184,7 @@
                                         <ScrollPane fitToWidth="true" prefHeight="150.0" style="-fx-background: #023d22; -fx-background-color: transparent; -fx-border-color: transparent;" VBox.vgrow="ALWAYS">
                                             <content>
                                                 <VBox fx:id="vboxActivities" spacing="10.0">
-                                                    <!
+
                                                 </VBox>
                                             </content>
                                         </ScrollPane>
