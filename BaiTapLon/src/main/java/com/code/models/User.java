@@ -49,7 +49,7 @@ public abstract class User implements Serializable {
      * CHỈ DAO dùng khi load từ DB.
      * protected + synchronized để đồng bộ với deposit/deductBalance.
      */
-    protected synchronized void setBalance(double balance) {
+    public synchronized void setBalance(double balance) {
         if (balance < 0) throw new IllegalArgumentException("balance không được âm");
         this.balance = balance;
     }

@@ -1,10 +1,13 @@
 package com.code.service;
 
+import com.code.dao.AuctionDAO;
+import com.code.dao.BidDAO;
 import com.code.exception.*;
 import com.code.models.*;
-import com.code.repository.BidRepository;
 import com.code.util.IdGenerator;
 
+
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 
 /**
@@ -24,11 +27,13 @@ import java.time.LocalDateTime;
  */
 public class BidService {
 
-    private final BidRepository bidRepository;
+    private final BidDAO bidDAO;
+    private final AuctionDAO auctionDAO;
 
     /** Constructor — inject BidRepository. */
-    public BidService(BidRepository bidRepository) {
-        this.bidRepository = bidRepository;
+    public BidService(BidDAO bidDAO,AuctionDAO auctionDAO) {
+        this.bidDAO= bidDAO;
+        this.auctionDAO = auctionDAO;
     }
 
     // ── Đặt giá ───────────────────────────────────────────────────────────────
@@ -94,9 +99,13 @@ public class BidService {
 
             auction.setCurrentPrice(amount);
             auction.recordBid(bid);
+             try {
+                bidDAO.save(bid);
+                auctionDAO.update(auction); // sync giá + leadingBidderId về DB
+                } catch (SQLException e) {
+                    throw new RuntimeException("Lỗi lưu bid: " + e.getMessage(), e);
+            }
 
-            // ── FIX: Lưu bid vào repository ────────────────────────────────────
-            bidRepository.save(bid);
 
             // ── Notify qua AuctionEvent (không dùng Bid giả) ──────────────────
             auction.notifyObservers(AuctionEvent.bidPlaced(auction.getAuctionId(), bid));

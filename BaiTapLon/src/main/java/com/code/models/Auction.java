@@ -64,6 +64,24 @@ public class Auction implements Serializable {
         // gọi hàm phụ để khởi tạo khoá lock vào ds observer
         initTransient();
     }
+    public static Auction loadFromDB(int auctionId, Item item, int sellerId,
+                                     double currentPrice, double bidIncrement,
+                                     LocalDateTime startTime, LocalDateTime endTime,
+                                     AuctionStatus status, boolean banned,
+                                     int leadingBidderId) {
+        // Tạo Auction ở trạng thái OPEN trước (constructor yêu cầu OPEN ban đầu)
+        // Dùng thủ thuật: startTime và endTime hợp lệ là đủ để qua constructor
+        Auction a = new Auction(auctionId, item, sellerId,
+                currentPrice, bidIncrement,
+                startTime, endTime);
+
+        // Ghi đè trực tiếp các field private bằng cách dùng setter nội bộ
+        a.status = status;
+        a.banned = banned;
+        a.leadingBidderId = leadingBidderId;
+
+        return a;
+    }
 
     // Khởi tạo lại sau khi deserialize (vì transient bị null)
     private void initTransient() {

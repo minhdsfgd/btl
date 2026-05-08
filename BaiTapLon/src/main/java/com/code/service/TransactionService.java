@@ -1,17 +1,19 @@
 package com.code.service;
 
+import com.code.dao.TransactionDAO;
 import com.code.models.Transaction;
 import com.code.repository.TransactionRepository;
 import com.code.util.IdGenerator;
 
+import java.sql.SQLException;
 import java.util.List;
 
 public class TransactionService {
 
-    private final TransactionRepository transactionRepository;
+    private final TransactionDAO transactionDAO;
 
-    public TransactionService(TransactionRepository transactionRepository) {
-        this.transactionRepository = transactionRepository;
+    public TransactionService(TransactionDAO transactionDAO) {
+        this.transactionDAO = transactionDAO;
     }
 
     /**
@@ -24,7 +26,12 @@ public class TransactionService {
                 userId,
                 amount
         );
-        transactionRepository.save(tx);
+        try{
+            transactionDAO.save(tx);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
     }
 
     /**
@@ -40,7 +47,12 @@ public class TransactionService {
                 auctionId,
                 Transaction.Type.ADJUSTMENT
         );
-        transactionRepository.save(tx);
+        try{
+            transactionDAO.save(tx);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
     }
 
     /**
@@ -55,7 +67,12 @@ public class TransactionService {
                 auctionId,
                 Transaction.Type.REFUND
         );
-        transactionRepository.save(tx);
+        try{
+            transactionDAO.save(tx);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
     }
 
     /**
@@ -70,14 +87,25 @@ public class TransactionService {
                 auctionId,
                 Transaction.Type.AUCTION_PAYMENT
         );
-        transactionRepository.save(tx);
+        try{
+            transactionDAO.save(tx);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
     }
 
     /**
      * Lấy sao kê lịch sử giao dịch của một user cụ thể.
      */
     public List<Transaction> getTransactionHistory(int userId) {
-        // Tùy theo cách bạn viết hàm này bên TransactionRepository
-        return transactionRepository.findByUserId(userId);
+        // Tùy theo cách bạn viết hàm này bên TransactionDAO
+        try{
+            return transactionDAO.findByUserId(userId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
+
     }
 }

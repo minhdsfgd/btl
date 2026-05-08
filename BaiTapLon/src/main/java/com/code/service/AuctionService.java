@@ -1,11 +1,13 @@
 package com.code.service;
 
+import com.code.dao.AuctionDAO;
 import com.code.exception.AuctionClosedException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
 import com.code.repository.AuctionRepository;
 import com.code.util.IdGenerator;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -33,13 +35,13 @@ public class AuctionService {
     }
 
     private AuctionService() {
-        this.auctionRepository = new AuctionRepository();
+        this.auctionDAO = new AuctionDAO();
         startScheduler();
     }
 
     // ── Fields ────────────────────────────────────────────────────────────────
 
-    private final AuctionRepository        auctionRepository;
+    private final AuctionDAO auctionDAO;
     private final ReentrantLock            managerLock = new ReentrantLock();
     private final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor(r -> {
@@ -66,9 +68,13 @@ public class AuctionService {
                     IdGenerator.getId(), item, seller.getUserId(),
                     item.getStartingPrice(), bidIncrement, startTime, endTime
             );
-            auctionRepository.save(auction);
+            auctionDAO.save(auction);
+
             return auction;
-        } finally {
+             } catch (SQLException e) {
+                throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+        finally {
             managerLock.unlock();
         }
     }
@@ -80,16 +86,39 @@ public class AuctionService {
      * Caller được nhắc nhở phải xử lý trường hợp không tìm thấy phiên.
      */
     public Auction getAuction(int auctionId) throws AuctionClosedException {
-        Auction a = auctionRepository.findAuctionById(auctionId);
-        if (a == null)
-            throw new AuctionClosedException("Không tìm thấy phiên đấu giá #" + auctionId);
-        return a;
+        try{
+            Auction a = auctionDAO.findById(auctionId);
+            if (a == null)
+                throw new AuctionClosedException("Không tìm thấy phiên đấu giá #" + auctionId);
+            return a;
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
+
     }
 
-    public List<Auction> getActiveAuctions() { return auctionRepository.findActiveAuctions(); }
-    public List<Auction> getAllAuctions()     { return auctionRepository.findAll(); }
+    public List<Auction> getActiveAuctions() {
+        try{
+            return auctionDAO.findActiveAuctions();
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+    }
+    public List<Auction> getAllAuctions()     {
+        try{
+            return auctionDAO.findAll();
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+    }
     public List<Auction> getAuctionsBySeller(int sellerId) {
-        return auctionRepository.findBySellerId(sellerId);
+        try{
+            return auctionDAO.findBySellerId(sellerId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
     }
 
     // ── Thay đổi trạng thái ──────────────────────────────────────────────────
@@ -111,11 +140,11 @@ public class AuctionService {
      * FIX: Dùng AuctionEvent.auctionFinished() thay vì Bid giả bidId=-1.
      */
     public void finishAuction(int auctionId) {
-        Auction auction = auctionRepository.findAuctionById(auctionId);
-        if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) return;
 
-        managerLock.lock();
         try {
+            Auction auction = auctionDAO.findById(auctionId);
+            if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) return;
+            managerLock.lock();
             auction.updateStatus(AuctionStatus.FINISHED);
             markAsPaid(auctionId);
             // Gửi event kết thúc — observer phân biệt qua EventType.AUCTION_FINISHED
@@ -123,6 +152,8 @@ public class AuctionService {
                     AuctionEvent.auctionFinished(auctionId, auction.getLeadingBidderId()));
         } catch (AuctionClosedException e) {
             throw new RuntimeException(e);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         } finally { managerLock.unlock(); }
     }
 
@@ -171,7 +202,7 @@ public class AuctionService {
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 LocalDateTime now = LocalDateTime.now();
-                for (Auction a : auctionRepository.findAll()) {
+                for (Auction a : auctionDAO.findAll()) {
 
                     // OPEN → RUNNING
                     if (a.getStatus() == AuctionStatus.OPEN
