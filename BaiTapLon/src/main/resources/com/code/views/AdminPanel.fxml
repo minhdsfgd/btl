@@ -11,8 +11,6 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-
-
 <StackPane prefHeight="500" prefWidth="800" style="-fx-background-color: #012b18;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.AdminPanelController">
 
     <VBox spacing="0">
@@ -87,7 +85,6 @@
                     <columns>
                         <TableColumn fx:id="colUserId" prefWidth="38" text="ID" />
                         <TableColumn fx:id="colUserName" prefWidth="130" text="Họ tên" />
-                        <TableColumn fx:id="colUserEmail" prefWidth="160" text="Email" />
                         <TableColumn fx:id="colUserRole" prefWidth="70" text="Vai trò" />
                         <TableColumn fx:id="colUserStatus" prefWidth="80" text="Trạng thái" />
                         <TableColumn fx:id="colUserAction" prefWidth="100" text="Hành động" />
