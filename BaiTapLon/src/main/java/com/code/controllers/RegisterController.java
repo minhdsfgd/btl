@@ -8,6 +8,9 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
 
+import static com.code.util.ControllerUtils.navigateTo;
+import static com.code.util.ControllerUtils.showAlert;
+
 public class RegisterController {
 
     @FXML private TextField fullNameField;
@@ -107,19 +110,6 @@ public class RegisterController {
         navigateTo("/com/code/views/Login.fxml");
     }
 
-    private void navigateTo(String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Parent root = loader.load();
-            Stage stage = (Stage) registerButton.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không tìm thấy màn hình: " + fxmlPath);
-        }
-    }
-
     private void showError(String message) {
         errorLabel.setText("⚠ " + message);
         errorLabel.setVisible(true);
@@ -128,13 +118,5 @@ public class RegisterController {
     private void clearError() {
         errorLabel.setText("");
         errorLabel.setVisible(false);
-    }
-
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
     }
 }

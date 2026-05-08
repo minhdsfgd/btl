@@ -1,5 +1,6 @@
 package com.code.controllers;
 
+import com.code.util.ControllerUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -8,12 +9,19 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
 
+import static com.code.util.ControllerUtils.navigateTo;
+import static com.code.util.ControllerUtils.showAlert;
+
 public class LoginController {
 
-    @FXML private TextField usernameField;
-    @FXML private PasswordField passwordField;
-    @FXML private Button loginButton;
-    @FXML private Hyperlink linkRegister;
+    @FXML
+    private TextField usernameField;
+    @FXML
+    private PasswordField passwordField;
+    @FXML
+    private Button loginButton;
+    @FXML
+    private Hyperlink linkRegister;
 
     @FXML
     public void initialize() {
@@ -47,9 +55,11 @@ public class LoginController {
             showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", "Vui lòng nhập đủ thông tin.");
             return;
         }
-
-        if (authenticate(username, password)) {
-            navigateTo("/com/code/views/Dashboard.fxml");
+        if (authenticateUser(username, password)) {
+            navigateTo("/com/code/views/AuctionList.fxml");
+        }
+        if (authenticateAdmin(username, password)) {
+            navigateTo("/com/code/views/AdminPanel.fxml");
         } else {
             showAlert(Alert.AlertType.ERROR, "Sai thông tin", "Tên đăng nhập hoặc mật khẩu không đúng.");
             passwordField.clear();
@@ -61,29 +71,12 @@ public class LoginController {
         navigateTo("/com/code/views/Register.fxml");
     }
 
-    private boolean authenticate(String username, String password) {
+    private boolean authenticateUser(String username, String password){
+        // TODO: the same as the one below
+        return username.equals("user") && password.equals("1234");
+    }
+    private boolean authenticateAdmin(String username, String password) {
         // TODO: thay bằng truy vấn DB
         return username.equals("admin") && password.equals("1234");
-    }
-
-    private void navigateTo(String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Parent root = loader.load();
-            Stage stage = (Stage) loginButton.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không tìm thấy màn hình: " + fxmlPath);
-        }
-    }
-
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
     }
 }

@@ -13,6 +13,8 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.code.util.ControllerUtils.navigateTo;
+
 public class AuctionListController {
 
     // ===== FXML fields =====
@@ -200,19 +202,6 @@ public class AuctionListController {
         filterUpcomingButton.setStyle(inactive);
         filterEndedButton.setStyle(inactive);
         activeBtn.setStyle(active);
-    }
-
-    // ===== Chuyển màn hình =====
-    private void navigateTo(String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Parent root = loader.load();
-            Stage stage = (Stage) logoutButton.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     // ===== Dữ liệu mẫu =====

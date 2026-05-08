@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
+import static com.code.util.ControllerUtils.navigateTo;
+
 public class AdminPanelController implements Initializable {
 
     // ── Header ──────────────────────────────────────────────────────────────
@@ -102,8 +104,7 @@ public class AdminPanelController implements Initializable {
 
     @FXML
     private void handleLogout() {
-        // TODO: implement logout logic (e.g. close window, navigate to login)
-        System.out.println("Logout clicked");
+        navigateTo("/com/code/views/Login.fxml");
     }
 
     @FXML

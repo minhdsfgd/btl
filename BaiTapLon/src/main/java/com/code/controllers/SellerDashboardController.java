@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
+import static com.code.util.ControllerUtils.navigateTo;
+
 public class SellerDashboardController implements Initializable {
 
     // ── Header ───────────────────────────────────────────────────────────────
@@ -144,9 +146,7 @@ public class SellerDashboardController implements Initializable {
 
     @FXML
     private void handleLogout() {
-        // TODO: navigate back to login screen
-        Stage stage = (Stage) btnLogout.getScene().getWindow();
-        stage.close();
+        navigateTo("com/code/views/Login.fxml");
     }
 
     // ========================================================================

@@ -8,6 +8,7 @@ import javafx.fxml.FXMLLoader;
 public class ClientApp extends Application {
     private static final double WIDTH = 800;
     private static final double HEIGHT = 600;
+    private static Stage primaryStage;
 
     public static void main(String args[]) {
         launch(args);
@@ -15,6 +16,7 @@ public class ClientApp extends Application {
 
     @Override // Override from Application
     public void start(Stage stage) throws Exception {
+        primaryStage = stage;
         FXMLLoader fxmlLoader = new FXMLLoader(
                 getClass().getResource("/com/code/views/Login.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), WIDTH, HEIGHT);
@@ -24,5 +26,8 @@ public class ClientApp extends Application {
         stage.setResizable(false);
         stage.centerOnScreen();
         stage.show();
+    }
+    public static Stage getStage(){
+        return primaryStage;
     }
 }
