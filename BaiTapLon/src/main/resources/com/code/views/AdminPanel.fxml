@@ -33,7 +33,10 @@
                     <font><Font name="Segoe UI Bold" size="16.0" /></font>
                 </Label>
                 <Region HBox.hgrow="ALWAYS" />
-                <Label fx:id="lblAdminName" style="-fx-text-fill:#c8f5e1; -fx-padding: 0 10 0 0;" />
+                <Label fx:id="lblAdminName" style="-fx-text-fill:#c8f5e1; -fx-padding: 0 10 0 0;">
+               <font>
+                  <Font size="12.0" />
+               </font></Label>
                 <Button onAction="#handleLogout" style="-fx-background-color: #880000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 15;" text="Đăng xuất">
                     <font><Font name="Segoe UI" size="12.0" /></font>
                 </Button>

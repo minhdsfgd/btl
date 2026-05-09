@@ -72,6 +72,8 @@ public class AdminPanelController implements Initializable {
         setupUserTable();
         setupSessionTable();
         setupFilters();
+        loadMockData();
+        lblAdminName.setText(LoginController.getCurrentUsername());
         showPanel(true);          // default: user panel visible
     }
 
@@ -104,6 +106,7 @@ public class AdminPanelController implements Initializable {
 
     @FXML
     private void handleLogout() {
+        LoginController.clearSession();
         navigateTo("/com/code/views/Login.fxml");
     }
 
@@ -240,6 +243,19 @@ public class AdminPanelController implements Initializable {
         cmbStatusFilter.setItems(FXCollections.observableArrayList(
                 "Tất cả", "Đang mở", "Đã kết thúc", "Chờ duyệt"));
         cmbStatusFilter.getSelectionModel().selectFirst();
+    }
+
+    private void loadMockData() {
+        setUsers(List.of(
+                new UserRow(1, "admin", "Admin", "Hoạt động"),
+                new UserRow(2, "seller", "Người dùng", "Hoạt động"),
+                new UserRow(3, "user", "Người dùng", "Hoạt động")
+        ));
+
+        setSessions(List.of(
+                new SessionRow(101, "Dong ho Rolex co", "12.000.000", "15.000.000", "Đang mở"),
+                new SessionRow(102, "Laptop Dell XPS 15", "20.000.000", "22.000.000", "Đã kết thúc")
+        ));
     }
 
     /** Toggle between the two panels and update tab-button styles. */

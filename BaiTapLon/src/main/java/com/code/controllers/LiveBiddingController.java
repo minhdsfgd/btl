@@ -12,7 +12,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.net.URL;
@@ -21,21 +20,28 @@ import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
 
 public class LiveBiddingController implements Initializable {
+    private static SessionData pendingSessionData;
 
     // ── Header ───────────────────────────────────────────────────────────────
     @FXML private Label currentUserLabel;
+    @FXML private Label sessionNameLabel;
 
     // ── Product info ─────────────────────────────────────────────────────────
     @FXML private ImageView productImageView;
     @FXML private Label     productNameLabel;
     @FXML private Label     productDescLabel;
+    @FXML private Label     productCategoryLabel;
 
     // ── Price & bidder ────────────────────────────────────────────────────────
     @FXML private Label currentPriceLabel;
     @FXML private Label leadingBidderLabel;
+    @FXML private Label startPriceLabel;
+    @FXML private Label minStepLabel;
 
     // ── Countdown ─────────────────────────────────────────────────────────────
     @FXML private Label countdownLabel;
+    @FXML private Label sessionStatusLabel;
+    @FXML private Label endTimeLabel;
 
     // ── Bid input ─────────────────────────────────────────────────────────────
     @FXML private TextField bidAmountField;
@@ -66,6 +72,7 @@ public class LiveBiddingController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         setupHistoryTable();
         clearError();
+        applyPendingSessionData();
     }
 
     // ========================================================================
@@ -78,6 +85,10 @@ public class LiveBiddingController implements Initializable {
         currentUserLabel.setText("👤  " + username);
     }
 
+    public void setSessionName(String sessionName) {
+        sessionNameLabel.setText(sessionName);
+    }
+
     /**
      * Load product information into the left panel.
      *
@@ -88,6 +99,7 @@ public class LiveBiddingController implements Initializable {
     public void setProduct(String name, String description, String imageUrl) {
         productNameLabel.setText(name);
         productDescLabel.setText(description);
+        productCategoryLabel.setText("Đồ sưu tầm");
         if (imageUrl != null && !imageUrl.isBlank()) {
             try {
                 productImageView.setImage(new Image(imageUrl, true));
@@ -112,6 +124,11 @@ public class LiveBiddingController implements Initializable {
      */
     public void setMinimumStep(double step) {
         this.minimumStep = step;
+        minStepLabel.setText(formatPrice(step));
+    }
+
+    public void setStartPrice(double price) {
+        startPriceLabel.setText(formatPrice(price));
     }
 
     /**
@@ -123,6 +140,8 @@ public class LiveBiddingController implements Initializable {
         stopCountdown();
         remainingSeconds = totalSeconds;
         updateCountdownLabel();
+        sessionStatusLabel.setText("Đang diễn ra");
+        endTimeLabel.setText(LocalDateTime.now().plusSeconds(totalSeconds).format(TIME_FMT));
 
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             remainingSeconds--;
@@ -200,9 +219,22 @@ public class LiveBiddingController implements Initializable {
     @FXML
     private void handleExitRoom() {
         stopCountdown();
-        // TODO: notify server that user left the room
-        Stage stage = (Stage) bidAmountField.getScene().getWindow();
-        stage.close();
+        com.code.util.ControllerUtils.navigateTo("/com/code/views/AuctionList.fxml");
+    }
+
+    @FXML
+    private void handleBackToList() {
+        stopCountdown();
+        com.code.util.ControllerUtils.navigateTo("/com/code/views/AuctionList.fxml");
+    }
+
+    public static void prepareSession(String username, String sessionName, String productName,
+                                      String description, double startPrice, double currentPrice,
+                                      double minStep, long countdownSeconds) {
+        pendingSessionData = new SessionData(
+                username, sessionName, productName, description,
+                startPrice, currentPrice, minStep, countdownSeconds
+        );
     }
 
     // ========================================================================
@@ -261,6 +293,7 @@ public class LiveBiddingController implements Initializable {
         Platform.runLater(() -> {
             countdownLabel.setText("KẾT THÚC");
             countdownLabel.setStyle("-fx-text-fill: #ef5350; -fx-font-size: 22; -fx-font-weight: bold;");
+            sessionStatusLabel.setText("Đã kết thúc");
             bidAmountField.setDisable(true);
             // TODO: show winner dialog / notify server
             System.out.println("[AUCTION] Phiên đấu giá đã kết thúc.");
@@ -277,6 +310,20 @@ public class LiveBiddingController implements Initializable {
 
     private String formatPrice(double price) {
         return String.format("%,.0f VND", price);
+    }
+
+    private void applyPendingSessionData() {
+        if (pendingSessionData == null) {
+            return;
+        }
+        setCurrentUser(pendingSessionData.username);
+        setSessionName(pendingSessionData.sessionName);
+        setProduct(pendingSessionData.productName, pendingSessionData.description, null);
+        setStartPrice(pendingSessionData.startPrice);
+        setCurrentPrice(pendingSessionData.currentPrice, pendingSessionData.username);
+        setMinimumStep(pendingSessionData.minStep);
+        startCountdown(pendingSessionData.countdownSeconds);
+        pendingSessionData = null;
     }
 
     // ========================================================================
@@ -297,5 +344,29 @@ public class LiveBiddingController implements Initializable {
         public String getUsername() { return username; }
         public String getTime()     { return time; }
         public String getAmount()   { return amount; }
+    }
+
+    private static class SessionData {
+        private final String username;
+        private final String sessionName;
+        private final String productName;
+        private final String description;
+        private final double startPrice;
+        private final double currentPrice;
+        private final double minStep;
+        private final long countdownSeconds;
+
+        private SessionData(String username, String sessionName, String productName,
+                            String description, double startPrice, double currentPrice,
+                            double minStep, long countdownSeconds) {
+            this.username = username;
+            this.sessionName = sessionName;
+            this.productName = productName;
+            this.description = description;
+            this.startPrice = startPrice;
+            this.currentPrice = currentPrice;
+            this.minStep = minStep;
+            this.countdownSeconds = countdownSeconds;
+        }
     }
 }

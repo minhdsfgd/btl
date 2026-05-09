@@ -1,50 +1,45 @@
 package com.code.controllers;
 
-import com.code.util.ControllerUtils;
+import com.code.models.Role;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
-import javafx.stage.Stage;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static com.code.util.ControllerUtils.navigateTo;
 import static com.code.util.ControllerUtils.showAlert;
 
 public class LoginController {
+    private static final Map<String, String> USER_PASSWORDS = new HashMap<>();
+    private static final Map<String, Set<Role>> USER_ROLES = new HashMap<>();
+    private static String currentUsername = "";
 
-    @FXML
-    private TextField usernameField;
-    @FXML
-    private PasswordField passwordField;
-    @FXML
-    private Button loginButton;
-    @FXML
-    private Hyperlink linkRegister;
+    static {
+        registerLocalUser("admin", "1234", Set.of(Role.ADMIN));
+        registerLocalUser("seller", "1234", Set.of(Role.SELLER, Role.BIDDER));
+        registerLocalUser("user", "1234", Set.of(Role.BIDDER));
+    }
+
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Button loginButton;
+    @FXML private Hyperlink linkRegister;
 
     @FXML
     public void initialize() {
-
-        // Nhập xong username → Enter → nhảy xuống password
         usernameField.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER) {
-                passwordField.requestFocus();
-            }
+            if (e.getCode() == KeyCode.ENTER) passwordField.requestFocus();
         });
-
-        // Đang ở password → Enter → click đăng nhập luôn
         passwordField.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER) {
-                handleLogin();
-            }
+            if (e.getCode() == KeyCode.ENTER) handleLogin();
         });
 
-        // Nút đăng nhập
         loginButton.setOnAction(e -> handleLogin());
-
-        // Link đăng ký
-        linkRegister.setOnAction(e -> handleRegister());
+        linkRegister.setOnAction(e -> navigateTo("/com/code/views/Register.fxml"));
     }
 
     private void handleLogin() {
@@ -55,28 +50,46 @@ public class LoginController {
             showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", "Vui lòng nhập đủ thông tin.");
             return;
         }
-        if (authenticateUser(username, password)) {
-            navigateTo("/com/code/views/AuctionList.fxml");
-        }
-        if (authenticateAdmin(username, password)) {
-            navigateTo("/com/code/views/AdminPanel.fxml");
-        } else {
-            showAlert(Alert.AlertType.ERROR, "Sai thông tin", "Tên đăng nhập hoặc mật khẩu không đúng.");
+
+        if (!isValidCredentials(username, password)) {
+            showAlert(Alert.AlertType.ERROR, "Đăng nhập thất bại", "Sai tên đăng nhập hoặc mật khẩu.");
             passwordField.clear();
-            passwordField.requestFocus(); // focus lại ô mật khẩu
+            passwordField.requestFocus();
+            return;
         }
+
+        currentUsername = username;
+        if (hasRole(username, Role.ADMIN)) navigateTo("/com/code/views/AdminPanel.fxml");
+        else if (hasRole(username, Role.SELLER)) navigateTo("/com/code/views/SellerDashboard.fxml");
+        else navigateTo("/com/code/views/AuctionList.fxml");
     }
 
-    private void handleRegister() {
-        navigateTo("/com/code/views/Register.fxml");
+    private boolean isValidCredentials(String username, String password) {
+        String savedPassword = USER_PASSWORDS.get(username);
+        return savedPassword != null && savedPassword.equals(password);
     }
 
-    private boolean authenticateUser(String username, String password){
-        // TODO: the same as the one below
-        return username.equals("user") && password.equals("1234");
+    public static boolean registerLocalUser(String username, String password, Set<Role> roles) {
+        if (USER_PASSWORDS.containsKey(username)) return false;
+        USER_PASSWORDS.put(username, password);
+        USER_ROLES.put(username, new HashSet<>(roles));
+        return true;
     }
-    private boolean authenticateAdmin(String username, String password) {
-        // TODO: thay bằng truy vấn DB
-        return username.equals("admin") && password.equals("1234");
+
+    public static String getCurrentUsername() {
+        return currentUsername == null || currentUsername.isBlank() ? "username" : currentUsername;
+    }
+
+    public static boolean hasRole(String username, Role role) {
+        Set<Role> roles = USER_ROLES.get(username);
+        return roles != null && roles.contains(role);
+    }
+
+    public static boolean currentUserHasRole(Role role) {
+        return hasRole(getCurrentUsername(), role);
+    }
+
+    public static void clearSession() {
+        currentUsername = "";
     }
 }
