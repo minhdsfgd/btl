@@ -4,212 +4,159 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
 import static com.code.util.ControllerUtils.navigateTo;
 
 public class SellerDashboardController implements Initializable {
 
-    // ── Header ───────────────────────────────────────────────────────────────
-    @FXML private Label lblUsername;
-
-    // ── Stats cards ──────────────────────────────────────────────────────────
+    @FXML private Label lblUsernameNav;
     @FXML private Label lblTotalLots;
     @FXML private Label lblActiveLots;
     @FXML private Label lblSoldLots;
 
-    // ── Lot table ─────────────────────────────────────────────────────────────
-    @FXML private TextField  txtSearch;
-    @FXML private TableView<LotRow>       tableLots;
+    @FXML private TextField txtSearch;
+    @FXML private TableView<LotRow> tableLots;
     @FXML private TableColumn<LotRow, String> colId;
     @FXML private TableColumn<LotRow, String> colProject;
     @FXML private TableColumn<LotRow, String> colPrice;
     @FXML private TableColumn<LotRow, String> colStatus;
 
-    // ── Revenue chart & activity feed ────────────────────────────────────────
-    @FXML private LineChart<String, Number> chartRevenue;
     @FXML private VBox vboxActivities;
 
-    // ── Sidebar logout ────────────────────────────────────────────────────────
-    @FXML private Button btnLogout;
+    @FXML private Button btnMenuOverview;
+    @FXML private Button btnMenuLots;
+    @FXML private Button btnMenuSessions;
+    @FXML private Button btnMenuNotif;
 
-    // ── Internal state ────────────────────────────────────────────────────────
     private final ObservableList<LotRow> allLots = FXCollections.observableArrayList();
 
-    // ========================================================================
-    //  Initializable
-    // ========================================================================
+    private static final String MENU_ACTIVE =
+            "-fx-background-color:#16a34a; -fx-text-fill:white; -fx-font-weight:bold;";
+    private static final String MENU_INACTIVE =
+            "-fx-background-color:#e0e0e0; -fx-text-fill:#1f2937;";
+
     @Override
-    public void initialize(URL url, ResourceBundle rb) {
-        setupTable();
-        styleChart();
-    }
+    public void initialize(URL location, ResourceBundle resources) {
+        lblUsernameNav.setText(LoginController.getCurrentUsername());
 
-    // ========================================================================
-    //  Public API
-    // ========================================================================
-
-    /** Display logged-in seller's name. */
-    public void setUsername(String username) {
-        lblUsername.setText(username);
-    }
-
-    /**
-     * Populate the lot table and refresh all stat cards.
-     */
-    public void setLots(List<LotRow> lots) {
-        allLots.setAll(lots);
-        tableLots.setItems(allLots);
+        configureTable();
+        loadSampleLots();
+        loadActivities();
         refreshStats();
+
+        setActiveMenu(btnMenuOverview);
     }
 
-    /**
-     * Feed revenue data into the line chart.
-     * Keys = month labels (e.g. "T1", "T2" …), values = revenue amounts.
-     */
-    public void setRevenueData(List<String> labels, List<Number> values) {
-        chartRevenue.getData().clear();
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        for (int i = 0; i < labels.size(); i++) {
-            series.getData().add(new XYChart.Data<>(labels.get(i), values.get(i)));
-        }
-        chartRevenue.getData().add(series);
-
-        // Style the line green after data is added
-        series.getNode().setStyle("-fx-stroke: #4caf50; -fx-stroke-width: 2;");
-    }
-
-    /**
-     * Add an activity entry to the recent-activity feed.
-     *
-     * @param icon  small emoji / symbol, e.g. "🟢"
-     * @param text  activity description
-     * @param time  timestamp string, e.g. "10:32"
-     */
-    public void addActivity(String icon, String text, String time) {
-        HBox row = new HBox(8);
-        row.setPadding(new Insets(4, 0, 4, 0));
-        row.setStyle("-fx-border-color: #054529; -fx-border-width: 0 0 1 0;");
-
-        Label iconLbl = new Label(icon);
-        iconLbl.setFont(Font.font(12));
-
-        Label textLbl = new Label(text);
-        textLbl.setTextFill(Color.web("#cccccc"));
-        textLbl.setFont(Font.font(10));
-        textLbl.setWrapText(true);
-        textLbl.setMaxWidth(130);
-
-        Label timeLbl = new Label(time);
-        timeLbl.setTextFill(Color.web("#6a8a75"));
-        timeLbl.setFont(Font.font(9));
-
-        VBox info = new VBox(2, textLbl, timeLbl);
-        row.getChildren().addAll(iconLbl, info);
-        vboxActivities.getChildren().add(0, row);   // newest on top
-    }
-
-    // ========================================================================
-    //  FXML handlers
-    // ========================================================================
-
-    @FXML
-    private void handleSearch() {
-        String keyword = txtSearch.getText().trim().toLowerCase();
-        if (keyword.isEmpty()) {
-            tableLots.setItems(allLots);
-            return;
-        }
-        ObservableList<LotRow> filtered = allLots.stream()
-                .filter(r -> r.getId().toLowerCase().contains(keyword)
-                        || r.getProject().toLowerCase().contains(keyword)
-                        || r.getStatus().toLowerCase().contains(keyword))
-                .collect(Collectors.toCollection(FXCollections::observableArrayList));
-        tableLots.setItems(filtered);
-    }
-
-    @FXML
-    private void handleLogout() {
-        navigateTo("com/code/views/Login.fxml");
-    }
-
-    // ========================================================================
-    //  Private helpers
-    // ========================================================================
-
-    private void setupTable() {
+    private void configureTable() {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colProject.setCellValueFactory(new PropertyValueFactory<>("project"));
         colPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-
-        // Colour-code the status cell
-        colStatus.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(String status, boolean empty) {
-                super.updateItem(status, empty);
-                if (empty || status == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(status);
-                    String color = switch (status) {
-                        case "Đang đấu"  -> "#4caf50";
-                        case "Đã bán"    -> "#ff9800";
-                        case "Chờ duyệt" -> "#4dd0e1";
-                        default          -> "#a0a0a0";
-                    };
-                    setStyle("-fx-text-fill: " + color + "; -fx-alignment: CENTER;");
-                }
-            }
-        });
-
-        colPrice.setStyle("-fx-alignment: CENTER_RIGHT;");
-        tableLots.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tableLots.setPlaceholder(new Label("Không có dữ liệu") {{
-            setStyle("-fx-text-fill: #4a7a5e; -fx-font-size: 11;");
-        }});
-
-        // Live search on key release
-        txtSearch.setOnKeyReleased(e -> handleSearch());
+        tableLots.setItems(allLots);
     }
 
-    private void styleChart() {
-        chartRevenue.setStyle(
-                "-fx-background-color: transparent;"
-                        + "-fx-plot-background-color: transparent;"
-                        + "-fx-chart-horizontal-grid-lines-visible: false;");
-        chartRevenue.lookup(".chart-plot-background")
-                .setStyle("-fx-background-color: transparent;");
+    private void loadSampleLots() {
+        allLots.setAll(
+                new LotRow("L001", "Đồng hồ Rolex cổ", "15,000,000 VND", "Đang đấu giá"),
+                new LotRow("L002", "Laptop Dell XPS 15", "22,000,000 VND", "Đang đấu giá"),
+                new LotRow("L003", "Tranh sơn dầu", "8,500,000 VND", "Đã bán"),
+                new LotRow("L004", "Xe đạp địa hình", "3,200,000 VND", "Chờ mở")
+        );
+    }
+
+    private void loadActivities() {
+        vboxActivities.getChildren().clear();
+
+        List<String> activities = List.of(
+                "Tạo lô hàng L004",
+                "Cập nhật giá khởi điểm L002",
+                "Có người đặt giá mới ở L001"
+        );
+
+        for (String act : activities) {
+            Label item = new Label("• " + act);
+            item.setWrapText(true);
+            vboxActivities.getChildren().add(item);
+        }
     }
 
     private void refreshStats() {
-        lblTotalLots.setText(String.valueOf(allLots.size()));
-        lblActiveLots.setText(String.valueOf(
-                allLots.stream().filter(r -> "Đang đấu".equals(r.getStatus())).count()));
-        lblSoldLots.setText(String.valueOf(
-                allLots.stream().filter(r -> "Đã bán".equals(r.getStatus())).count()));
+        long total = allLots.size();
+        long active = allLots.stream().filter(l -> "Đang đấu giá".equals(l.getStatus())).count();
+        long sold = allLots.stream().filter(l -> "Đã bán".equals(l.getStatus())).count();
+
+        lblTotalLots.setText(String.valueOf(total));
+        lblActiveLots.setText(String.valueOf(active));
+        lblSoldLots.setText(String.valueOf(sold));
     }
 
-    // ========================================================================
-    //  Inner model
-    // ========================================================================
+    @FXML
+    private void handleSearch() {
+        String keyword = txtSearch.getText().trim().toLowerCase();
+
+        if (keyword.isBlank()) {
+            tableLots.setItems(allLots);
+            return;
+        }
+
+        ObservableList<LotRow> filtered = allLots.filtered(l ->
+                l.getId().toLowerCase().contains(keyword) ||
+                        l.getProject().toLowerCase().contains(keyword)
+        );
+        tableLots.setItems(filtered);
+    }
+
+    @FXML
+    private void handleMenuOverview() {
+        setActiveMenu(btnMenuOverview);
+    }
+
+    @FXML
+    private void handleMenuLots() {
+        setActiveMenu(btnMenuLots);
+    }
+
+    @FXML
+    private void handleMenuSessions() {
+        setActiveMenu(btnMenuSessions);
+        navigateTo("/com/code/views/AuctionList.fxml");
+    }
+
+    @FXML
+    private void handleMenuNotif() {
+        setActiveMenu(btnMenuNotif);
+        new Alert(Alert.AlertType.INFORMATION, "Bạn chưa có thông báo mới.").showAndWait();
+    }
+
+    @FXML
+    private void handleAddLot() {
+        new Alert(Alert.AlertType.INFORMATION, "Chức năng thêm lô sẽ bổ sung sau.").showAndWait();
+    }
+
+    @FXML
+    private void handleLogout() {
+        LoginController.clearSession();
+        navigateTo("/com/code/views/Login.fxml");
+    }
+
+    private void setActiveMenu(Button active) {
+        List<Button> menus = List.of(btnMenuOverview, btnMenuLots, btnMenuSessions, btnMenuNotif);
+        for (Button b : menus) {
+            b.setStyle(b == active ? MENU_ACTIVE : MENU_INACTIVE);
+        }
+    }
 
     public static class LotRow {
         private final String id;
@@ -218,15 +165,26 @@ public class SellerDashboardController implements Initializable {
         private final String status;
 
         public LotRow(String id, String project, String price, String status) {
-            this.id      = id;
+            this.id = id;
             this.project = project;
-            this.price   = price;
-            this.status  = status;
+            this.price = price;
+            this.status = status;
         }
 
-        public String getId()      { return id; }
-        public String getProject() { return project; }
-        public String getPrice()   { return price; }
-        public String getStatus()  { return status; }
+        public String getId() {
+            return id;
+        }
+
+        public String getProject() {
+            return project;
+        }
+
+        public String getPrice() {
+            return price;
+        }
+
+        public String getStatus() {
+            return status;
+        }
     }
 }

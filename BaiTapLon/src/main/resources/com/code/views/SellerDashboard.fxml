@@ -13,217 +13,90 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
 <AnchorPane prefHeight="500.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.SellerDashboardController">
 
     <children>
-
-        <!-- Hình nền -->
-        <ImageView fitHeight="500.0" fitWidth="800.0" pickOnBounds="true" preserveRatio="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-
+        <!-- Background -->
+        <ImageView fitHeight="500.0" fitWidth="800.0" preserveRatio="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <image>
-                <Image url="@/com/code/images/screen.jpg" />
+                <!-- Quan trọng: dùng đường dẫn tương đối -->
+                <Image url="@../images/screen.jpg" />
             </image>
         </ImageView>
 
-        <VBox spacing="0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <VBox spacing="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
-            <!-- ================= NAVBAR ================= -->
-            <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-background-color:#065f3b;                          -fx-padding:10;">
-
-                <VBox alignment="CENTER_LEFT">
-
-                    <Label style="-fx-text-fill:white;                                   -fx-font-size:16;                                   -fx-font-weight:bold;" text="SELLER DASHBOARD">
-
-                        <font>
-                            <Font name="Segoe UI Bold" size="16.0" />
-                        </font>
-                    </Label>
-
-                    <Label fx:id="lblUsernameNav" style="-fx-text-fill:#c8f5e1;                                   -fx-font-size:10;" text="username" />
-                </VBox>
-
+            <!-- Navbar -->
+            <HBox alignment="CENTER_LEFT" spacing="8.0" style="-fx-background-color:#065f3b; -fx-padding:10;">
+                <Label style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;" text="SELLER DASHBOARD" />
                 <Region HBox.hgrow="ALWAYS" />
-
-                <Button fx:id="btnLogout" onAction="#handleLogout" style="-fx-background-color: #880000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 15;" text="Đăng xuất">
-
-                    <font>
-                        <Font name="Segoe UI" size="12.0" />
-                    </font>
-                </Button>
-
+                <Label fx:id="lblUsernameNav" style="-fx-text-fill:#c8f5e1;" />
+                <Button onAction="#handleLogout" style="-fx-background-color:#880000; -fx-text-fill:white; -fx-font-weight:bold; -fx-background-radius:6;" text="Đăng xuất" />
             </HBox>
 
-            <!-- ================= NỘI DUNG ================= -->
-            <HBox spacing="0" VBox.vgrow="ALWAYS">
-
-                <!-- Sidebar -->
-                <VBox prefWidth="155.0" spacing="8.0" style="-fx-background-color: #065f3b; -fx-border-color: rgba(110,231,183,0.25); -fx-border-width: 0 1 0 0;">
-
-                    <padding>
-                        <Insets bottom="15.0" left="10.0" right="10.0" top="15.0" />
-                    </padding>
-
-                    <Label style="-fx-text-fill:#c8f5e1;                                   -fx-font-size:10;                                   -fx-font-weight:bold;" text="MENU">
-
-                        <font>
-                            <Font name="Segoe UI Bold" size="10.0" />
-                        </font>
-
-                        <VBox.margin>
-                            <Insets bottom="4.0" />
-                        </VBox.margin>
-                    </Label>
-
-                    <Button fx:id="btnMenuOverview" maxWidth="1.7976931348623157E308" onAction="#handleMenuOverview" style="-fx-background-color: #006633; -fx-text-fill: white; -fx-font-size: 12; -fx-background-radius: 7; -fx-cursor: hand; -fx-padding: 6 10;" text="Tổng quan" />
-
-                    <Button fx:id="btnMenuLots" maxWidth="1.7976931348623157E308" onAction="#handleMenuLots" style="-fx-background-color:transparent;                                    -fx-text-fill:rgba(255,255,255,0.65);                                    -fx-font-size:12;                                    -fx-background-radius:7;                                    -fx-cursor:hand;                                    -fx-border-color:rgba(255,255,255,0.2);                                    -fx-border-radius:7;                                    -fx-padding:6 10;" text="Quản lý lô hàng" />
-
-                    <Button fx:id="btnMenuSessions" maxWidth="1.7976931348623157E308" onAction="#handleMenuSessions" style="-fx-background-color:transparent;                                    -fx-text-fill:rgba(255,255,255,0.65);                                    -fx-font-size:12;                                    -fx-background-radius:7;                                    -fx-cursor:hand;                                    -fx-border-color:rgba(255,255,255,0.2);                                    -fx-border-radius:7;                                    -fx-padding:6 10;" text="Danh sách phiên" />
-
-                    <Button fx:id="btnMenuNotif" maxWidth="1.7976931348623157E308" onAction="#handleMenuNotif" style="-fx-background-color:transparent;                                    -fx-text-fill:rgba(255,255,255,0.65);                                    -fx-font-size:12;                                    -fx-background-radius:7;                                    -fx-cursor:hand;                                    -fx-border-color:rgba(255,255,255,0.2);                                    -fx-border-radius:7;                                    -fx-padding:6 10;" text="Thông báo" />
-
-                    <Region VBox.vgrow="ALWAYS" />
-
+            <!-- Stats -->
+            <HBox spacing="10.0" style="-fx-padding:10;">
+                <VBox alignment="CENTER" spacing="4" style="-fx-background-color:#006633; -fx-background-radius:8; -fx-padding:10;" HBox.hgrow="ALWAYS">
+                    <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:10; -fx-font-weight:bold;" text="TỔNG LÔ" />
+                    <Label fx:id="lblTotalLots" style="-fx-text-fill:white; -fx-font-size:20; -fx-font-weight:bold;" />
                 </VBox>
 
-                <!-- Nội dung chính -->
-                <VBox spacing="12.0" style="-fx-background-color: #98D0B9;" HBox.hgrow="ALWAYS">
+                <VBox alignment="CENTER" spacing="4" style="-fx-background-color:#006633; -fx-background-radius:8; -fx-padding:10;" HBox.hgrow="ALWAYS">
+                    <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:10; -fx-font-weight:bold;" text="ĐANG ĐẤU GIÁ" />
+                    <Label fx:id="lblActiveLots" style="-fx-text-fill:#6ee7b7; -fx-font-size:20; -fx-font-weight:bold;" />
+                </VBox>
 
-                    <padding>
-                        <Insets bottom="14.0" left="14.0" right="14.0" top="14.0" />
-                    </padding>
+                <VBox alignment="CENTER" spacing="4" style="-fx-background-color:#006633; -fx-background-radius:8; -fx-padding:10;" HBox.hgrow="ALWAYS">
+                    <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:10; -fx-font-weight:bold;" text="ĐÃ BÁN" />
+                    <Label fx:id="lblSoldLots" style="-fx-text-fill:#fbbf24; -fx-font-size:20; -fx-font-weight:bold;" />
+                </VBox>
+            </HBox>
 
-                    <!-- Thống kê -->
-                    <HBox spacing="10.0">
+            <!-- Menu -->
+            <HBox spacing="8.0" style="-fx-padding:0 10 10 10;">
+                <Button fx:id="btnMenuOverview" onAction="#handleMenuOverview" style="-fx-background-color: #065f3b;" text="Tổng quan" textFill="WHITE" />
+                <Button fx:id="btnMenuLots" onAction="#handleMenuLots" style="-fx-background-color: #065f3b;" text="Quản lý lô hàng" textFill="WHITE" />
+                <Button fx:id="btnMenuSessions" onAction="#handleMenuSessions" style="-fx-background-color: #065f3b;" text="Danh sách phiên" textFill="WHITE" />
+                <Button fx:id="btnMenuNotif" onAction="#handleMenuNotif" style="-fx-background-color: #065f3b;" text="Thông báo" textFill="WHITE" />
+            </HBox>
 
-                        <VBox alignment="CENTER" spacing="4" style="-fx-background-color: #006633; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 10 14 10 14;" HBox.hgrow="ALWAYS">
+            <!-- Content -->
+            <HBox spacing="12.0" style="-fx-padding:0 10 10 10;" VBox.vgrow="ALWAYS">
 
-                            <Label style="-fx-text-fill:#c8f5e1;                                           -fx-font-size:9;                                           -fx-font-weight:bold;" text="TỔNG SỐ LÔ" />
-
-                            <Label fx:id="lblTotalLots" style="-fx-text-fill:white;                                           -fx-font-size:22;                                           -fx-font-weight:bold;" text="—">
-
-                                <font>
-                                    <Font name="Segoe UI Bold" size="22.0" />
-                                </font>
-                            </Label>
-                        </VBox>
-
-                        <VBox alignment="CENTER" spacing="4" style="-fx-background-color: #006633; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 10 14 10 14;" HBox.hgrow="ALWAYS">
-
-                            <Label style="-fx-text-fill:#c8f5e1;                                           -fx-font-size:9;                                           -fx-font-weight:bold;" text="ĐANG ĐẤU GIÁ" />
-
-                            <Label fx:id="lblActiveLots" style="-fx-text-fill:#6ee7b7;                                           -fx-font-size:22;                                           -fx-font-weight:bold;" text="—">
-
-                                <font>
-                                    <Font name="Segoe UI Bold" size="22.0" />
-                                </font>
-                            </Label>
-                        </VBox>
-
-                        <VBox alignment="CENTER" spacing="4" style="-fx-background-color: #006633; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 10 14 10 14;" HBox.hgrow="ALWAYS">
-
-                            <Label style="-fx-text-fill:#c8f5e1;                                           -fx-font-size:9;                                           -fx-font-weight:bold;" text="ĐÃ BÁN" />
-
-                            <Label fx:id="lblSoldLots" style="-fx-text-fill:#fbbf24;                                           -fx-font-size:22;                                           -fx-font-weight:bold;" text="—">
-
-                                <font>
-                                    <Font name="Segoe UI Bold" size="22.0" />
-                                </font>
-                            </Label>
-                        </VBox>
-
+                <!-- Left: table -->
+                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                    <HBox spacing="8.0">
+                        <TextField fx:id="txtSearch" promptText="Tìm kiếm lô hàng..." HBox.hgrow="ALWAYS" />
+                        <Button onAction="#handleSearch" text="Tìm" />
+                        <Button onAction="#handleAddLot" text="+ Thêm lô" />
                     </HBox>
 
-                    <!-- Bảng + biểu đồ -->
-                    <HBox spacing="12.0" VBox.vgrow="ALWAYS">
+                    <TableView fx:id="tableLots" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colId" prefWidth="90.0" text="Mã lô" />
+                            <TableColumn fx:id="colProject" prefWidth="230.0" text="Sản phẩm" />
+                            <TableColumn fx:id="colPrice" prefWidth="130.0" text="Giá" />
+                            <TableColumn fx:id="colStatus" prefWidth="130.0" text="Trạng thái" />
+                        </columns>
+                    </TableView>
+                </VBox>
 
-                        <!-- Table -->
-                        <VBox spacing="8.0" HBox.hgrow="ALWAYS">
-
-                            <HBox spacing="8.0">
-
-                                <TextField fx:id="txtSearch" promptText="Tìm kiếm lô hàng..." style="-fx-background-color:rgba(255,255,255,0.9);                                                   -fx-text-fill:#1a1a1a;                                                   -fx-prompt-text-fill:#999;                                                   -fx-background-radius:8;                                                   -fx-padding:6 10 6 10;                                                   -fx-font-size:12;" HBox.hgrow="ALWAYS">
-
-                                    <font>
-                                        <Font name="Segoe UI" size="12.0" />
-                                    </font>
-                                </TextField>
-
-                                <Button onAction="#handleSearch" style="-fx-background-color: #006633; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 12; -fx-cursor: hand; -fx-padding: 6 14;" text="Tìm">
-
-                                    <font>
-                                        <Font name="Segoe UI" size="12.0" />
-                                    </font>
-                                </Button>
-
-                                <Button onAction="#handleAddLot" style="-fx-background-color: #006633; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 12; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 6 14;" text="+ Thêm lô">
-
-                                    <font>
-                                        <Font name="Segoe UI" size="12.0" />
-                                    </font>
-                                </Button>
-
-                            </HBox>
-
-                            <TableView fx:id="tableLots" style="-fx-background-color: #006633; -fx-control-inner-background: rgba(255,255,255,0.08); -fx-table-cell-border-color: rgba(110,231,183,0.25);" VBox.vgrow="ALWAYS">
-
-                                <columns>
-
-                                    <TableColumn fx:id="colId" prefWidth="55.0" text="Mã lô" />
-
-                                    <TableColumn fx:id="colProject" prefWidth="140.0" text="Dự án / Sản phẩm" />
-
-                                    <TableColumn fx:id="colPrice" prefWidth="110.0" text="Giá (VND)" />
-
-                                    <TableColumn fx:id="colStatus" prefWidth="90.0" text="Trạng thái" />
-
-                                </columns>
-
-                                <placeholder>
-                                    <Label style="-fx-text-fill:#c8f5e1;                                                   -fx-font-size:11;" text="Chưa có lô hàng nào" />
-                                </placeholder>
-
-                            </TableView>
-
-                        </VBox>
-
-                        <!-- Right panel -->
-                        <VBox prefWidth="210.0" spacing="10.0" style="-fx-background-color:rgba(255,255,255,0.13);                                      -fx-background-radius:10;                                      -fx-border-color:#6ee7b7;                                      -fx-border-radius:10;                                      -fx-border-width:1;">
-
-                            <padding>
-                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                            </padding>
-
-                            <Label style="-fx-text-fill: #065f3b; -fx-font-size: 9; -fx-font-weight: bold;" text="HOẠT ĐỘNG GẦN ĐÂY" textFill="#340505" />
-
-                            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="285.0" prefWidth="212.0" style="-fx-background: #006633; -fx-background-color: transparent; -fx-border-color: transparent;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
-
-                                <content>
-
-                                    <VBox fx:id="vboxActivities" spacing="8.0" style="-fx-background-color:transparent;">
-
-                                        <!-- dữ liệu nhảy từ controller -->
-
-                                        <Label style="-fx-text-fill:#c8f5e1;                                                       -fx-font-size:10;" text="Chưa có hoạt động" />
-
-                                    </VBox>
-
-                                </content>
-
-                            </ScrollPane>
-
-                        </VBox>
-
-                    </HBox>
-
+                <!-- Right: activities -->
+                <VBox prefWidth="220.0" spacing="8.0" style="-fx-background-color:rgba(255,255,255,0.18); -fx-background-radius:10; -fx-padding:10;">
+                    <Label style="-fx-font-weight:bold;" text="HOẠT ĐỘNG GẦN ĐÂY" />
+                    <ScrollPane fitToWidth="true" style="-fx-background-color: #065f3b;" VBox.vgrow="ALWAYS">
+                        <content>
+                            <VBox fx:id="vboxActivities" spacing="6.0">
+                                <padding>
+                                    <Insets bottom="6" left="6" right="6" top="6" />
+                                </padding>
+                            </VBox>
+                        </content>
+                    </ScrollPane>
                 </VBox>
 
             </HBox>
-
         </VBox>
-
     </children>
-
 </AnchorPane>
