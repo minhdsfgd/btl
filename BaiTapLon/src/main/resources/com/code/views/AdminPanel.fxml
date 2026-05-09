@@ -6,127 +6,142 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<StackPane prefHeight="500" prefWidth="800" style="-fx-background-color: #012b18;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.AdminPanelController">
+<AnchorPane prefHeight="500" prefWidth="800" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.AdminPanelController">
+    <children>
 
-    <VBox spacing="0">
+        <!-- Hình nền -->
+        <ImageView fitHeight="500.0" fitWidth="800.0" pickOnBounds="true" preserveRatio="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <image>
+                <Image url="@../images/screen.jpg" />
+            </image>
+        </ImageView>
 
+        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
-        <HBox alignment="CENTER_LEFT" prefHeight="48" spacing="10" style="-fx-background-color: #011f12;                  -fx-padding: 0 20 0 20;">
-            <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
-                <Label style="-fx-text-fill: #4caf50;                       -fx-font-size: 15;                       -fx-font-weight: bold;" text="ADMIN PANEL">
-               <font>
-                  <Font name="Segoe UI Bold" size="14.0" />
-               </font></Label>
-            </VBox>
+            <!-- Navbar — giống hệt AuctionList -->
+            <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-background-color:#065f3b; -fx-padding:10;">
+                <Label style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;" text="ADMIN PANEL">
+                    <font><Font name="Segoe UI Bold" size="16.0" /></font>
+                </Label>
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="lblAdminName" style="-fx-text-fill:#c8f5e1; -fx-padding: 0 10 0 0;" />
+                <Button onAction="#handleLogout" style="-fx-background-color: #880000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 15;" text="Đăng xuất">
+                    <font><Font name="Segoe UI" size="12.0" /></font>
+                </Button>
+            </HBox>
 
-            <Label fx:id="lblAdminName" style="-fx-text-fill: #cccccc;                     -fx-font-size: 11;" />
-            <Button onAction="#handleLogout" prefHeight="18.0" prefWidth="85.0" style="-fx-background-color: transparent;                      -fx-text-fill: white;                      -fx-border-color: rgba(255,255,255,0.4);                      -fx-border-radius: 6; -fx-background-radius: 6;                      -fx-font-size: 11; -fx-cursor: hand;                      -fx-padding: 4 12 4 12;" text="Đăng xuất" />
-        </HBox>
+            <!-- Thống kê -->
+            <HBox spacing="10" style="-fx-padding:10;">
+                <VBox alignment="CENTER" spacing="3" style="-fx-background-color: #006633; -fx-background-radius: 8; -fx-padding: 10 14 10 14; -fx-border-color: #6ee7b7; -fx-border-radius: 8; -fx-border-width: 1;" HBox.hgrow="ALWAYS">
+                    <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:9; -fx-font-weight:bold;" text="TỔNG NGƯỜI DÙNG" />
+                    <Label fx:id="lblTotalUsers" style="-fx-text-fill:white; -fx-font-size:22; -fx-font-weight:bold;">
+                        <font><Font name="Segoe UI Bold" size="22.0" /></font>
+                    </Label>
+                </VBox>
+                <VBox alignment="CENTER" spacing="3" style="-fx-background-color: #006633; -fx-background-radius: 8; -fx-padding: 10 14 10 14; -fx-border-color: #6ee7b7; -fx-border-radius: 8; -fx-border-width: 1;" HBox.hgrow="ALWAYS">
+                    <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:9; -fx-font-weight:bold;" text="PHIÊN ĐANG MỞ" textFill="#0f5000" />
+                    <Label fx:id="lblActiveSessions" style="-fx-text-fill:#6ee7b7; -fx-font-size:22; -fx-font-weight:bold;">
+                        <font><Font name="Segoe UI Bold" size="22.0" /></font>
+                    </Label>
+                </VBox>
+                <VBox alignment="CENTER" spacing="3" style="-fx-background-color: #006633; -fx-background-radius: 8; -fx-padding: 10 14 10 14; -fx-border-color: #6ee7b7; -fx-border-radius: 8; -fx-border-width: 1;" HBox.hgrow="ALWAYS">
+                    <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:9; -fx-font-weight:bold;" text="TỔNG PHIÊN" />
+                    <Label fx:id="lblTotalSessions" style="-fx-text-fill:white; -fx-font-size:22; -fx-font-weight:bold;">
+                        <font><Font name="Segoe UI Bold" size="22.0" /></font>
+                    </Label>
+                </VBox>
+                <VBox alignment="CENTER" spacing="3" style="-fx-background-color: #006633; -fx-background-radius: 8; -fx-padding: 10 14 10 14; -fx-border-color: #6ee7b7; -fx-border-radius: 8; -fx-border-width: 1;" HBox.hgrow="ALWAYS">
+                    <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:9; -fx-font-weight:bold;" text="DOANH THU" />
+                    <Label fx:id="lblRevenue" style="-fx-text-fill:#6ee7b7; -fx-font-size:22; -fx-font-weight:bold;">
+                        <font><Font name="Segoe UI Bold" size="22.0" /></font>
+                    </Label>
+                </VBox>
+            </HBox>
 
+            <!-- Tab buttons — style giống filter buttons AuctionList -->
+            <HBox spacing="10" style="-fx-padding:0 10 10 10;">
+                <Button fx:id="tabBtnUsers" maxWidth="Infinity" onAction="#switchToUsers" style="-fx-background-color: #006633; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 7; -fx-cursor: hand; -fx-padding: 6 0 6 0; -fx-font-size: 12;" text="Quản lý người dùng" HBox.hgrow="ALWAYS">
+                    <font><Font name="Segoe UI" size="12.0" /></font>
+                </Button>
+                <Button fx:id="tabBtnSessions" maxWidth="Infinity" onAction="#switchToSessions" style="-fx-background-color:transparent;                                -fx-text-fill:rgba(255,255,255,0.6);                                -fx-border-color:rgba(255,255,255,0.3);                                -fx-border-radius:7;                                -fx-background-radius:7;                                -fx-cursor:hand;                                -fx-padding:6 0 6 0;                                -fx-font-size:12;" text="Quản lý phiên đấu giá" HBox.hgrow="ALWAYS">
+                    <font><Font name="Segoe UI" size="12.0" /></font>
+                </Button>
+            </HBox>
 
-        <HBox spacing="10" style="-fx-padding: 10 18 6 18;">
+            <!-- Panel chính -->
+            <StackPane style="-fx-padding:0 10 10 10;" VBox.vgrow="ALWAYS">
 
+                <!-- Panel người dùng -->
+                <VBox fx:id="panelUsers" spacing="8" style="-fx-background-color:rgba(255,255,255,0.13);                              -fx-background-radius:10;                              -fx-border-color:#6ee7b7;                              -fx-border-radius:10;                              -fx-border-width:1;                              -fx-padding:10 12 10 12;">
 
-            <VBox alignment="CENTER" spacing="3" style="-fx-background-color: #0f3d2a;                    -fx-background-radius: 7;                    -fx-padding: 8 10 8 10;" HBox.hgrow="ALWAYS">
-                <Label style="-fx-text-fill: #7fae94; -fx-font-size: 9;" text="TỔNG NGƯỜI DÙNG" />
-                <Label fx:id="lblTotalUsers" style="-fx-text-fill: white;                       -fx-font-size: 20; -fx-font-weight: bold;" />
-            </VBox>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label style="-fx-text-fill: #003333; -fx-font-size: 11; -fx-font-weight: bold;" text="DANH SÁCH NGƯỜI DÙNG" HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="tfUserSearch" onKeyReleased="#handleUserSearch" prefWidth="160" promptText="Tìm theo tên / email..." style="-fx-background-color:rgba(255,255,255,0.9);                                           -fx-text-fill:#1a1a1a;                                           -fx-prompt-text-fill:#999;                                           -fx-background-radius:8;                                           -fx-padding:5 8 5 8;                                           -fx-font-size:11;">
+                            <font><Font name="Segoe UI" size="11.0" /></font>
+                        </TextField>
+                        <ComboBox fx:id="cmbRoleFilter" onAction="#handleUserSearch" prefWidth="120" style="-fx-background-color:rgba(255,255,255,0.9);                                          -fx-background-radius:8;                                          -fx-font-size:11;" />
+                        <Button onAction="#handleAddUser" style="-fx-background-color: #006633; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 11; -fx-cursor: hand; -fx-font-weight: bold; -fx-padding: 5 12 5 12;" text="+ Thêm">
+                            <font><Font name="Segoe UI" size="11.0" /></font>
+                        </Button>
+                    </HBox>
 
+                    <TableView fx:id="tableUsers" style="-fx-background-color: #006633; -fx-control-inner-background: rgba(255,255,255,0.08); -fx-table-cell-border-color: rgba(110,231,183,0.25); -fx-text-fill: white;" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colUserId" prefWidth="38" text="ID" />
+                            <TableColumn fx:id="colUserName" prefWidth="160" text="Họ tên" />
+                            <TableColumn fx:id="colUserRole" prefWidth="80" text="Vai trò" />
+                            <TableColumn fx:id="colUserStatus" prefWidth="90" text="Trạng thái" />
+                            <TableColumn fx:id="colUserAction" prefWidth="110" text="Hành động" />
+                        </columns>
+                        <placeholder>
+                            <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:11;" text="Chưa có dữ liệu" />
+                        </placeholder>
+                    </TableView>
 
-            <VBox alignment="CENTER" spacing="3" style="-fx-background-color: #0f3d2a;                    -fx-background-radius: 7;                    -fx-padding: 8 10 8 10;" HBox.hgrow="ALWAYS">
-                <Label style="-fx-text-fill: #7fae94; -fx-font-size: 9;" text="PHIÊN ĐANG MỞ" />
-                <Label fx:id="lblActiveSessions" style="-fx-text-fill: #4caf50;                       -fx-font-size: 20; -fx-font-weight: bold;" />
-            </VBox>
+                    <Label fx:id="lblUserMsg" style="-fx-text-fill:#fca5a5; -fx-font-size:10;" />
+                </VBox>
 
+                <!-- Panel phiên đấu giá -->
+                <VBox fx:id="panelSessions" managed="false" spacing="8" style="-fx-background-color:rgba(255,255,255,0.13);                              -fx-background-radius:10;                              -fx-border-color:#6ee7b7;                              -fx-border-radius:10;                              -fx-border-width:1;                              -fx-padding:10 12 10 12;" visible="false">
 
-            <VBox alignment="CENTER" spacing="3" style="-fx-background-color: #0f3d2a;                    -fx-background-radius: 7;                    -fx-padding: 8 10 8 10;" HBox.hgrow="ALWAYS">
-                <Label style="-fx-text-fill: #7fae94; -fx-font-size: 9;" text="TỔNG PHIÊN" />
-                <Label fx:id="lblTotalSessions" style="-fx-text-fill: white;                       -fx-font-size: 20; -fx-font-weight: bold;" />
-            </VBox>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label style="-fx-text-fill:#c8f5e1;                                       -fx-font-size:11;                                       -fx-font-weight:bold;" text="DANH SÁCH PHIÊN ĐẤU GIÁ" HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="tfSessionSearch" onKeyReleased="#handleSessionSearch" prefWidth="160" promptText="Tìm theo sản phẩm..." style="-fx-background-color:rgba(255,255,255,0.9);                                           -fx-text-fill:#1a1a1a;                                           -fx-prompt-text-fill:#999;                                           -fx-background-radius:8;                                           -fx-padding:5 8 5 8;                                           -fx-font-size:11;">
+                            <font><Font name="Segoe UI" size="11.0" /></font>
+                        </TextField>
+                        <ComboBox fx:id="cmbStatusFilter" onAction="#handleSessionSearch" prefWidth="120" style="-fx-background-color:rgba(255,255,255,0.9);                                          -fx-background-radius:8;                                          -fx-font-size:11;" />
+                        <Button onAction="#handleCreateSession" style="-fx-background-color:#16a34a;                                        -fx-text-fill:white;                                        -fx-background-radius:8;                                        -fx-font-size:11;                                        -fx-cursor:hand;                                        -fx-font-weight:bold;                                        -fx-padding:5 12 5 12;" text="+ Tạo phiên">
+                            <font><Font name="Segoe UI" size="11.0" /></font>
+                        </Button>
+                    </HBox>
 
+                    <TableView fx:id="tableSessions" style="-fx-background-color:transparent;                                       -fx-control-inner-background:rgba(255,255,255,0.08);                                       -fx-table-cell-border-color:rgba(110,231,183,0.25);                                       -fx-text-fill:white;" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colSessionId" prefWidth="38" text="ID" />
+                            <TableColumn fx:id="colSessionProduct" prefWidth="155" text="Sản phẩm" />
+                            <TableColumn fx:id="colSessionStartPrice" prefWidth="105" text="Giá khởi điểm" />
+                            <TableColumn fx:id="colSessionCurPrice" prefWidth="105" text="Giá hiện tại" />
+                            <TableColumn fx:id="colSessionStatus" prefWidth="80" text="Trạng thái" />
+                            <TableColumn fx:id="colSessionAction" prefWidth="100" text="Hành động" />
+                        </columns>
+                        <placeholder>
+                            <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:11;" text="Chưa có dữ liệu" />
+                        </placeholder>
+                    </TableView>
 
-            <VBox alignment="CENTER" spacing="3" style="-fx-background-color: #0f3d2a;                    -fx-background-radius: 7;                    -fx-padding: 8 10 8 10;" HBox.hgrow="ALWAYS">
-                <Label style="-fx-text-fill: #7fae94; -fx-font-size: 9;" text="DOANH THU" />
-                <Label fx:id="lblRevenue" style="-fx-text-fill: #4dd0e1;                       -fx-font-size: 20; -fx-font-weight: bold;" />
-            </VBox>
+                    <Label fx:id="lblSessionMsg" style="-fx-text-fill:#fca5a5; -fx-font-size:10;" />
+                </VBox>
 
-        </HBox>
-
-
-        <HBox spacing="8" style="-fx-padding: 6 18 6 18;">
-
-            <Button fx:id="tabBtnUsers" maxWidth="Infinity" onAction="#switchToUsers" style="-fx-background-color: #16a34a;                      -fx-text-fill: white;                      -fx-font-size: 13; -fx-font-weight: bold;                      -fx-background-radius: 7;                      -fx-cursor: hand; -fx-padding: 7 0 7 0;" text="Quản lý người dùng" HBox.hgrow="ALWAYS" />
-            <Button fx:id="tabBtnSessions" maxWidth="Infinity" onAction="#switchToSessions" style="-fx-background-color: transparent;                      -fx-text-fill: rgba(255,255,255,0.5);                      -fx-border-color: rgba(255,255,255,0.2);                      -fx-border-radius: 7; -fx-background-radius: 7;                      -fx-font-size: 13;                      -fx-cursor: hand; -fx-padding: 7 0 7 0;" text="Quản lý phiên đấu giá" HBox.hgrow="ALWAYS" />
-        </HBox>
-
-
-        <StackPane style="-fx-padding: 0 18 12 18;" VBox.vgrow="ALWAYS">
-
-
-            <VBox fx:id="panelUsers" spacing="8" style="-fx-background-color: #0f3d2a;                    -fx-background-radius: 8;                    -fx-padding: 10 12 10 12;">
-
-
-                <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label style="-fx-text-fill: #7fae94; -fx-font-size: 9;" text="DANH SÁCH NGƯỜI DÙNG" HBox.hgrow="ALWAYS" />
-
-                    <TextField fx:id="tfUserSearch" onKeyReleased="#handleUserSearch" prefWidth="160" promptText="Tìm theo tên / email..." style="-fx-background-color: white;                             -fx-text-fill: #1a1a1a;                             -fx-prompt-text-fill: #999;                             -fx-border-radius: 5; -fx-background-radius: 5;                             -fx-padding: 4 8 4 8; -fx-font-size: 11;" />
-
-                    <ComboBox fx:id="cmbRoleFilter" onAction="#handleUserSearch" prefWidth="120" style="-fx-background-color: #e8e8e8;                            -fx-background-radius: 5;                            -fx-font-size: 11;" />
-                    <Button onAction="#handleAddUser" style="-fx-background-color: #2e7d32;                          -fx-text-fill: white;                          -fx-background-radius: 5;                          -fx-font-size: 11; -fx-cursor: hand;                          -fx-padding: 5 10 5 10;" text="+ Thêm người dùng" />
-                </HBox>
-
-
-                <TableView fx:id="tableUsers" style="-fx-background-color: #0f3d2a;                           -fx-control-inner-background: #0f3d2a;                           -fx-table-cell-border-color: #1e5e38;" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="colUserId" prefWidth="38" text="ID" />
-                        <TableColumn fx:id="colUserName" prefWidth="130" text="Họ tên" />
-                        <TableColumn fx:id="colUserRole" prefWidth="70" text="Vai trò" />
-                        <TableColumn fx:id="colUserStatus" prefWidth="80" text="Trạng thái" />
-                        <TableColumn fx:id="colUserAction" prefWidth="100" text="Hành động" />
-                    </columns>
-                    <placeholder>
-                        <Label style="-fx-text-fill: #4a7a5e; -fx-font-size: 11;" text="Chưa có dữ liệu — gọi ctrl.setUsers()" />
-                    </placeholder>
-                </TableView>
-
-                <Label fx:id="lblUserMsg" style="-fx-text-fill: #ef5350; -fx-font-size: 10;" />
-            </VBox>
-
-            <VBox fx:id="panelSessions" managed="false" spacing="8" style="-fx-background-color: #0f3d2a;                    -fx-background-radius: 8;                    -fx-padding: 10 12 10 12;" visible="false">
-
-
-                <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label style="-fx-text-fill: #7fae94; -fx-font-size: 9;" text="DANH SÁCH PHIÊN ĐẤU GIÁ" HBox.hgrow="ALWAYS" />
-
-                    <TextField fx:id="tfSessionSearch" onKeyReleased="#handleSessionSearch" prefWidth="160" promptText="Tìm theo sản phẩm..." style="-fx-background-color: white;                             -fx-text-fill: #1a1a1a;                             -fx-prompt-text-fill: #999;                             -fx-border-radius: 5; -fx-background-radius: 5;                             -fx-padding: 4 8 4 8; -fx-font-size: 11;" />
-
-                    <ComboBox fx:id="cmbStatusFilter" onAction="#handleSessionSearch" prefWidth="120" style="-fx-background-color: #e8e8e8;                            -fx-background-radius: 5;                            -fx-font-size: 11;" />
-                    <Button onAction="#handleCreateSession" style="-fx-background-color: #2e7d32;                          -fx-text-fill: white;                          -fx-background-radius: 5;                          -fx-font-size: 11; -fx-cursor: hand;                          -fx-padding: 5 10 5 10;" text="+ Tạo phiên" />
-                </HBox>
-
-
-                <TableView fx:id="tableSessions" style="-fx-background-color: #0f3d2a;                           -fx-control-inner-background: #0f3d2a;                           -fx-table-cell-border-color: #1e5e38;" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="colSessionId" prefWidth="38" text="ID" />
-                        <TableColumn fx:id="colSessionProduct" prefWidth="160" text="Sản phẩm" />
-                        <TableColumn fx:id="colSessionStartPrice" prefWidth="110" text="Giá khởi điểm" />
-                        <TableColumn fx:id="colSessionCurPrice" prefWidth="110" text="Giá hiện tại" />
-                        <TableColumn fx:id="colSessionStatus" prefWidth="80" text="Trạng thái" />
-                        <TableColumn fx:id="colSessionAction" prefWidth="100" text="Hành động" />
-                    </columns>
-                    <placeholder>
-                        <Label style="-fx-text-fill: #4a7a5e; -fx-font-size: 11;" text="Chưa có dữ liệu — gọi ctrl.setSessions()" />
-                    </placeholder>
-                </TableView>
-
-                <Label fx:id="lblSessionMsg" style="-fx-text-fill: #ef5350; -fx-font-size: 10;" />
-            </VBox>
-
-        </StackPane>
-    </VBox>
-</StackPane>
+            </StackPane>
+        </VBox>
+    </children>
+</AnchorPane>
