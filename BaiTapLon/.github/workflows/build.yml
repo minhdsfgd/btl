@@ -2,14 +2,18 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main","dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
 
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-
+
+    defaults:
+      run:
+        working-directory: BaiTapLon
 
     steps:
 
@@ -25,7 +29,10 @@ jobs:
           cache: maven
 
       - name: Install xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb
+        run: sudo apt-get update && sudo apt-get install -y
+
+      - name: Build with Maven
+        run: xvfb-run mvn -B package -DskipTests
 
 
       - name: Run Tests with Maven
