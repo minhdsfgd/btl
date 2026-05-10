@@ -1,5 +1,7 @@
 package com.code.controllers;
 
+import com.code.network.Response;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -72,9 +74,9 @@ public class AdminPanelController implements Initializable {
         setupUserTable();
         setupSessionTable();
         setupFilters();
-        loadMockData();
-        lblAdminName.setText(LoginController.getCurrentUsername());
-        showPanel(true);          // default: user panel visible
+        lblAdminName.setText(com.code.client.SessionManager.getUsername());
+        showPanel(true);
+        loadDataFromServer();
     }
 
     // ========================================================================
@@ -106,7 +108,12 @@ public class AdminPanelController implements Initializable {
 
     @FXML
     private void handleLogout() {
-        LoginController.clearSession();
+        try {
+            com.code.client.SocketClient.getInstance()
+                    .sendAsync(com.code.network.Request.of(
+                            com.code.network.RequestType.LOGOUT));
+        } catch (Exception ignored) {}
+        com.code.client.SessionManager.clear();
         navigateTo("/com/code/views/Login.fxml");
     }
 
@@ -245,17 +252,70 @@ public class AdminPanelController implements Initializable {
         cmbStatusFilter.getSelectionModel().selectFirst();
     }
 
-    private void loadMockData() {
-        setUsers(List.of(
-                new UserRow(1, "admin", "Admin", "Hoạt động"),
-                new UserRow(2, "seller", "Người dùng", "Hoạt động"),
-                new UserRow(3, "user", "Người dùng", "Hoạt động")
-        ));
+    private void loadDataFromServer() {
+        // Tải danh sách user
+        new Thread(() -> {
+            try {
+                Response res = com.code.client.SocketClient.getInstance()
+                        .sendRequest(com.code.network.Request.of(
+                                com.code.network.RequestType.GET_ALL_USERS));
+                Platform.runLater(() -> {
+                    if (res.isSuccess()) {
+                        @SuppressWarnings("unchecked")
+                        List<com.code.models.User> users =
+                                res.getDataAs(List.class);
+                        if (users != null) {
+                            List<UserRow> rows = users.stream()
+                                    .map(u -> new UserRow(
+                                            u.getUserId(),
+                                            u.getUsername(),
+                                            u.getRoles().stream()
+                                                    .map(Enum::name)
+                                                    .reduce((a, b) -> a + ", " + b)
+                                                    .orElse(""),
+                                            u.isBanned() ? "Bị cấm" : "Hoạt động"
+                                    ))
+                                    .collect(java.util.stream.Collectors.toList());
+                            setUsers(rows);
+                        }
+                    }
+                });
+            } catch (Exception ex) {
+                System.err.println("[Admin] Lỗi tải users: " + ex.getMessage());
+            }
+        }, "load-admin-users").start();
 
-        setSessions(List.of(
-                new SessionRow(101, "Dong ho Rolex co", "12.000.000", "15.000.000", "Đang mở"),
-                new SessionRow(102, "Laptop Dell XPS 15", "20.000.000", "22.000.000", "Đã kết thúc")
-        ));
+        // Tải danh sách phiên đấu giá
+        new Thread(() -> {
+            try {
+                Response res = com.code.client.SocketClient.getInstance()
+                        .sendRequest(com.code.network.Request.of(
+                                com.code.network.RequestType.GET_ALL_AUCTIONS));
+                Platform.runLater(() -> {
+                    if (res.isSuccess()) {
+                        @SuppressWarnings("unchecked")
+                        List<com.code.models.Auction> auctions =
+                                res.getDataAs(List.class);
+                        if (auctions != null) {
+                            List<SessionRow> rows = auctions.stream()
+                                    .map(a -> new SessionRow(
+                                            a.getAuctionId(),
+                                            a.getItem().getName(),
+                                            String.format("%,.0f đ",
+                                                    a.getItem().getStartingPrice()),
+                                            String.format("%,.0f đ",
+                                                    a.getCurrentPrice()),
+                                            a.getStatus().name()
+                                    ))
+                                    .collect(java.util.stream.Collectors.toList());
+                            setSessions(rows);
+                        }
+                    }
+                });
+            } catch (Exception ex) {
+                System.err.println("[Admin] Lỗi tải auctions: " + ex.getMessage());
+            }
+        }, "load-admin-auctions").start();
     }
 
     /** Toggle between the two panels and update tab-button styles. */
