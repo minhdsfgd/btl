@@ -1,11 +1,11 @@
 package com.code.service;
 
+import com.code.dao.UserDAO;
 import com.code.exception.AuthenticationException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
-import com.code.repository.UserRepository;
-import com.code.util.IdGenerator;
 
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -21,10 +21,10 @@ import java.util.List;
  */
 public class UserService {
 
-    private final UserRepository userRepository;
+    private final UserDAO userDAO;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserService(UserDAO userDAO) {
+        this.userDAO = userDAO;
     }
 
     // ── Đăng ký ──────────────────────────────────────────────────────────────
@@ -50,14 +50,18 @@ public class UserService {
             throw new AuthenticationException(
                     "Không thể tự đăng ký tài khoản Admin. Liên hệ quản trị viên.");
 
-        if (userRepository.existsByUsername(username))
-            throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
+        try{
+            if (userDAO.existsByUsername(username))
+                throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
 
-        RegularUser user = new RegularUser(
-                IdGenerator.getId(), username, password, 0.0, primaryRole
-        );
-        userRepository.save(user);
-        return user;
+            RegularUser user = new RegularUser(
+                    0, username, password, 0.0, primaryRole
+            );
+            userDAO.save(user);
+            return user;
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -70,12 +74,16 @@ public class UserService {
             throw new IllegalArgumentException("Username không được để trống.");
         if (password == null || password.length() < 6)
             throw new IllegalArgumentException("Password phải ít nhất 6 ký tự.");
-        if (userRepository.existsByUsername(username))
-            throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
+        try{
+            if (userDAO.existsByUsername(username))
+                throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
 
-        Admin admin = new Admin(IdGenerator.getId(), username, password, 0.0);
-        userRepository.save(admin);
-        return admin;
+            Admin admin = new Admin(0, username, password, 0.0);
+            userDAO.save(admin);
+            return admin;
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
     }
 
     // ── Đăng nhập ────────────────────────────────────────────────────────────
@@ -87,19 +95,23 @@ public class UserService {
      */
     public User login(String username, String password)
             throws AuthenticationException, UserBannedException {
-        User user = userRepository.findByUsername(username);
+        try{
+            User user =userDAO.findByUsername(username);
+            // FIX: cùng message để tránh timing attack (không lộ username có tồn tại không)
+            if (user == null || !user.getPassword().equals(password))
+                throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu.");
 
-        // FIX: cùng message để tránh timing attack (không lộ username có tồn tại không)
-        if (user == null || !user.getPassword().equals(password))
-            throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu.");
+            if (!user.isActive())
+                throw new AuthenticationException("Tài khoản đã bị vô hiệu hóa.");
 
-        if (!user.isActive())
-            throw new AuthenticationException("Tài khoản đã bị vô hiệu hóa.");
+            if (user.isBanned())
+                throw new UserBannedException(username);
 
-        if (user.isBanned())
-            throw new UserBannedException(username);
+            return user;
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
 
-        return user;
     }
 
     // ── Admin: quản lý tài khoản ─────────────────────────────────────────────
@@ -117,7 +129,13 @@ public class UserService {
         if (target.hasRole(Role.ADMIN))
             throw new AuthenticationException("Không thể ban tài khoản Admin khác.");
         target.setBanned(true);
-        userRepository.update(target);
+        try{
+            userDAO.update(target);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
+
     }
 
     /**
@@ -127,7 +145,12 @@ public class UserService {
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
         getOrThrow(userId).setBanned(false);
-        userRepository.update(getOrThrow(userId));
+        try{
+            userDAO.update(getOrThrow(userId));
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
     }
 
     /**
@@ -156,7 +179,12 @@ public class UserService {
     public List<User> getAllUsers(User admin)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        return userRepository.findAll();
+        try{
+            return userDAO.findAll();
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
     }
 
     // ── Helper ───────────────────────────────────────────────────────────────
@@ -169,9 +197,15 @@ public class UserService {
     }
 
     private User getOrThrow(int userId) {
-        User u = userRepository.findById(userId);
-        if (u == null)
-            throw new IllegalArgumentException("Không tìm thấy user #" + userId);
-        return u;
+        try{
+            User u = userDAO.findById(userId);
+            if (u == null)
+                throw new IllegalArgumentException("Không tìm thấy user #" + userId);
+            return u;
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+
+
     }
 }

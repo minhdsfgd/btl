@@ -15,15 +15,14 @@ USE auction_db;
 CREATE TABLE IF NOT EXISTS users (
                                      id         INT           AUTO_INCREMENT PRIMARY KEY,
                                      username   VARCHAR(50)   NOT NULL UNIQUE,
-    password   VARCHAR(255)  NOT NULL,          -- nên hash trước khi lưu
-    balance    DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    active     TINYINT(1)    NOT NULL DEFAULT 1,
-    banned     TINYINT(1)    NOT NULL DEFAULT 0,
-    roles      VARCHAR(100)  NOT NULL,           -- vd: "BIDDER,SELLER"
-    created_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    INDEX idx_username (username)
-    ) ENGINE=InnoDB;
+                                     password   VARCHAR(255)  NOT NULL,
+                                     balance    DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+                                     active     TINYINT(1)    NOT NULL DEFAULT 1,
+                                     banned     TINYINT(1)    NOT NULL DEFAULT 0,
+                                     roles      VARCHAR(100)  NOT NULL,
+                                     created_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     INDEX idx_username (username)
+) ENGINE=InnoDB;
 
 -- ── 2. items ─────────────────────────────────────────────────
 -- Ánh xạ: Item (abstract) → Electronics / Art / Vehicle

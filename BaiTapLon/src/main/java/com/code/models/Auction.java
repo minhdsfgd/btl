@@ -15,7 +15,7 @@ import static com.code.models.AuctionStatus.*;
 public class Auction implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final int auctionId;
+    private int auctionId;
     private final int sellerId;          // chỉ lưu id, không lưu cả User (tránh lộ password)
     private final Item item;
     private double currentPrice;
@@ -173,6 +173,7 @@ public class Auction implements Serializable {
     }
 
     // ── Setters ───────────────────────────────────────────────────────────────
+    public void setAuctionId(int id) { this.auctionId = id; }
 
     public void setCurrentPrice(double p) {
         if (p < currentPrice)

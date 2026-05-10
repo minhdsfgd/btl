@@ -105,26 +105,32 @@ public class AuctionDAO {
 
     // ── Ghi dữ liệu ──────────────────────────────────────────────────────────
 
-    /** Lưu Auction mới (trạng thái OPEN). */
+    /** Lưu Auction mới (trạng thái OPEN). ID được MySQL tự sinh. */
     public void save(Auction auction) throws SQLException {
         String sql = """
             INSERT INTO auctions
-                (id, item_id, seller_id, current_price, bid_increment,
+                (item_id, seller_id, current_price, bid_increment,
                  start_time, end_time, status, banned, leading_bidder_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
-        try (PreparedStatement ps = conn().prepareStatement(sql)) {
-            ps.setInt       (1, auction.getAuctionId());
-            ps.setInt       (2, auction.getItem().getItemId());
-            ps.setInt       (3, auction.getSellerId());
-            ps.setDouble    (4, auction.getCurrentPrice());
-            ps.setDouble    (5, auction.getBidIncrement());
-            ps.setTimestamp (6, Timestamp.valueOf(auction.getStartTime()));
-            ps.setTimestamp (7, Timestamp.valueOf(auction.getEndTime()));
-            ps.setString    (8, auction.getStatus().name());
-            ps.setBoolean   (9, auction.isBanned());
-            setLeadingBidder(ps, 10, auction.getLeadingBidderId());
+        try (PreparedStatement ps = conn().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt       (1, auction.getItem().getItemId());
+            ps.setInt       (2, auction.getSellerId());
+            ps.setDouble    (3, auction.getCurrentPrice());
+            ps.setDouble    (4, auction.getBidIncrement());
+            ps.setTimestamp (5, Timestamp.valueOf(auction.getStartTime()));
+            ps.setTimestamp (6, Timestamp.valueOf(auction.getEndTime()));
+            ps.setString    (7, auction.getStatus().name());
+            ps.setBoolean   (8, auction.isBanned());
+            setLeadingBidder(ps, 9, auction.getLeadingBidderId());
             ps.executeUpdate();
+
+            // Lấy ID vừa tạo từ DB
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    auction.setAuctionId(rs.getInt(1));
+                }
+            }
         }
     }
 
