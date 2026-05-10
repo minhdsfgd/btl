@@ -22,17 +22,33 @@ public class ItemService {
     /**
      * Thêm một sản phẩm mới vô kho (chưa đem đi đấu giá).
      */
-    public void createItem(Item item) {
+    public void createItem(Item item, User currentUser) throws AuthenticationException, UserBannedException {
         if (item == null) {
             throw new IllegalArgumentException("Sản phẩm không được để trống.");
         }
-        try{
+
+        if (currentUser == null) {
+            throw new AuthenticationException("User chưa đăng nhập");
+        }
+
+        if (currentUser.isBanned()) {
+            throw new UserBannedException(currentUser.getUsername());
+        }
+
+        // Kiểm tra quyền: phải có role SELLER hoặc ADMIN
+        if (!currentUser.hasRole(Role.SELLER) && !currentUser.hasRole(Role.ADMIN)) {
+            throw new AuthenticationException("Cần vai trò SELLER để tạo sản phẩm.");
+        }
+
+
+        try {
             itemDAO.save(item);
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
-
     }
+
+
 
     /**
      * Tìm sản phẩm theo ID.
@@ -93,6 +109,32 @@ public class ItemService {
             existing.setStartingPrice(item.getStartingPrice());
 
             itemDAO.save(existing);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+    }
+    public void deleteItem(int itemId, User currentUser) throws AuthenticationException, UserBannedException {
+        try {
+            if (currentUser == null) {
+                throw new AuthenticationException("User chưa đăng nhập");
+            }
+
+            if (currentUser.isBanned()) {
+                throw new UserBannedException(currentUser.getUsername());
+            }
+
+            Item existing = itemDAO.findById(itemId);
+            if (existing == null) {
+                throw new IllegalArgumentException("Item không tồn tại");
+            }
+
+            // Không phải owner và cũng không phải admin
+            if (existing.getSellerId() != currentUser.getUserId()
+                    && !currentUser.hasRole(Role.ADMIN)) {
+                throw new AuthenticationException("Không có quyền xóa item");
+            }
+
+            itemDAO.delete(itemId);
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }

@@ -60,18 +60,29 @@ public class ItemDAO {
 
     // ── Ghi dữ liệu ──────────────────────────────────────────────────────────
 
-    /** Lưu Item mới. ID lấy từ IdGenerator trước khi gọi. */
+    /** Lưu Item mới. ID được MySQL tự sinh. */
     public void save(Item item) throws SQLException {
         String sql = """
             INSERT INTO items
-                (id, seller_id, name, description, starting_price, item_type,
+                (seller_id, name, description, starting_price, item_type,
                  brand, warranty_months, artist_name, medium, license_plate, year_made)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
-        try (PreparedStatement ps = conn().prepareStatement(sql)) {
-            setCommonFields(ps, item);   // fill các field chung
-            setSubclassFields(ps, item); // fill field riêng của subclass
+        try (PreparedStatement ps = conn().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt   (1, item.getSellerId());
+            ps.setString(2, item.getName());
+            ps.setString(3, item.getDescription());
+            ps.setDouble(4, item.getStartingPrice());
+            ps.setString(5, item.getType().name());
+            setSubclassFields(ps, item); // fill field riêng của subclass từ index 6
             ps.executeUpdate();
+
+            // Lấy ID vừa tạo từ DB
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    item.setItemId(rs.getInt(1));
+                }
+            }
         }
     }
 
@@ -162,39 +173,29 @@ public class ItemDAO {
         };
     }
 
-    /** Set các field chung (dùng trong save). */
-    private void setCommonFields(PreparedStatement ps, Item item) throws SQLException {
-        ps.setInt   (1, item.getItemId());
-        ps.setInt   (2, item.getSellerId());
-        ps.setString(3, item.getName());
-        ps.setString(4, item.getDescription());
-        ps.setDouble(5, item.getStartingPrice());
-        ps.setString(6, item.getType().name());
-    }
-
     /** Set field riêng theo subclass (dùng trong save). */
     private void setSubclassFields(PreparedStatement ps, Item item) throws SQLException {
         if (item instanceof Electronics e) {
-            ps.setString(7,  e.getBrand());
-            ps.setInt   (8,  e.getWarrantyMonths());
-            ps.setString(9,  "Khuyết danh");
+            ps.setString(6,  e.getBrand());
+            ps.setInt   (7,  e.getWarrantyMonths());
+            ps.setString(8,  "Khuyết danh");
+            ps.setString(9,  "");
             ps.setString(10, "");
-            ps.setString(11, "");
-            ps.setInt   (12, 0);
+            ps.setInt   (11, 0);
         } else if (item instanceof Art a) {
-            ps.setString(7,  "");
-            ps.setInt   (8,  0);
-            ps.setString(9,  a.getArtistName());
-            ps.setString(10, a.getMedium());
-            ps.setString(11, "");
-            ps.setInt   (12, 0);
-        } else if (item instanceof Vehicle v) {
-            ps.setString(7,  "");
-            ps.setInt   (8,  0);
-            ps.setString(9,  "Khuyết danh");
+            ps.setString(6,  "");
+            ps.setInt   (7,  0);
+            ps.setString(8,  a.getArtistName());
+            ps.setString(9,  a.getMedium());
             ps.setString(10, "");
-            ps.setString(11, v.getLicensePlate());
-            ps.setInt   (12, v.getYearMade());
+            ps.setInt   (11, 0);
+        } else if (item instanceof Vehicle v) {
+            ps.setString(6,  "");
+            ps.setInt   (7,  0);
+            ps.setString(8,  "Khuyết danh");
+            ps.setString(9,  "");
+            ps.setString(10, v.getLicensePlate());
+            ps.setInt   (11, v.getYearMade());
         }
     }
 }

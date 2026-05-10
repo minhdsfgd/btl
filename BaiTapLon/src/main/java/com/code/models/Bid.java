@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class Bid implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final int bidId;
+    private int bidId;
     private final int auctionId;
     private final int userId;
     private final double amount;
@@ -30,6 +30,12 @@ public class Bid implements Serializable {
     public int           getUserId()    { return userId; }
     public double        getAmount()    { return amount; }
     public LocalDateTime getTimestamp() { return timestamp; }
+
+    public void setBidId(int bidId) {
+        this.bidId = bidId;
+    }
+
+
 
     @Override
     public String toString() {

@@ -24,16 +24,22 @@ public class BidDAO {
     /** Lưu bid mới. Gọi ngay sau BidService.placeBid() thành công. */
     public void save(Bid bid) throws SQLException {
         String sql = """
-            INSERT INTO bids (id, auction_id, user_id, amount, bid_time)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO bids (auction_id, user_id, amount, bid_time)
+            VALUES (?, ?, ?, ?)
             """;
-        try (PreparedStatement ps = conn().prepareStatement(sql)) {
-            ps.setInt      (1, bid.getBidId());
-            ps.setInt      (2, bid.getAuctionId());
-            ps.setInt      (3, bid.getUserId());
-            ps.setDouble   (4, bid.getAmount());
-            ps.setTimestamp(5, Timestamp.valueOf(bid.getTimestamp()));
+        try (PreparedStatement ps = conn().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt      (1, bid.getAuctionId());
+            ps.setInt      (2, bid.getUserId());
+            ps.setDouble   (3, bid.getAmount());
+            ps.setTimestamp(4, Timestamp.valueOf(bid.getTimestamp()));
             ps.executeUpdate();
+
+            // Lấy ID vừa tạo từ DB
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    bid.setBidId(rs.getInt(1));
+                }
+            }
         }
     }
 

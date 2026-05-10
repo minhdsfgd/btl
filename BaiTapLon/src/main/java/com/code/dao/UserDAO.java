@@ -71,22 +71,28 @@ public class UserDAO {
 
     /**
      * Lưu user mới vào DB. ID được MySQL tự sinh (AUTO_INCREMENT).
-     * Sau khi save, KHÔNG cần gọi lại — id đã được gán từ IdGenerator.
+     * Sau khi save, ID được cập nhật vào user object từ RETURN_GENERATED_KEYS.
      */
     public void save(User user) throws SQLException {
         String sql = """
-            INSERT INTO users (id, username, password, balance, active, banned, roles)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO users (username, password, balance, active, banned, roles)
+            VALUES (?, ?, ?, ?, ?, ?)
             """;
-        try (PreparedStatement ps = conn().prepareStatement(sql)) {
-            ps.setInt   (1, user.getUserId());
-            ps.setString(2, user.getUsername());
-            ps.setString(3, user.getPassword());
-            ps.setDouble(4, user.getBalance());
-            ps.setBoolean(5, user.isActive());
-            ps.setBoolean(6, user.isBanned());
-            ps.setString(7, rolesToString(user.getRoles()));
+        try (PreparedStatement ps = conn().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, user.getUsername());
+            ps.setString(2, user.getPassword());
+            ps.setDouble(3, user.getBalance());
+            ps.setBoolean(4, user.isActive());
+            ps.setBoolean(5, user.isBanned());
+            ps.setString(6, rolesToString(user.getRoles()));
             ps.executeUpdate();
+
+            // Lấy ID vừa tạo từ DB
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    user.setUserId(rs.getInt(1));
+                }
+            }
         }
     }
 
@@ -145,7 +151,6 @@ public class UserDAO {
         }
         user.setActive(active);
         user.setBanned(banned);
-        // setBalance dùng protected — DAO được phép gọi vì load từ DB
         user.setBalance(balance);
         return user;
     }

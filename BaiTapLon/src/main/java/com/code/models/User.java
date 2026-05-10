@@ -9,7 +9,7 @@ import java.util.Set;
 public abstract class User implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final int userId;
+    private int userId;
     private String username;
     private String password;
     private double balance;
@@ -68,7 +68,7 @@ public abstract class User implements Serializable {
     }
 
     // ── Setters ───────────────────────────────────────────────────────────────
-
+    public void setUserId(int id)       { this.userId = id; }
     public void setUsername(String u)  { this.username = Objects.requireNonNull(u); }
     public void setPassword(String p)  { this.password = Objects.requireNonNull(p); }
     public void setActive(boolean a)   { this.active = a; }

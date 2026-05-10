@@ -18,7 +18,7 @@ public class Transaction implements Serializable {
         ADJUSTMENT       // Admin điều chỉnh thủ công
     }
 
-    private final int id;
+    private int id;
     private final int fromUserId;   // người trả tiền (-1 nếu là nạp tiền)
     private final int toUserId;     // người nhận tiền
     private final double amount;
@@ -56,6 +56,8 @@ public class Transaction implements Serializable {
     public int           getAuctionId()   { return auctionId; }
     public Type          getType()        { return type; }
     public LocalDateTime getCreatedAt()   { return createdAt; }
+
+    public void setId(int id) { this.id = id; } // Chỉ DAO dùng khi load từ DB
 
     @Override
     public String toString() {

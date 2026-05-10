@@ -12,7 +12,7 @@ import java.util.Objects;
 public abstract class Item implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final int itemId;
+    private int itemId;
     private final int sellerId;
     private String name;
     private String description;
@@ -37,7 +37,9 @@ public abstract class Item implements Serializable {
     public abstract String toString();
 
     // ── Setters ───────────────────────────────────────────────────────────────
-
+    public void setItemId(int itemId) {
+        this.itemId = itemId;
+    }
     public void setName(String name) {
         this.name = Objects.requireNonNull(name, "name");
     }

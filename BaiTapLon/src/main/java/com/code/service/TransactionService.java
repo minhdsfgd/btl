@@ -2,8 +2,6 @@ package com.code.service;
 
 import com.code.dao.TransactionDAO;
 import com.code.models.Transaction;
-import com.code.repository.TransactionRepository;
-import com.code.util.IdGenerator;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -22,7 +20,7 @@ public class TransactionService {
     public void logDeposit(int userId, double amount) {
         // Class của bạn có sẵn hàm static deposit() xịn xò rứa thì mần luôn
         Transaction tx = Transaction.deposit(
-                IdGenerator.getId(),
+                0,
                 userId,
                 amount
         );
@@ -40,7 +38,7 @@ public class TransactionService {
     public void logBidHold(int userId, double amount, int auctionId) {
         // Tiền đi từ user sang hệ thống (-1)
         Transaction tx = new Transaction(
-                IdGenerator.getId(),
+                0,
                 userId,  // fromUserId: người đặt giá
                 -1,      // toUserId: hệ thống giữ
                 amount,  // Lưu ý: amount phải > 0 theo rule trong class của bạn
@@ -60,7 +58,7 @@ public class TransactionService {
      */
     public void logRefund(int userId, double amount, int auctionId) {
         Transaction tx = new Transaction(
-                IdGenerator.getId(),
+                0,
                 -1,      // fromUserId: từ hệ thống
                 userId,  // toUserId: trả lại cho user
                 amount,
@@ -80,7 +78,7 @@ public class TransactionService {
      */
     public void logPaymentToSeller(int buyerId, int sellerId, double amount, int auctionId) {
         Transaction tx = new Transaction(
-                IdGenerator.getId(),
+                0,
                 buyerId,  // fromUserId: người thắng cuộc trả tiền
                 sellerId, // toUserId: người bán nhận tiền
                 amount,
@@ -107,5 +105,12 @@ public class TransactionService {
         }
 
 
+    }
+    public void save(Transaction tx) {
+        try {
+            transactionDAO.save(tx);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB khi lưu transaction: " + e.getMessage(), e);
+        }
     }
 }

@@ -2,9 +2,9 @@ package com.code.service;
 
 import com.code.dao.AuctionDAO;
 import com.code.dao.BidDAO;
+import com.code.dao.UserDAO;
 import com.code.exception.*;
 import com.code.models.*;
-import com.code.util.IdGenerator;
 
 
 import java.sql.SQLException;
@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
  *   <li>Bid sản phẩm của chính mình?  → SelfBidException</li>
  *   <li>Phiên không RUNNING?          → AuctionClosedException</li>
  *   <li>Phiên bị Admin ban?           → AuctionClosedException</li>
- *   <li>Số tiền &lt; giá tối thiểu?   → InvalidBidException</li>
+ *   <li>Số tiền < giá tối thiểu?   → InvalidBidException</li>
  *   <li>Số dư không đủ?               → InsufficientBalanceException</li>
  * </ol>
  * Bước 4–7 nằm trong ReentrantLock để tránh race condition.</p>
@@ -29,11 +29,13 @@ public class BidService {
 
     private final BidDAO bidDAO;
     private final AuctionDAO auctionDAO;
+    private final UserDAO userDAO;
 
     /** Constructor — inject BidRepository. */
-    public BidService(BidDAO bidDAO,AuctionDAO auctionDAO) {
+    public BidService(BidDAO bidDAO,AuctionDAO auctionDAO, UserDAO userDAO) {
         this.bidDAO= bidDAO;
         this.auctionDAO = auctionDAO;
+        this.userDAO = userDAO;
     }
 
     // ── Đặt giá ───────────────────────────────────────────────────────────────
@@ -82,15 +84,11 @@ public class BidService {
                         "Giá tối thiểu: %,.0f VNĐ (hiện tại %,.0f + bước %,.0f)",
                         minRequired, auction.getCurrentPrice(), auction.getBidIncrement()));
 
-            // 7. Số dư đủ không
-            if (user.getBalance() < amount)
-                throw new InsufficientBalanceException(String.format(
-                        "Số dư không đủ: cần %,.0f VNĐ, có %,.0f VNĐ.",
-                        amount, user.getBalance()));
+
 
             // ── Tất cả hợp lệ ─────────────────────────────────────────────────
             Bid bid = new Bid(
-                    IdGenerator.getId(),
+                    0,
                     auction.getAuctionId(),
                     user.getUserId(),
                     amount,
@@ -99,11 +97,14 @@ public class BidService {
 
             auction.setCurrentPrice(amount);
             auction.recordBid(bid);
-             try {
+            user.deductBalance(amount);  // trừ tiền trong memory
+
+            try {
+
                 bidDAO.save(bid);
                 auctionDAO.update(auction); // sync giá + leadingBidderId về DB
-                } catch (SQLException e) {
-                    throw new RuntimeException("Lỗi lưu bid: " + e.getMessage(), e);
+            } catch (SQLException e) {
+                throw new RuntimeException("Lỗi lưu bid: " + e.getMessage(), e);
             }
 
 
@@ -123,7 +124,7 @@ public class BidService {
      * Nạp tiền vào tài khoản.
      *
      * @throws UserBannedException   nếu tài khoản bị ban
-     * @throws IllegalArgumentException nếu amount &lt;= 0  (unchecked — lỗi lập trình viên)
+     * @throws IllegalArgumentException nếu amount <= 0  (unchecked — lỗi lập trình viên)
      */
     public Transaction deposit(User user, double amount) throws UserBannedException {
         if (user.isBanned())
@@ -133,6 +134,6 @@ public class BidService {
             throw new IllegalArgumentException("Số tiền nạp phải > 0 VNĐ.");
 
         user.deposit(amount);
-        return Transaction.deposit(IdGenerator.getId(), user.getUserId(), amount);
+        return Transaction.deposit(0, user.getUserId(), amount);
     }
 }
