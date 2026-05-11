@@ -9,11 +9,25 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-
+    runs-on: ubuntu-lastest
 
     defaults:
       run:
         working-directory: BaiTapLon
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: auction_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
 
@@ -29,7 +43,19 @@ jobs:
           cache: maven
 
       - name: Install xvfb
-        run: sudo apt-get update && sudo apt-get install -y
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Create db.properties
+        run: |
+          echo "db.url=jdbc:mysql://127.0.0.1:3306/auction_db?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true" > src/main/resources/db.properties
+          echo "db.username=root" >> src/main/resources/db.properties
+          echo "db.password=root" >> src/main/resources/db.properties
+          echo "db.pool.size=10" >> src/main/resources/db.properties
+
+      - name: Init DB schema
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot auction_db \
+            < src/main/resources/schema.sql
 
       - name: Build with Maven
         run: xvfb-run mvn -B package -DskipTests
