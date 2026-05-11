@@ -146,20 +146,22 @@ public class AuctionService {
         } finally { managerLock.unlock(); }
     }
 
-    public void finishAuction(int auctionId) {
+    private void finishAuction(int auctionId) {
         try {
             Auction auction = auctionDAO.findById(auctionId);
             if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) return;
             managerLock.lock();
-            auction.updateStatus(AuctionStatus.FINISHED);
-            markAsPaid(auctionId);
-            auction.notifyObservers(
-                    AuctionEvent.auctionFinished(auctionId, auction.getLeadingBidderId()));
-        } catch (AuctionClosedException e) {
-            throw new RuntimeException(e);
+            try {
+                auction.updateStatus(AuctionStatus.FINISHED);
+                auctionDAO.update(auction);  // ← Lưu FINISHED vào DB
+                auction.notifyObservers(
+                        AuctionEvent.auctionFinished(auctionId, auction.getLeadingBidderId()));
+            } finally {
+                managerLock.unlock();
+            }
         } catch (SQLException e) {
-            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
-        } finally { managerLock.unlock(); }
+            System.err.println("[Scheduler] Lỗi kết thúc phiên #" + auctionId + ": " + e.getMessage());
+        }
     }
 
     public void cancelAuction(int auctionId, User requester)

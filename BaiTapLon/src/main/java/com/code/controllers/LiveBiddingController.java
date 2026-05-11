@@ -204,6 +204,13 @@ public class LiveBiddingController implements Initializable {
     @FXML
     private void handlePlaceBid() {
         clearError();
+
+        // ← Thêm kiểm tra: button phải được enable (phiên đang RUNNING)
+        if (bidAmountField.isDisabled()) {
+            showError("Phiên đấu giá đã kết thúc hoặc bị hủy. Không thể đặt giá.");
+            return;
+        }
+
         String raw = bidAmountField.getText().trim().replaceAll("[^\\d]", "");
 
         if (raw.isEmpty()) { showError("Vui lòng nhập số tiền đặt giá."); return; }

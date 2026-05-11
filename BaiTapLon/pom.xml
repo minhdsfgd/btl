@@ -20,7 +20,7 @@
         <maven.compiler.target>21</maven.compiler.target>
 
         <!-- Versions -->
-        <javafx.version>21.0.6</javafx.version>
+        <javafx.version>25</javafx.version>
         <junit.version>5.12.1</junit.version>
     </properties>
 
@@ -99,7 +99,13 @@
                 <version>0.0.8</version>
 
                 <configuration>
-                    <mainClass>com.code/com.code.ClientApp</mainClass>
+                    <mainClass>com.code.ClientApp</mainClass>
+                    <options>
+                        <option>--enable-native-access=javafx.graphics</option>
+                            <option>--enable-preview</option>  <!-- ← Thêm -->
+                            <option>--add-opens=java.base/sun.misc=ALL-UNNAMED</option>
+
+                    </options>
                 </configuration>
             </plugin>
 

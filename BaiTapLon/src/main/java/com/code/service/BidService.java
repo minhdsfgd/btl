@@ -67,10 +67,11 @@ public class BidService {
         auction.getLock().lock();
         try {
             // 4. Phiên phải RUNNING
-            if (auction.getStatus() != AuctionStatus.RUNNING)
+            if (!auction.getStatus().isActive())
                 throw new AuctionClosedException(
-                        "Phiên #" + auction.getAuctionId() + " không nhận giá "
-                                + "(trạng thái: " + auction.getStatus() + ").");
+                        "Phiên #" + auction.getAuctionId() + " không nhận giá. "
+                                + "Trạng thái hiện tại: " + auction.getStatus() + ". "
+                                + "Chỉ phiên ở trạng thái RUNNING mới nhận giá.");
 
             // 5. Phiên không bị Admin ban
             if (auction.isBanned())

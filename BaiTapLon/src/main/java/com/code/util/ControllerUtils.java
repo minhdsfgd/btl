@@ -15,7 +15,8 @@ public class ControllerUtils {
             ClientApp.getStage().setScene(new Scene(root));
         } catch (IOException e) {
             e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không tìm thấy màn hình: " + fxmlPath);        }
+            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không tìm thấy màn hình: " + fxmlPath);
+        }
     }
     public static void showAlert(Alert.AlertType type, String title, String message) {
         Alert alert = new Alert(type);
