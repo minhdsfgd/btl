@@ -75,6 +75,8 @@ public class RequestProcessor {
                 case UNBAN_USER    -> handleUnbanUser(request, handler);
                 case ADD_ROLE      -> handleAddRole(request, handler);
                 case REMOVE_ROLE   -> handleRemoveRole(request, handler);
+                case UPDATE_USER   -> handleUpdateUser(request, handler);
+                case DELETE_USER   -> handleDeleteUser(request, handler);
 
                 // ── Balance ────────────────────────────────────────────────────
                 case DEPOSIT -> handleDeposit(request, handler);
@@ -108,7 +110,10 @@ public class RequestProcessor {
 
                 // ── Transaction ────────────────────────────────────────────────
                 case GET_ALL_TRANSACTIONS -> handleGetAllTransactions(handler);
-                case GET_MY_TRANSACTIONS  -> handleGetMyTransactions(handler);
+                case GET_MY_TRANSACTIONS -> handleGetMyTransactions(handler);
+
+
+
             };
 
         } catch (Exception e) {
@@ -261,6 +266,33 @@ public class RequestProcessor {
             userService.removeRole(handler.currentUser, data.userId, data.role);
             return Response.ok("Đã xóa quyền " + data.role
                     + " của user #" + data.userId);
+        } catch (AuthenticationException | UserBannedException e) {
+            return Response.fail(e.getMessage());
+        }
+    }
+
+    private Response handleUpdateUser(Request req, ClientHandler handler) {
+        Response check = requireLogin(handler);
+        if (check != null) return check;
+
+        try {
+            com.code.network.UpdateUserData data = req.getDataAs(com.code.network.UpdateUserData.class);
+            userService.updateUser(handler.currentUser, data.userId, 
+                    data.username, data.password, data.balance, data.active, data.roles);
+            return Response.ok("Đã cập nhật user #" + data.userId);
+        } catch (AuthenticationException | UserBannedException e) {
+            return Response.fail(e.getMessage());
+        }
+    }
+
+    private Response handleDeleteUser(Request req, ClientHandler handler) {
+        Response check = requireLogin(handler);
+        if (check != null) return check;
+
+        try {
+            int userId = req.getDataAs(Integer.class);
+            userService.deleteUser(handler.currentUser, userId);
+            return Response.ok("Đã xóa user #" + userId);
         } catch (AuthenticationException | UserBannedException e) {
             return Response.fail(e.getMessage());
         }

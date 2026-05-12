@@ -8,7 +8,7 @@ module com.code {
     requires java.sql;
 
     // ── Controllers cần mở để JavaFX inject @FXML ─────────────────────────────
-    opens com.code.controllers to javafx.fxml;
+    opens com.code.controllers to javafx.fxml, javafx.base;
 
     // ── Mở models cho javafx.base để TableView binding hoạt động ──────────────
     opens com.code.models to javafx.base;

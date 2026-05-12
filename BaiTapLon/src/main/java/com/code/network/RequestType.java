@@ -44,6 +44,12 @@ public enum RequestType {
     /** Admin tạo tài khoản Admin mới — data: {@code LoginData(username, password)} */
     CREATE_ADMIN,
 
+    /** Admin sửa thông tin user — data: {@code UpdateUserData} */
+    UPDATE_USER,
+
+    /** Admin xóa user — data: {@code Integer userId} */
+    DELETE_USER,
+
     // ── Balance ───────────────────────────────────────────────────────────────
     /** Nạp tiền vào tài khoản — data: {@code Double amount} */
     DEPOSIT,
@@ -114,4 +120,8 @@ public enum RequestType {
 
     /** Dừng theo dõi phiên đấu giá hiện tại — data: null */
     UNWATCH_AUCTION,
+
+
+
+
 }

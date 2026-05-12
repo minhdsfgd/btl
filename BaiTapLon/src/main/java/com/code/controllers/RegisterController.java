@@ -16,7 +16,6 @@ import static com.code.util.ControllerUtils.showAlert;
 
 public class RegisterController {
 
-    @FXML private TextField     fullNameField;
     @FXML private TextField     usernameField;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmPasswordField;
@@ -26,9 +25,6 @@ public class RegisterController {
 
     @FXML
     public void initialize() {
-        fullNameField.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER) usernameField.requestFocus();
-        });
         usernameField.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) passwordField.requestFocus();
         });
@@ -42,27 +38,24 @@ public class RegisterController {
         registerButton.setOnAction(e -> handleRegister());
         linkLogin.setOnMouseClicked(e -> navigateTo("/com/code/views/Login.fxml"));
 
-        fullNameField.textProperty().addListener((obs, old, val) -> clearError());
         usernameField.textProperty().addListener((obs, old, val) -> clearError());
         passwordField.textProperty().addListener((obs, old, val) -> clearError());
         confirmPasswordField.textProperty().addListener((obs, old, val) -> clearError());
     }
 
     private void handleRegister() {
-        String fullName         = fullNameField.getText().trim();
-        String username         = usernameField.getText().trim();
-        String password         = passwordField.getText();
-        String confirmPassword  = confirmPasswordField.getText();
+        String username        = usernameField.getText().trim();
+        String password        = passwordField.getText();
+        String confirmPassword = confirmPasswordField.getText();
 
-        if (!validate(fullName, username, password, confirmPassword)) return;
+        if (!validate(username, password, confirmPassword)) return;
 
         registerButton.setDisable(true);
         registerButton.setText("Đang xử lý...");
 
         new Thread(() -> {
             try {
-                // Server nhận LoginData; username = username, password = password
-                // fullName hiện tại chưa được model User hỗ trợ riêng → bỏ qua hoặc truyền thêm
+                // Server sẽ tự gán cả BIDDER + SELLER cho mọi tài khoản mới
                 Request req = Request.of(RequestType.REGISTER,
                         new LoginData(username, password, Role.BIDDER));
                 Response res = SocketClient.getInstance().sendRequest(req);
@@ -73,7 +66,7 @@ public class RegisterController {
 
                     if (res.isSuccess()) {
                         showAlert(Alert.AlertType.INFORMATION, "Thành công",
-                                "Tài khoản đã được tạo!\nVui lòng đăng nhập.");
+                                "Tài khoản đã được tạo!\nBạn có thể đăng nhập ngay.");
                         navigateTo("/com/code/views/Login.fxml");
                     } else {
                         showError(res.getMessage());
@@ -89,10 +82,8 @@ public class RegisterController {
         }, "register-thread").start();
     }
 
-    private boolean validate(String fullName, String username,
-                             String password, String confirmPassword) {
-        if (fullName.isEmpty() || username.isEmpty()
-                || password.isEmpty() || confirmPassword.isEmpty()) {
+    private boolean validate(String username, String password, String confirmPassword) {
+        if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             showError("Vui lòng điền đầy đủ tất cả các trường.");
             return false;
         }

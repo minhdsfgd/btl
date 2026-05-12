@@ -2,6 +2,7 @@ package com.code.models;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Sự kiện được gửi tới Observer khi có thay đổi trong phiên đấu giá.
@@ -34,7 +35,7 @@ public class AuctionEvent implements Serializable {
         BID_PLACED,
         AUCTION_FINISHED,
         AUCTION_CANCELED,
-        STATUS_CHANGED
+        STATUS_CHANGED,
     }
 
     private final EventType      type;
@@ -43,6 +44,7 @@ public class AuctionEvent implements Serializable {
     private final int            winnerBidderId; // -1 nếu không có người thắng
     private final AuctionStatus  newStatus;      // trạng thái mới sau khi đổi
     private final LocalDateTime  timestamp;
+    private List<Bid> bidHistory;
 
     // ── Constructor cho BID_PLACED ────────────────────────────────────────────
     public static AuctionEvent bidPlaced(int auctionId, Bid bid) {

@@ -1,12 +1,20 @@
 package com.code.controllers;
 
+import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.ResourceBundle;
+
 import com.code.client.SessionManager;
 import com.code.client.SocketClient;
 import com.code.models.AuctionEvent;
+import com.code.models.Bid;
 import com.code.network.PlaceBidData;
 import com.code.network.Request;
 import com.code.network.RequestType;
 import com.code.network.Response;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -14,15 +22,15 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.util.Duration;
-
-import java.net.URL;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ResourceBundle;
 
 public class LiveBiddingController implements Initializable {
 
@@ -31,6 +39,7 @@ public class LiveBiddingController implements Initializable {
 
     // ── Header ────────────────────────────────────────────────────────────────
     @FXML private Label currentUserLabel;
+    @FXML private Label balanceLiveLabel;
     @FXML private Label sessionNameLabel;
 
     // ── Product info ──────────────────────────────────────────────────────────
@@ -254,9 +263,17 @@ public class LiveBiddingController implements Initializable {
     }
 
     private void leave() {
+
         stopCountdown();
+
         sendUnwatch();
-        com.code.util.ControllerUtils.navigateTo("/com/code/views/AuctionList.fxml");
+
+        // QUAN TRỌNG:
+        // dừng listener realtime trước khi quay lại màn khác
+        SocketClient.getInstance().stopListening();
+
+        com.code.util.ControllerUtils.navigateTo(
+                "/com/code/views/AuctionList.fxml");
     }
 
     private void sendUnwatch() {
@@ -347,7 +364,44 @@ public class LiveBiddingController implements Initializable {
         setCurrentPrice(pendingSessionData.currentPrice, pendingSessionData.username);
         setMinimumStep(pendingSessionData.minStep);
         startCountdown(pendingSessionData.countdownSeconds);
+        // Hiển thị số dư người dùng
+        if (SessionManager.getUser() != null) {
+            java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
+            balanceLiveLabel.setText(nf.format((long) SessionManager.getUser().getBalance()) + " ₫");
+        }
+        loadBidHistory();
         pendingSessionData = null;
+    }
+
+    private void loadBidHistory() {
+        if (currentAuctionId < 0) return;
+
+        new Thread(() -> {
+            try {
+                Response res = SocketClient.getInstance().sendRequest(
+                        Request.of(RequestType.GET_BIDS_BY_AUCTION, currentAuctionId));
+                if (!res.isSuccess()) {
+                    Platform.runLater(() -> showError("Không tải được lịch sử: " + res.getMessage()));
+                    return;
+                }
+
+                Object data = res.getData();
+                if (!(data instanceof List<?> bids)) return;
+
+                Platform.runLater(() -> {
+                    bidHistory.clear();
+                    for (Object obj : bids) {
+                        if (!(obj instanceof Bid bid)) continue;
+                        String username = bid.getUserId() == SessionManager.getUserId()
+                                ? currentUsername : "Người khác #" + bid.getUserId();
+                        String time = bid.getTimestamp().format(TIME_FMT);
+                        bidHistory.add(0, new BidRow(username, time, formatPrice(bid.getAmount())));
+                    }
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> showError("Lỗi tải lịch sử: " + ex.getMessage()));
+            }
+        }, "load-bid-history").start();
     }
 
     private void setupHistoryTable() {

@@ -1,12 +1,14 @@
 package com.code.client;
 
-import com.code.models.Auction;
-import com.code.network.Request;
-import com.code.network.Response;
-
-import java.io.*;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.function.Consumer;
+
+import com.code.network.Request;
+import com.code.network.Response;
 
 /**
  * Quản lý kết nối Socket từ phía Client — Singleton.
@@ -43,13 +45,9 @@ public class SocketClient {
     private static volatile SocketClient instance;
 
     /** Khởi tạo lần đầu — gọi một lần duy nhất khi app khởi động. */
-    public static void init(String host, int port) {
+    public static synchronized void init(String host, int port) {
         if (instance == null) {
-            synchronized (SocketClient.class) {
-                if (instance == null) {
-                    instance = new SocketClient(host, port);
-                }
-            }
+            instance = new SocketClient(host, port);
         }
     }
 
@@ -66,6 +64,8 @@ public class SocketClient {
     private Socket             socket;
     private ObjectOutputStream out;
     private ObjectInputStream  in;
+    private Thread listenerThread;
+    private volatile boolean listening = false;
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -113,10 +113,19 @@ public class SocketClient {
      */
     public synchronized Response sendRequest(Request request)
             throws IOException, ClassNotFoundException {
-        out.writeObject(request);
-        out.flush();
-        out.reset(); // tránh cache object cũ
-        return (Response) in.readObject();
+        try {
+            out.writeObject(request);
+            out.flush();
+            out.reset(); // tránh cache object cũ
+            return (Response) in.readObject();
+        } catch (IOException e) {
+            // Thử reconnect nếu mất kết nối
+            if (socket == null || socket.isClosed()) {
+                System.out.println("[Client] Socket closed, attempting reconnect...");
+                connect();
+            }
+            throw e;
+        }
     }
 
     // ── Gửi request KHÔNG chờ response (dùng khi đang startListening) ────────
@@ -135,9 +144,18 @@ public class SocketClient {
      * </pre>
      */
     public synchronized void sendAsync(Request request) throws IOException {
-        out.writeObject(request);
-        out.flush();
-        out.reset();
+        try {
+            out.writeObject(request);
+            out.flush();
+            out.reset();
+        } catch (IOException e) {
+            // Thử reconnect nếu mất kết nối
+            if (socket == null || socket.isClosed()) {
+                System.out.println("[Client] Socket closed, attempting reconnect...");
+                connect();
+            }
+            throw e;
+        }
     }
 
     // ── Lắng nghe push từ Server (realtime) ───────────────────────────────────
@@ -170,23 +188,47 @@ public class SocketClient {
      *
      * @param onEvent callback nhận {@link com.code.models.AuctionEvent}
      */
-    public void startListening(Consumer<Object> onEvent) {
-        Thread listenerThread = new Thread(() -> {
+    public synchronized void startListening(Consumer<Object> onEvent) {
+
+        stopListening();
+
+        listening = true;
+
+        listenerThread = new Thread(() -> {
             try {
-                while (!socket.isClosed()) {
-                    // readObject() blocking — chờ server gửi xuống
+                while (listening && socket != null && !socket.isClosed()) {
+
                     Object event = in.readObject();
                     onEvent.accept(event);
                 }
+
             } catch (EOFException | java.net.SocketException e) {
-                System.out.println("[Client] Mất kết nối server.");
-                onEvent.accept(null); // signal mất kết nối cho UI
+
+                if (listening) {
+                    System.out.println("[Client] Mất kết nối server.");
+                    onEvent.accept(null);
+                }
+
             } catch (Exception e) {
-                System.err.println("[Client] Lỗi listener: " + e.getMessage());
+
+                if (listening) {
+                    System.err.println("[Client] Lỗi listener: " + e.getMessage());
+                }
             }
+
         }, "auction-listener");
-        listenerThread.setDaemon(true); // tự tắt khi app đóng
+
+        listenerThread.setDaemon(true);
         listenerThread.start();
+    }
+    public synchronized void stopListening() {
+
+        listening = false;
+
+        if (listenerThread != null) {
+            listenerThread.interrupt();
+            listenerThread = null;
+        }
     }
 
     // ── Đóng kết nối ─────────────────────────────────────────────────────────

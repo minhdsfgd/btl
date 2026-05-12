@@ -141,8 +141,11 @@ public class AuctionService {
         managerLock.lock();
         try {
             auction.updateStatus(AuctionStatus.RUNNING);
+            auctionDAO.update(auction);   // ← Lưu vào DB
             auction.notifyObservers(
                     AuctionEvent.statusChanged(auctionId, AuctionStatus.RUNNING));
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB khi bắt đầu phiên: " + e.getMessage(), e);
         } finally { managerLock.unlock(); }
     }
 
@@ -172,7 +175,10 @@ public class AuctionService {
         managerLock.lock();
         try {
             auction.updateStatus(AuctionStatus.CANCELED);
+            auctionDAO.update(auction);   // ← Lưu vào DB
             auction.notifyObservers(AuctionEvent.auctionCanceled(auctionId));
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB khi hủy phiên: " + e.getMessage(), e);
         } finally { managerLock.unlock(); }
     }
 

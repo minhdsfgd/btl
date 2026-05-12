@@ -30,7 +30,7 @@ public class UserService {
     // ── Đăng ký ──────────────────────────────────────────────────────────────
 
     /**
-     * Đăng ký tài khoản mới với role BIDDER mặc định.
+     * Đăng ký tài khoản mới. Mặc định gán cả BIDDER và SELLER.
      *
      * @param username  tên đăng nhập (không được trùng)
      * @param password  mật khẩu (nên hash trước khi truyền vào)
@@ -54,8 +54,9 @@ public class UserService {
             if (userDAO.existsByUsername(username))
                 throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
 
+            // Mọi tài khoản mới đều có BIDDER + SELLER
             RegularUser user = new RegularUser(
-                    0, username, password, 0.0, primaryRole
+                    0, username, password, 0.0, Role.BIDDER, Role.SELLER
             );
             userDAO.save(user);
             return user;
@@ -185,6 +186,66 @@ public class UserService {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
 
+    }
+
+    /**
+     * Admin cập nhật thông tin user.
+     * Các trường null sẽ bị bỏ qua (không cập nhật).
+     */
+    public void updateUser(User admin, int userId, String username, String password,
+                          Double balance, Boolean active, String rolesStr)
+            throws UserBannedException, AuthenticationException {
+        requireAdmin(admin);
+        User target = getOrThrow(userId);
+        
+        if (target.hasRole(Role.ADMIN) && !admin.equals(target))
+            throw new AuthenticationException("Không thể sửa tài khoản Admin khác.");
+        
+        if (username != null && !username.isBlank())
+            target.setUsername(username);
+        
+        if (password != null && password.length() >= 6)
+            target.setPassword(password);
+        
+        if (balance != null && balance >= 0)
+            target.setBalance(balance);
+        
+        if (active != null)
+            target.setActive(active);
+        
+        if (rolesStr != null && !rolesStr.isBlank()) {
+            target.getRoles().clear();
+            for (String roleStr : rolesStr.split(",")) {
+                try {
+                    target.addRole(Role.valueOf(roleStr.trim()));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+        
+        try {
+            userDAO.update(target);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Admin xóa user.
+     */
+    public void deleteUser(User admin, int userId)
+            throws UserBannedException, AuthenticationException {
+        requireAdmin(admin);
+        if (userId == admin.getUserId())
+            throw new AuthenticationException("Không thể xóa chính mình.");
+        User target = getOrThrow(userId);
+        if (target.hasRole(Role.ADMIN))
+            throw new AuthenticationException("Không thể xóa tài khoản Admin.");
+        
+        try {
+            userDAO.delete(userId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
     }
 
     // ── Helper ───────────────────────────────────────────────────────────────
