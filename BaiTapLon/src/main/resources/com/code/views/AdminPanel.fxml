@@ -75,7 +75,7 @@
                 <Button fx:id="tabBtnUsers" maxWidth="Infinity" onAction="#switchToUsers" style="-fx-background-color: #006633; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 7; -fx-cursor: hand; -fx-padding: 6 0 6 0; -fx-font-size: 12;" text="Quản lý người dùng" HBox.hgrow="ALWAYS">
                     <font><Font name="Segoe UI" size="12.0" /></font>
                 </Button>
-                <Button fx:id="tabBtnSessions" maxWidth="Infinity" onAction="#switchToSessions" style="-fx-background-color:transparent;                                -fx-text-fill:rgba(255,255,255,0.6);                                -fx-border-color:rgba(255,255,255,0.3);                                -fx-border-radius:7;                                -fx-background-radius:7;                                -fx-cursor:hand;                                -fx-padding:6 0 6 0;                                -fx-font-size:12;" text="Quản lý phiên đấu giá" HBox.hgrow="ALWAYS">
+                <Button fx:id="tabBtnSessions" maxWidth="Infinity" onAction="#switchToSessions" style="-fx-background-color: #065f3b; -fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.3); -fx-border-radius: 7; -fx-background-radius: 7; -fx-cursor: hand; -fx-padding: 6 0 6 0; -fx-font-size: 12;" text="Quản lý phiên đấu giá" HBox.hgrow="ALWAYS">
                     <font><Font name="Segoe UI" size="12.0" /></font>
                 </Button>
             </HBox>
