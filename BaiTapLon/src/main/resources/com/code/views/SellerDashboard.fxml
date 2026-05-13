@@ -69,7 +69,6 @@
             <HBox spacing="8.0" style="-fx-padding:0 10 10 10;">
                 <Button fx:id="btnMenuOverview" onAction="#handleMenuOverview" style="-fx-background-color: #065f3b;" text="Tổng quan" textFill="WHITE" />
                 <Button fx:id="btnMenuLots" onAction="#handleMenuLots" style="-fx-background-color: #065f3b;" text="Quản lý lô hàng" textFill="WHITE" />
-                <Button fx:id="btnMenuSessions" onAction="#handleMenuSessions" style="-fx-background-color: #065f3b;" text="Danh sách phiên" textFill="WHITE" />
                 <Button fx:id="btnMenuNotif" onAction="#handleMenuNotif" style="-fx-background-color: #065f3b;" text="Thông báo" textFill="WHITE" />
                 <Button fx:id="btnMenuActivity" onAction="#handleShowActivities" style="-fx-background-color: #065f3b;" text="🕐 Hoạt động gần đây" textFill="WHITE" />
             </HBox>

@@ -45,7 +45,7 @@ public class ClientApp extends Application {
 
         stage.setTitle("UET Auction System");
         stage.setScene(scene);
-        stage.setResizable(false);
+        stage.setResizable(true);
         stage.centerOnScreen();
 
         stage.setOnCloseRequest(e -> {

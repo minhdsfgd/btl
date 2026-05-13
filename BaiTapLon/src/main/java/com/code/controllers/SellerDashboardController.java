@@ -6,6 +6,7 @@ import com.code.models.Auction;
 import com.code.network.Request;
 import com.code.network.RequestType;
 import com.code.network.Response;
+import com.code.util.ControllerUtils;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static com.code.util.ControllerUtils.navigateTo;
+import static com.code.util.ControllerUtils.showAlert;
 
 public class SellerDashboardController implements Initializable {
 
@@ -164,10 +166,6 @@ public class SellerDashboardController implements Initializable {
 
     @FXML private void handleMenuOverview()  { setActiveMenu(btnMenuOverview); }
     @FXML private void handleMenuLots()      { setActiveMenu(btnMenuLots); }
-    @FXML private void handleMenuSessions()  {
-        setActiveMenu(btnMenuSessions);
-        navigateTo("/com/code/views/AuctionList.fxml");
-    }
     @FXML private void handleMenuNotif()     {
         setActiveMenu(btnMenuNotif);
         showNotificationHistoryDialog();
@@ -503,10 +501,9 @@ public class SellerDashboardController implements Initializable {
 
                     Platform.runLater(() -> {
                         if (res.isSuccess()) {
+                            showAlert(Alert.AlertType.INFORMATION,"Thành công",
+                                    "Tạo phiên đấu giá thành công");
                             dialog.close();
-                            Alert alert = new Alert(Alert.AlertType.INFORMATION,
-                                    "Tạo phiên đấu giá thành công!");
-                            alert.showAndWait();
                             loadMyAuctions();
                         } else {
                             Alert alert = new Alert(Alert.AlertType.ERROR,
@@ -640,11 +637,10 @@ public class SellerDashboardController implements Initializable {
                             .sendRequest(Request.of(RequestType.CREATE_ITEM, finalItem));
                     Platform.runLater(() -> {
                         if (res.isSuccess()) {
+                            //dialog.close();
+                            showAlert(Alert.AlertType.INFORMATION,"Thành công",
+                                    "Tạo sản phẩm thành công");
                             dialog.close();
-                            Alert ok = new Alert(Alert.AlertType.INFORMATION,
-                                    "Tạo sản phẩm \"" + name + "\" thành công!\n"
-                                    + "Bạn có thể tạo phiên đấu giá cho sản phẩm này.");
-                            ok.showAndWait();
                             activities.add(0, "Tạo sản phẩm mới: " + name);
                             renderActivities();
                         } else {
