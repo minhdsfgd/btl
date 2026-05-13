@@ -29,12 +29,14 @@
             <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-background-color:#065f3b; -fx-padding:10;">
 
                 <VBox alignment="CENTER_LEFT">
-                    <Label prefHeight="2.0" prefWidth="151.0" style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;" text="ĐẤU GIÁ TRỰC TIẾP">
-                        <font><Font name="Segoe UI Bold" size="16.0" /></font>
-                    </Label>
                     <Label fx:id="sessionNameLabel" style="-fx-text-fill:#c8f5e1; -fx-font-size:10;" />
                 </VBox>
-
+                 <Label contentDisplay="CENTER" style="-fx-text-fill:white; -fx-font-size:16; -fx-font-weight:bold;" text="ĐẤU GIÁ TRỰC TIẾP">
+                     <font>
+                  <Font name="Segoe UI Bold" size="16.0" />
+               </font>
+                 </Label>
+      
                 <Region HBox.hgrow="ALWAYS" />
 
                 <!-- Nút quay lại danh sách -->
@@ -45,15 +47,12 @@
                 <Label fx:id="currentUserLabel" style="-fx-text-fill:#c8f5e1; -fx-padding:0 6 0 0;" text="username" />
 
                 <!-- Số dư người dùng -->
-                <HBox alignment="CENTER" spacing="5"
-                      style="-fx-background-color:rgba(255,255,255,0.12);
-                             -fx-background-radius:10; -fx-padding:4 10 4 10;">
-                    <Label text="💰" style="-fx-font-size:11;" />
-                    <Label fx:id="balanceLiveLabel" text="0 ₫"
-                           style="-fx-text-fill:#6ee7b7; -fx-font-weight:bold; -fx-font-size:11;" />
+                <HBox alignment="CENTER" spacing="5" style="-fx-background-color:rgba(255,255,255,0.12);                              -fx-background-radius:10; -fx-padding:4 10 4 10;">
+                    <Label style="-fx-font-size:11;" text="💰" />
+                    <Label fx:id="balanceLiveLabel" style="-fx-text-fill:#6ee7b7; -fx-font-weight:bold; -fx-font-size:11;" text="0 ₫" />
                 </HBox>
 
-                <Button onAction="#handleExitRoom" style="-fx-background-color: #880000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 15;" text="Thoát phòng">
+                <Button onAction="#handleExitRoom" style="-fx-background-color: #880000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 4 13;" text="Thoát phòng">
                     <font><Font name="Segoe UI" size="12.0" /></font>
                 </Button>
             </HBox>
@@ -65,9 +64,9 @@
                 <VBox prefWidth="420" spacing="10">
 
                     <!-- Thông tin sản phẩm -->
-                    <VBox spacing="8" style="-fx-background-color: #006633; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 12;">
+                    <VBox spacing="8" style="-fx-background-color: #003333; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 12;">
                         <Label style="-fx-text-fill:#c8f5e1;                                       -fx-font-size:9;                                       -fx-font-weight:bold;" text="SẢN PHẨM" />
-                        <HBox spacing="10">
+                        <HBox prefHeight="137.0" prefWidth="394.0" spacing="10">
                             <ImageView fx:id="productImageView" fitHeight="70" fitWidth="70" style="-fx-background-color:rgba(255,255,255,0.1);                                               -fx-background-radius:8;" />
                             <VBox spacing="5" VBox.vgrow="ALWAYS">
                                 <Label fx:id="productNameLabel" style="-fx-text-fill:white;                                               -fx-font-size:14;                                               -fx-font-weight:bold;" text="—">
@@ -80,7 +79,7 @@
                     </VBox>
 
                     <!-- Giá hiện tại -->
-                    <VBox spacing="6" style="-fx-background-color: #006633; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 12;">
+                    <VBox spacing="6" style="-fx-background-color: #003333; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 12;">
                         <Label style="-fx-text-fill:#c8f5e1;                                       -fx-font-size:9;                                       -fx-font-weight:bold;" text="GIÁ HIỆN TẠI" />
                         <Label fx:id="currentPriceLabel" style="-fx-text-fill:#6ee7b7;                                       -fx-font-size:26;                                       -fx-font-weight:bold;" text="—">
                             <font><Font name="Segoe UI Bold" size="26.0" /></font>
@@ -96,7 +95,7 @@
                     </VBox>
 
                     <!-- Đếm ngược -->
-                    <VBox spacing="6" style="-fx-background-color: #006633; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 12;">
+                    <VBox spacing="6" style="-fx-background-color: #003333; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 12;">
                         <Label style="-fx-text-fill:#c8f5e1;                                       -fx-font-size:9;                                       -fx-font-weight:bold;" text="THỜI GIAN CÒN LẠI" />
                         <HBox alignment="CENTER_LEFT" spacing="12">
                             <Label fx:id="countdownLabel" style="-fx-text-fill:#6ee7b7;                                           -fx-font-size:28;                                           -fx-font-weight:bold;" text="--:--:--">
@@ -116,7 +115,7 @@
                 <VBox prefWidth="420" spacing="10">
 
                     <!-- Đặt giá -->
-                    <VBox alignment="CENTER" spacing="10" style="-fx-background-color: #006633; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 14;">
+                    <VBox alignment="CENTER" spacing="10" style="-fx-background-color: #003333; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 14;">
                         <Label style="-fx-text-fill:#c8f5e1;                                       -fx-font-size:9;                                       -fx-font-weight:bold;" text="ĐẶT GIÁ CỦA BẠN" />
 
                         <HBox alignment="CENTER" spacing="8">
@@ -124,19 +123,19 @@
                             <Label fx:id="minStepLabel" style="-fx-text-fill:#6ee7b7;                                           -fx-font-size:11;                                           -fx-font-weight:bold;" text="—" />
                         </HBox>
 
-                        <TextField fx:id="bidAmountField" maxWidth="300.0" onAction="#handlePlaceBid" prefHeight="38.0" prefWidth="300.0" promptText="Nhập giá (VND)" style="-fx-background-color: #99D1D3; -fx-text-fill: #1a1a1a; -fx-prompt-text-fill: #999; -fx-background-radius: 8; -fx-font-size: 14; -fx-alignment: CENTER; -fx-padding: 6 10 6 10;">
+                        <TextField fx:id="bidAmountField" maxWidth="300.0" onAction="#handlePlaceBid" prefHeight="38.0" prefWidth="300.0" promptText="Nhập giá (VND)" style="-fx-background-color: #99D1D3; -fx-text-fill: #1a1a1a; -fx-prompt-text-fill: #000022; -fx-background-radius: 8; -fx-font-size: 14; -fx-alignment: CENTER; -fx-padding: 6 10 6 10;">
                             <font><Font name="Segoe UI" size="14.0" /></font>
                         </TextField>
 
                         <Label fx:id="errorLabel" style="-fx-text-fill:#fca5a5; -fx-font-size:10;" text="" />
 
-                        <Button onAction="#handlePlaceBid" prefWidth="150.0" style="-fx-background-color: #006633; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 8 0 8 0;" text="ĐẶT GIÁ NGAY">
+                        <Button onAction="#handlePlaceBid" prefWidth="150.0" style="-fx-background-color: #770000; -fx-text-fill: white; -fx-font-size: 10; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 4 10;" text="ĐẶT GIÁ NGAY">
                             <font><Font name="Segoe UI Bold" size="13.0" /></font>
                         </Button>
                     </VBox>
 
                     <!-- Lịch sử đặt giá -->
-                    <VBox spacing="8" style="-fx-background-color: #006633; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 12;" VBox.vgrow="ALWAYS">
+                    <VBox spacing="8" style="-fx-background-color: #003333; -fx-background-radius: 10; -fx-border-color: #6ee7b7; -fx-border-radius: 10; -fx-border-width: 1; -fx-padding: 12;" VBox.vgrow="ALWAYS">
                         <Label style="-fx-text-fill:#c8f5e1;                                       -fx-font-size:9;                                       -fx-font-weight:bold;" text="LỊCH SỬ ĐẶT GIÁ" />
 
                         <TableView fx:id="bidHistoryTable" style="-fx-background-color: #006633; -fx-control-inner-background: rgba(255,255,255,0.08); -fx-table-cell-border-color: rgba(110,231,183,0.25);" VBox.vgrow="ALWAYS">
