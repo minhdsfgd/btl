@@ -167,6 +167,12 @@ public class Auction implements Serializable {
     public boolean        isBanned()           { return banned; }
     public int            getLeadingBidderId() { return leadingBidderId; }
     public List<Bid>      getBids()            { return Collections.unmodifiableList(bids); }
+
+    /** Thêm bid vào danh sách (internal use, dùng khi load từ DB) */
+    public void addBidToList(Bid bid) {
+        this.bids.add(bid);
+    }
+
     public ReentrantLock  getLock() {
         if (lock == null) lock = new ReentrantLock();
         return lock;

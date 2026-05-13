@@ -308,6 +308,20 @@ public class AuctionListController {
         if (a.getStatus() == AuctionStatus.RUNNING) {
             long remaining = ChronoUnit.SECONDS.between(
                     LocalDateTime.now(), a.getEndTime());
+            String leaderName = "";
+
+            if (a.getLeadingBidderId() == -1) {
+
+                leaderName = "";
+
+            } else if (a.getLeadingBidderId() == SessionManager.getUserId()) {
+
+                leaderName = SessionManager.getUsername();
+
+            } else {
+
+                leaderName = "Người khác #" + a.getLeadingBidderId();
+            }
             LiveBiddingController.prepareSession(
                     a.getAuctionId(),
                     SessionManager.getUsername(),
@@ -317,7 +331,7 @@ public class AuctionListController {
                     a.getCurrentPrice() - a.getBidIncrement(),
                     a.getCurrentPrice(),
                     a.getBidIncrement(),
-                    Math.max(remaining, 0)
+                    Math.max(remaining, 0),leaderName
             );
             navigateTo("/com/code/views/LiveBidding.fxml");
         } else if (a.getStatus() == AuctionStatus.OPEN) {
@@ -333,10 +347,16 @@ public class AuctionListController {
         } else {
             // FINISHED / PAID / CANCELED — show result
             int bidCount = a.getBids().size();
+            String winnerInfo = "";
+            if (a.getLeadingBidderId() != -1) {
+                winnerInfo = "\nNgười thắng: " + (a.getLeadingBidderId() == SessionManager.getUserId()
+                        ? SessionManager.getUsername() : "Người khác #" + a.getLeadingBidderId());
+            }
             String info = "Sản phẩm: " + a.getItem().getName()
                     + "\nTrạng thái: " + mapStatus(a.getStatus())
                     + "\nGiá cuối: " + formatPrice(a.getCurrentPrice())
                     + "\nSố lượt đặt giá: " + bidCount
+                    + winnerInfo
                     + "\nKết thúc lúc: " + a.getEndTime().format(FMT);
             showAlert(Alert.AlertType.INFORMATION, "Kết quả phiên #" + a.getAuctionId(), info);
         }

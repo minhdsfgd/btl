@@ -20,6 +20,7 @@ import java.util.List;
 public class AuctionDAO {
 
     private final ItemDAO itemDAO = new ItemDAO();
+    private final BidDAO bidDAO = new BidDAO();
 
     private Connection conn() {
         return DBConnection.getInstance().getConnection();
@@ -48,7 +49,7 @@ public class AuctionDAO {
         }
     }
 
-    /** OPEN + RUNNING — Bidder xem danh sách phiên có thể tham gia. */
+    /** OPEN + RUNNING + FINISHED + PAID — Bidder xem danh sách phiên công khai (bao gồm phiên đã kết thúc). */
     public List<Auction> findActiveAuctions() throws SQLException {
         String sql = """
             SELECT a.*, i.seller_id AS item_seller_id, i.name, i.description,
@@ -58,7 +59,7 @@ public class AuctionDAO {
                    i.license_plate, i.year_made
             FROM auctions a
             JOIN items i ON a.item_id = i.id
-            WHERE a.status IN ('OPEN','RUNNING')
+            WHERE a.status IN ('OPEN','RUNNING','FINISHED','PAID')
               AND a.banned = 0
             ORDER BY a.end_time ASC
             """;
@@ -195,12 +196,24 @@ public class AuctionDAO {
         if (lbId != null) leadingBidderId = (int) lbId;
 
         // ── Dùng factory method để tái tạo Auction từ DB ──────────────────────
-        return Auction.loadFromDB(
+        Auction auction = Auction.loadFromDB(
                 auctionId, item, sellerId,
                 currentPrice, bidIncrement,
                 startTime, endTime,
                 status, banned, leadingBidderId
         );
+
+        // ── Tải danh sách bids cho phiên này ────────────────────────────────────
+        try {
+            List<Bid> bids = bidDAO.findByAuctionId(auctionId);
+            for (Bid bid : bids) {
+                auction.addBidToList(bid);
+            }
+        } catch (SQLException e) {
+            System.err.println("[AuctionDAO] Lỗi tải bids cho phiên #" + auctionId + ": " + e.getMessage());
+        }
+
+        return auction;
     }
 
     /**

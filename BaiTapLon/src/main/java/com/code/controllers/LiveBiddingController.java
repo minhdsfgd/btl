@@ -106,10 +106,10 @@ public class LiveBiddingController implements Initializable {
                                       String sessionName, String productName,
                                       String description, double startPrice,
                                       double currentPrice, double minStep,
-                                      long countdownSeconds) {
+                                      long countdownSeconds,String leadingBidder) {
         pendingSessionData = new SessionData(
                 auctionId, username, sessionName, productName, description,
-                startPrice, currentPrice, minStep, countdownSeconds
+                startPrice, currentPrice, minStep, countdownSeconds,leadingBidder
         );
     }
 
@@ -164,19 +164,28 @@ public class LiveBiddingController implements Initializable {
                 setCurrentPrice(amount, who);
                 addBidToHistory(who, amount);
             }
-            case AUCTION_FINISHED -> {
-                stopCountdown();
-                countdownLabel.setText("KẾT THÚC");
-                countdownLabel.setStyle("-fx-text-fill:#ef5350; -fx-font-size:22;"
-                        + " -fx-font-weight:bold;");
-                sessionStatusLabel.setText("Đã kết thúc");
-                bidAmountField.setDisable(true);
-                int winner = event.getWinnerBidderId();
-                String winMsg = winner == SessionManager.getUserId()
-                        ? "🏆 Bạn đã thắng phiên đấu giá này!"
-                        : "Phiên kết thúc. Người thắng: #" + winner;
-                showAlert(winMsg);
-            }
+             case AUCTION_FINISHED -> {
+                 stopCountdown();
+                 countdownLabel.setText("KẾT THÚC");
+                 countdownLabel.setStyle("-fx-text-fill:#ef5350; -fx-font-size:22;"
+                         + " -fx-font-weight:bold;");
+                 sessionStatusLabel.setText("Đã kết thúc");
+                 bidAmountField.setDisable(true);
+                 int winner = event.getWinnerBidderId();
+                 // Xác định tên người thắng
+                 String winnerName;
+                 if (winner == -1) {
+                     winnerName = "Không có người đặt giá";
+                 } else if (winner == SessionManager.getUserId()) {
+                     winnerName = currentUsername;
+                 } else {
+                     winnerName = "Người khác #" + winner;
+                 }
+                 String winMsg = winner == SessionManager.getUserId()
+                         ? "🏆 Bạn đã thắng phiên đấu giá này!"
+                         : "Phiên kết thúc. Người thắng: " + winnerName;
+                 showAlert(winMsg);
+             }
             case AUCTION_CANCELED -> {
                 stopCountdown();
                 sessionStatusLabel.setText("Đã hủy");
@@ -361,7 +370,7 @@ public class LiveBiddingController implements Initializable {
         setSessionName(pendingSessionData.sessionName);
         setProduct(pendingSessionData.productName, pendingSessionData.description, null);
         setStartPrice(pendingSessionData.startPrice);
-        setCurrentPrice(pendingSessionData.currentPrice, pendingSessionData.username);
+        setCurrentPrice(pendingSessionData.currentPrice, pendingSessionData.leadingBidder);
         setMinimumStep(pendingSessionData.minStep);
         startCountdown(pendingSessionData.countdownSeconds);
         // Hiển thị số dư người dùng
@@ -488,10 +497,11 @@ public class LiveBiddingController implements Initializable {
         final double currentPrice;
         final double minStep;
         final long   countdownSeconds;
+        final String leadingBidder;
 
         SessionData(int auctionId, String username, String sessionName,
                     String productName, String description, double startPrice,
-                    double currentPrice, double minStep, long countdownSeconds) {
+                    double currentPrice, double minStep, long countdownSeconds, String leadingBidder) {
             this.auctionId       = auctionId;
             this.username        = username;
             this.sessionName     = sessionName;
@@ -501,6 +511,7 @@ public class LiveBiddingController implements Initializable {
             this.currentPrice    = currentPrice;
             this.minStep         = minStep;
             this.countdownSeconds = countdownSeconds;
+            this.leadingBidder = leadingBidder;
         }
     }
 }

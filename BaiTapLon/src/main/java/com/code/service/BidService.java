@@ -88,6 +88,9 @@ public class BidService {
 
 
             // ── Tất cả hợp lệ ─────────────────────────────────────────────────
+
+
+
             Bid bid = new Bid(
                     0,
                     auction.getAuctionId(),
@@ -96,14 +99,73 @@ public class BidService {
                     LocalDateTime.now()
             );
 
+// ===== Xử lý giữ tiền bidder =====
+
+            int currentLeaderId = auction.getLeadingBidderId();
+            double oldPrice = auction.getCurrentPrice();
+
+// ================================
+// CASE 1: Tự vượt giá chính mình
+// ================================
+            if (currentLeaderId == user.getUserId()) {
+
+                // Hoàn lại tiền bid cũ
+                user.deposit(oldPrice);
+
+                // Kiểm tra đủ tiền cho bid mới
+                if (user.getBalance() < amount) {
+                    throw new IllegalArgumentException("Không đủ số dư");
+                }
+
+                // Giữ lại toàn bộ bid mới
+                user.deductBalance(amount);
+            }
+
+// ================================
+// CASE 2: Người khác bị vượt giá
+// ================================
+            else {
+
+                // Hoàn tiền leader cũ
+                if (currentLeaderId != -1) {
+                    try {
+                        User prevLeader = userDAO.findById(currentLeaderId);
+
+                        if (prevLeader != null) {
+                            prevLeader.deposit(oldPrice);
+                            userDAO.update(prevLeader);
+                        }
+
+                    } catch (SQLException e) {
+                        throw new RuntimeException(
+                                "Lỗi hoàn tiền người dẫn đầu trước",
+                                e
+                        );
+                    }
+                }
+
+                // Kiểm tra bidder mới đủ tiền
+                if (user.getBalance() < amount) {
+                    throw new IllegalArgumentException("Không đủ số dư");
+                }
+
+                // Giữ tiền bidder mới
+                user.deductBalance(amount);
+            }
+// Update auction
             auction.setCurrentPrice(amount);
             auction.recordBid(bid);
-            user.deductBalance(amount);  // trừ tiền trong memory
-
             try {
-
+                // Lưu bid
                 bidDAO.save(bid);
-                auctionDAO.update(auction); // sync giá + leadingBidderId về DB
+
+                // Sync auction
+                auctionDAO.update(auction);
+
+                // QUAN TRỌNG:
+                // Sync balance bidder mới xuống DB
+                userDAO.update(user);
+
             } catch (SQLException e) {
                 throw new RuntimeException("Lỗi lưu bid: " + e.getMessage(), e);
             }
