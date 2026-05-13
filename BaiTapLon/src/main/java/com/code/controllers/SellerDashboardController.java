@@ -52,7 +52,7 @@ public class SellerDashboardController implements Initializable {
     @FXML private Button btnMenuLots;
     @FXML private Button btnMenuSessions;
     @FXML private Button btnMenuNotif;
-
+    @FXML private Button btnMenuActivity;
     private final ObservableList<LotRow>  allLots              = FXCollections.observableArrayList();
     private final ObservableList<String>  activities           = FXCollections.observableArrayList();
     private final ObservableList<String>  notificationHistory  = FXCollections.observableArrayList();
@@ -171,6 +171,9 @@ public class SellerDashboardController implements Initializable {
     @FXML private void handleMenuNotif()     {
         setActiveMenu(btnMenuNotif);
         showNotificationHistoryDialog();
+    }
+
+    private void showNotificationHistoryDialog() {
     }
 
     @FXML
@@ -299,7 +302,7 @@ public class SellerDashboardController implements Initializable {
      }
 
      private void setActiveMenu(Button activeBtn) {
-         for (Button btn : new Button[] { btnMenuOverview, btnMenuLots, btnMenuSessions, btnMenuNotif }) {
+         for (Button btn : new Button[] { btnMenuOverview, btnMenuLots, btnMenuSessions, btnMenuNotif, btnMenuActivity }) {
              btn.setStyle(btn == activeBtn ? MENU_ACTIVE : MENU_INACTIVE);
          }
      }
@@ -318,20 +321,32 @@ public class SellerDashboardController implements Initializable {
             vboxActivities.getChildren().add(label);
         }
     }
+    
+    @FXML
+    private void handleShowActivities() {
+        setActiveMenu(btnMenuActivity);
 
-    private void showNotificationHistoryDialog() {
         ListView<String> listView = new ListView<>();
-        listView.setItems(notificationHistory.isEmpty()
-                ? FXCollections.observableArrayList("Chưa có thông báo.")
-                : notificationHistory);
+        listView.setItems(activities.isEmpty()
+                ? FXCollections.observableArrayList("Chưa có hoạt động nào.")
+                : activities);
+        listView.setPrefHeight(300);
+
         BorderPane root = new BorderPane(listView);
         root.setPadding(new Insets(10));
+
+        // Tiêu đề
+        Label title = new Label("🕐 Hoạt động gần đây");
+        title.setStyle("-fx-font-size: 14; -fx-font-weight: bold; -fx-padding: 0 0 8 0;");
+        root.setTop(title);
+
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Lịch sử thông báo");
-        dialog.setScene(new Scene(root, 540, 360));
+        dialog.setTitle("Hoạt động gần đây");
+        dialog.setScene(new Scene(root, 500, 360));
         dialog.showAndWait();
     }
+    
 
     private void showCreateAuctionDialog() {
         // Load seller's items
