@@ -4,6 +4,7 @@ import com.code.dao.AuctionDAO;
 import com.code.exception.AuctionClosedException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
+import com.code.dao.*;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -211,6 +212,7 @@ public class AuctionService {
 
     // ── Scheduler ────────────────────────────────────────────────────────────
 
+    // Dòng 214-247 trong AuctionService.java
     private void startScheduler() {
         scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -225,6 +227,7 @@ public class AuctionService {
                         managerLock.lock();
                         try {
                             a.updateStatus(AuctionStatus.RUNNING);
+                            auctionDAO.update(a);  // ← THÊM DÒNG NÀY
                             a.notifyObservers(
                                     AuctionEvent.statusChanged(a.getAuctionId(), AuctionStatus.RUNNING));
                         } catch (Exception e) {
