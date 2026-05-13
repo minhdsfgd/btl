@@ -50,7 +50,6 @@ public class SellerDashboardController implements Initializable {
 
     @FXML private Button btnMenuOverview;
     @FXML private Button btnMenuLots;
-    @FXML private Button btnMenuSessions;
     @FXML private Button btnMenuNotif;
 
     private final ObservableList<LotRow>  allLots              = FXCollections.observableArrayList();
@@ -164,10 +163,6 @@ public class SellerDashboardController implements Initializable {
 
     @FXML private void handleMenuOverview()  { setActiveMenu(btnMenuOverview); }
     @FXML private void handleMenuLots()      { setActiveMenu(btnMenuLots); }
-    @FXML private void handleMenuSessions()  {
-        setActiveMenu(btnMenuSessions);
-        navigateTo("/com/code/views/AuctionList.fxml");
-    }
     @FXML private void handleMenuNotif()     {
         setActiveMenu(btnMenuNotif);
         showNotificationHistoryDialog();
@@ -299,7 +294,7 @@ public class SellerDashboardController implements Initializable {
      }
 
      private void setActiveMenu(Button activeBtn) {
-         for (Button btn : new Button[] { btnMenuOverview, btnMenuLots, btnMenuSessions, btnMenuNotif }) {
+         for (Button btn : new Button[] { btnMenuOverview, btnMenuLots, btnMenuNotif }) {
              btn.setStyle(btn == activeBtn ? MENU_ACTIVE : MENU_INACTIVE);
          }
      }
