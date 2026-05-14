@@ -196,7 +196,10 @@ public class AuctionService {
             }
 
             auction.updateStatus(AuctionStatus.PAID);
+            auctionDAO.update(auction);   // ← Lưu vào DB
 
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB khi đánh dấu đã thanh toán: " + e.getMessage(), e);
         } finally {
             managerLock.unlock();
         }
@@ -207,7 +210,14 @@ public class AuctionService {
         if (admin.isBanned()) throw new UserBannedException(admin.getUsername());
         if (!admin.hasRole(Role.ADMIN))
             throw new AuctionClosedException("Chỉ Admin được ban phiên đấu giá.");
-        getAuction(auctionId).setBanned(true);
+        Auction  auction = getAuction(auctionId);
+        auction.setBanned(true);
+        try{
+            auctionDAO.update(auction);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB khi ban phiên: " + e.getMessage(), e);
+        }
+
     }
 
     // ── Scheduler ────────────────────────────────────────────────────────────

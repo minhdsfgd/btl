@@ -1,8 +1,6 @@
 package com.code.service;
 
-import com.code.dao.AuctionDAO;
-import com.code.dao.BidDAO;
-import com.code.dao.UserDAO;
+import com.code.dao.*;
 import com.code.exception.*;
 import com.code.models.*;
 
