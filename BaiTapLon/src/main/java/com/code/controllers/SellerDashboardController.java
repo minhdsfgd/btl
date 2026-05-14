@@ -3,10 +3,11 @@ package com.code.controllers;
 import com.code.client.SessionManager;
 import com.code.client.SocketClient;
 import com.code.models.Auction;
+import com.code.models.AuctionStatus;
+import com.code.models.Item;
 import com.code.network.Request;
 import com.code.network.RequestType;
 import com.code.network.Response;
-import com.code.util.ControllerUtils;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,13 +24,14 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.net.URL;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import static com.code.util.ControllerUtils.navigateTo;
 import static com.code.util.ControllerUtils.showAlert;
+import static com.code.models.AuctionStatus.*;
 
 public class SellerDashboardController implements Initializable {
 
@@ -57,6 +59,7 @@ public class SellerDashboardController implements Initializable {
     private final ObservableList<LotRow>  allLots              = FXCollections.observableArrayList();
     private final ObservableList<String>  activities           = FXCollections.observableArrayList();
     private final ObservableList<String>  notificationHistory  = FXCollections.observableArrayList();
+    private final Set<Integer> usedItemIds = new HashSet<>();
 
     private static final String MENU_ACTIVE   =
             "-fx-background-color:#16a34a; -fx-text-fill:white; -fx-font-weight:bold; -fx-background-radius:6;";
@@ -91,8 +94,10 @@ public class SellerDashboardController implements Initializable {
                     if (res.isSuccess()) {
                         @SuppressWarnings("unchecked")
                         List<Auction> list = res.getDataAs(List.class);
+                        usedItemIds.clear();
                         if (list != null) {
                             for (Auction a : list) {
+                                usedItemIds.add(a.getItem().getItemId());
                                 allLots.add(auctionToLotRow(a));
                                 activities.add(0, "Phiên #" + a.getAuctionId()
                                         + " — " + a.getItem().getName()
@@ -361,7 +366,7 @@ public class SellerDashboardController implements Initializable {
                     }
 
                     @SuppressWarnings("unchecked")
-                    java.util.List<com.code.models.Item> items = res.getDataAs(java.util.List.class);
+                    List<Item> items = res.getDataAs(List.class);
 
                     if (items == null || items.isEmpty()) {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION,
@@ -369,8 +374,21 @@ public class SellerDashboardController implements Initializable {
                         alert.showAndWait();
                         return;
                     }
+                    loadMyAuctions();
+                    List<Item> availableItems = new ArrayList<>();
+                    for (Item item : items) {
+                        if (!usedItemIds.contains(item.getItemId())){
+                            availableItems.add(item);
+                        }
+                    }
 
-                    showCreateAuctionForm(items);
+                    if (availableItems.isEmpty()) {
+                        showAlert(Alert.AlertType.INFORMATION,"Thông báo",
+                                "Tất cả sản phẩm của bạn đang trong phiên đấu giá hoặc đã được bán");
+                        return;
+                    }
+
+                    showCreateAuctionForm(availableItems);
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
@@ -382,14 +400,14 @@ public class SellerDashboardController implements Initializable {
         }, "load-seller-items").start();
     }
 
-    private void showCreateAuctionForm(java.util.List<com.code.models.Item> items) {
+    private void showCreateAuctionForm(List<Item> items) {
         VBox vbox = new VBox(10);
         vbox.setPadding(new Insets(15));
 
         // Item selection
         ComboBox<String> cmbItem = new ComboBox<>();
-        java.util.Map<String, Integer> itemMap = new java.util.HashMap<>();
-        for (com.code.models.Item item : items) {
+        Map<String, Integer> itemMap = new HashMap<>();
+        for (Item item : items) {
             String display = "#" + item.getItemId() + " - " + item.getName() +
                            " (" + String.format("%,.0f đ", item.getStartingPrice()) + ")";
             cmbItem.getItems().add(display);
@@ -447,9 +465,9 @@ public class SellerDashboardController implements Initializable {
         dialog.showAndWait();
     }
 
-    private void createAuctionSession(java.util.Map<String, Integer> itemMap, String selectedItem,
-                                     String bidIncrementStr, java.time.LocalDate startDate,
-                                     int startHour, int startMin, java.time.LocalDate endDate,
+    private void createAuctionSession(Map<String, Integer> itemMap, String selectedItem,
+                                     String bidIncrementStr, LocalDate startDate,
+                                     int startHour, int startMin, LocalDate endDate,
                                      int endHour, int endMin, Stage dialog) {
         try {
             if (selectedItem == null || selectedItem.isEmpty()) {
@@ -629,14 +647,13 @@ public class SellerDashboardController implements Initializable {
                 lblErr.setText("Lỗi: " + ex.getMessage()); return;
             }
 
-            final com.code.models.Item finalItem = item;
+            final Item finalItem = item;
             new Thread(() -> {
                 try {
                     Response res = SocketClient.getInstance()
                             .sendRequest(Request.of(RequestType.CREATE_ITEM, finalItem));
                     Platform.runLater(() -> {
                         if (res.isSuccess()) {
-                            //dialog.close();
                             showAlert(Alert.AlertType.INFORMATION,"Thành công",
                                     "Tạo sản phẩm thành công");
                             dialog.close();
