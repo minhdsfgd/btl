@@ -97,7 +97,10 @@ public class SellerDashboardController implements Initializable {
                         usedItemIds.clear();
                         if (list != null) {
                             for (Auction a : list) {
-                                usedItemIds.add(a.getItem().getItemId());
+                                AuctionStatus as = a.getStatus();
+                                if (as == OPEN || as == RUNNING || as == FINISHED || as == PAID){
+                                    usedItemIds.add(a.getItem().getItemId());
+                                }
                                 allLots.add(auctionToLotRow(a));
                                 activities.add(0, "Phiên #" + a.getAuctionId()
                                         + " — " + a.getItem().getName()
