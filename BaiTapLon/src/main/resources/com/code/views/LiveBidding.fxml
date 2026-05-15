@@ -17,7 +17,7 @@
     <children>
 
         <!-- Hình nền -->
-        <ImageView fitHeight="520.0" fitWidth="880.0" pickOnBounds="true" preserveRatio="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <ImageView pickOnBounds="true" preserveRatio="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <image>
                 <Image url="@../images/screen.jpg" />
             </image>
@@ -99,7 +99,9 @@
                         <Label style="-fx-text-fill:#c8f5e1;                                       -fx-font-size:9;                                       -fx-font-weight:bold;" text="THỜI GIAN CÒN LẠI" />
                         <HBox alignment="CENTER_LEFT" spacing="12">
                             <Label fx:id="countdownLabel" style="-fx-text-fill:#6ee7b7;                                           -fx-font-size:28;                                           -fx-font-weight:bold;" text="--:--:--">
-                                <font><Font name="Segoe UI Bold" size="28.0" /></font>
+                                <font>
+                           <Font name="Segoe UI Bold" size="28.0" />
+                        </font>
                             </Label>
                             <Label fx:id="sessionStatusLabel" style="-fx-background-color:rgba(110,231,183,0.2);                                           -fx-text-fill:#6ee7b7;                                           -fx-font-size:10;                                           -fx-font-weight:bold;                                           -fx-background-radius:6;                                           -fx-padding:3 10 3 10;" text="Đang diễn ra" />
                         </HBox>
