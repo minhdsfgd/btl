@@ -224,4 +224,19 @@ public class AuctionDAO {
         if (id == -1) ps.setNull(paramIndex, Types.INTEGER);
         else          ps.setInt (paramIndex, id);
     }
+    public boolean isItemLocked(int itemId) throws SQLException {
+        // Chỉ cần SELECT 1 thay vì JOIN bảng để tối ưu tốc độ tối đa
+        String sql = """
+            SELECT 1 FROM auctions 
+            WHERE item_id = ? 
+              AND status IN ('OPEN', 'RUNNING', 'PAID')
+            LIMIT 1
+            """;
+        try (PreparedStatement ps = conn().prepareStatement(sql)) {
+            ps.setInt(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next(); // Có dữ liệu -> Đang bị khóa -> Trả về true
+            }
+        }
+    }
 }

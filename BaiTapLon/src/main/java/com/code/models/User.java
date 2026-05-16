@@ -9,7 +9,7 @@ import java.util.Set;
 public abstract class User implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private int userId;
+    private static int userId;
     private String username;
     private String password;
     private double balance;
@@ -76,7 +76,7 @@ public abstract class User implements Serializable {
 
     // ── Getters ───────────────────────────────────────────────────────────────
 
-    public int     getUserId()   { return userId; }
+    public static int     getUserId()   { return userId; }
     public String  getUsername() { return username; }
     public String  getPassword() { return password; }
     public double  getBalance()  { return balance; }

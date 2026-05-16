@@ -105,13 +105,10 @@ public class SellerDashboardController implements Initializable {
                     if (res.isSuccess()) {
                         @SuppressWarnings("unchecked")
                         List<Auction> list = res.getDataAs(List.class);
-                        usedItemIds.clear();
+
                         if (list != null) {
                             for (Auction a : list) {
                                 AuctionStatus as = a.getStatus();
-                                if (as == OPEN || as == RUNNING || as == FINISHED || as == PAID){
-                                    usedItemIds.add(a.getItem().getItemId());
-                                }
                                 allLots.add(auctionToLotRow(a));
                                 activities.add(0, "Phiên #" + a.getAuctionId()
                                         + " — " + a.getItem().getName()
@@ -147,12 +144,12 @@ public class SellerDashboardController implements Initializable {
      }
 
      private String formatAuctionTime(Auction a) {
-         java.time.LocalDateTime now = java.time.LocalDateTime.now();
-         if (a.getStatus() == com.code.models.AuctionStatus.RUNNING) {
+         LocalDateTime now = LocalDateTime.now();
+         if (a.getStatus() == RUNNING) {
              long mins = java.time.temporal.ChronoUnit.MINUTES.between(now, a.getEndTime());
              return mins > 0 ? mins + " phút còn lại" : "Sắp kết thúc";
          }
-         if (a.getStatus() == com.code.models.AuctionStatus.OPEN) {
+         if (a.getStatus() == OPEN) {
              long mins = java.time.temporal.ChronoUnit.MINUTES.between(now, a.getStartTime());
              if (mins <= 0) return "Bắt đầu ngay";
              return "Bắt đầu trong " + mins + " phút";
@@ -435,19 +432,21 @@ public class SellerDashboardController implements Initializable {
         // Load seller's items
         new Thread(() -> {
             try {
-                Response res = SocketClient.getInstance()
+                Response resAuctions = SocketClient.getInstance()
+                        .sendRequest(Request.of(RequestType.GET_MY_AUCTIONS));
+
+                Response resItems = SocketClient.getInstance()
                         .sendRequest(Request.of(RequestType.GET_MY_ITEMS));
 
                 Platform.runLater(() -> {
-                    if (!res.isSuccess()) {
-                        Alert alert = new Alert(Alert.AlertType.ERROR,
-                                "Lỗi tải sản phẩm: " + res.getMessage());
-                        alert.showAndWait();
+                    if (!resItems.isSuccess()) {
+                        showAlert(Alert.AlertType.ERROR, "Lỗi",
+                                "Lỗi tải sản phẩm: " + resItems.getMessage());
                         return;
                     }
 
                     @SuppressWarnings("unchecked")
-                    List<Item> items = res.getDataAs(List.class);
+                    List<Item> items = resItems.getDataAs(List.class);
 
                     if (items == null || items.isEmpty()) {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION,
@@ -455,21 +454,34 @@ public class SellerDashboardController implements Initializable {
                         alert.showAndWait();
                         return;
                     }
-                    loadMyAuctions();
+                    usedItemIds.clear();
+                    if (resAuctions.isSuccess()) {
+                        @SuppressWarnings("unchecked")
+                        List<Auction> auctions = resAuctions.getDataAs(List.class);
+                        if (auctions != null) {
+                            for (Auction a : auctions) {
+                                if (a.getStatus() == OPEN ||
+                                        a.getStatus() == RUNNING ||
+                                        a.getStatus() == PAID) {
+                                    usedItemIds.add(a.getItem().getItemId());
+                                }
+                            }
+                        }
+                    }
                     List<Item> availableItems = new ArrayList<>();
                     for (Item item : items) {
-                        if (!usedItemIds.contains(item.getItemId())){
+                        if (!usedItemIds.contains(item.getItemId())) {
                             availableItems.add(item);
                         }
                     }
-
                     if (availableItems.isEmpty()) {
-                        showAlert(Alert.AlertType.INFORMATION,"Thông báo",
+                        showAlert(Alert.AlertType.INFORMATION, "Thông báo",
                                 "Tất cả sản phẩm của bạn đang trong phiên đấu giá hoặc đã được bán");
                         return;
                     }
 
                     showCreateAuctionForm(availableItems);
+                    //loadMyAuctions();
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {

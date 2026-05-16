@@ -72,12 +72,19 @@ public class AuctionService {
                                  double bidIncrement,
                                  LocalDateTime startTime,
                                  LocalDateTime endTime)
-            throws UserBannedException, AuctionClosedException {
+            throws Exception {
 
         if (seller.isBanned()) throw new UserBannedException(seller.getUsername());
         if (!seller.hasRole(Role.SELLER))
             throw new AuctionClosedException("Cần vai trò SELLER để tạo phiên đấu giá.");
+        if (item.getSellerId() != User.getUserId()) {
+            throw new Exception("Bạn không phải chủ sở hữu của sản phẩm này!");
+        }
 
+        // 2. [FIX BUG]: Kiểm tra xem vật phẩm đã bị khóa trong phiên khác chưa
+        if (auctionDAO.isItemLocked(item.getItemId())) {
+            throw new Exception("Sản phẩm này đang được đấu giá hoặc đã bán ở một phiên khác!");
+        }
         managerLock.lock();
         try {
             Auction auction = new Auction(
