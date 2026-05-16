@@ -77,7 +77,7 @@ public class AuctionService {
         if (seller.isBanned()) throw new UserBannedException(seller.getUsername());
         if (!seller.hasRole(Role.SELLER))
             throw new AuctionClosedException("Cần vai trò SELLER để tạo phiên đấu giá.");
-        if (item.getSellerId() != User.getUserId()) {
+        if (item.getSellerId() != seller.getUserId()) {
             throw new Exception("Bạn không phải chủ sở hữu của sản phẩm này!");
         }
 
