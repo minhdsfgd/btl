@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
+import com.code.models.Role;
+import com.code.network.Request;
 import com.code.network.Response;
 import static com.code.util.ControllerUtils.navigateTo;
 import com.code.network.UpdateUserData;
@@ -229,16 +231,7 @@ public class AdminPanelController implements Initializable {
             final com.code.models.Role finalRole = role;
             new Thread(() -> {
                 try {
-                    com.code.network.Request req;
-                    if (finalRole == com.code.models.Role.ADMIN) {
-                        req = com.code.network.Request.of(
-                                com.code.network.RequestType.CREATE_ADMIN,
-                                new com.code.network.LoginData(uname, pwd));
-                    } else {
-                        req = com.code.network.Request.of(
-                                com.code.network.RequestType.REGISTER,
-                                new com.code.network.LoginData(uname, pwd, finalRole));
-                    }
+                    Request req = getRequest(finalRole, uname, pwd);
                     Response res = com.code.client.SocketClient.getInstance().sendRequest(req);
                     Platform.runLater(() -> {
                         if (res.isSuccess()) {
@@ -256,6 +249,20 @@ public class AdminPanelController implements Initializable {
         });
 
         dialog.showAndWait();
+    }
+
+    private static Request getRequest(Role finalRole, String uname, String pwd) {
+        Request req;
+        if (finalRole == Role.ADMIN) {
+            req = Request.of(
+                    com.code.network.RequestType.CREATE_ADMIN,
+                    new com.code.network.LoginData(uname, pwd));
+        } else {
+            req = Request.of(
+                    com.code.network.RequestType.REGISTER,
+                    new com.code.network.LoginData(uname, pwd, finalRole));
+        }
+        return req;
     }
 
     @FXML
@@ -301,7 +308,13 @@ public class AdminPanelController implements Initializable {
         colUserRole.setCellValueFactory(new PropertyValueFactory<>("role"));
         colUserStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        // Style header + cells
+        // ─── CĂN GIỮA CÁC Ô DỮ LIỆU ───
+        colUserId.setStyle("-fx-alignment: CENTER;");
+        colUserRole.setStyle("-fx-alignment: CENTER;");
+        colUserStatus.setStyle("-fx-alignment: CENTER;");
+        colUserAction.setStyle("-fx-alignment: CENTER;"); // Căn giữa cột hành động
+        // ───────────────────────────────
+
         styleTable(tableUsers);
 
         // Action column: Edit + Delete buttons
@@ -311,7 +324,7 @@ public class AdminPanelController implements Initializable {
             private final HBox   box       = new HBox(4, btnEdit, btnDelete);
 
             {
-                box.setAlignment(Pos.CENTER);
+                box.setAlignment(Pos.CENTER); // Căn giữa các nút bấm bên trong khung chứa
                 btnEdit.setOnAction(e -> {
                     UserRow row = getTableView().getItems().get(getIndex());
                     handleEditUser(row);
@@ -325,17 +338,26 @@ public class AdminPanelController implements Initializable {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty ? null : box);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(box);
+                }
             }
         });
     }
-
     private void setupSessionTable() {
         colSessionId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colSessionProduct.setCellValueFactory(new PropertyValueFactory<>("product"));
         colSessionStartPrice.setCellValueFactory(new PropertyValueFactory<>("startPrice"));
         colSessionCurPrice.setCellValueFactory(new PropertyValueFactory<>("curPrice"));
         colSessionStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        // ─── CĂN GIỮA CÁC Ô DỮ LIỆU ───
+        colSessionId.setStyle("-fx-alignment: CENTER;");
+        colSessionStatus.setStyle("-fx-alignment: CENTER;");
+        colSessionAction.setStyle("-fx-alignment: CENTER;"); // Căn giữa cột hành động
+        // ───────────────────────────────
 
         styleTable(tableSessions);
 
@@ -345,7 +367,7 @@ public class AdminPanelController implements Initializable {
             private final HBox   box       = new HBox(4, btnEdit, btnDelete);
 
             {
-                box.setAlignment(Pos.CENTER);
+                box.setAlignment(Pos.CENTER); // Căn giữa các nút bấm bên trong khung chứa
                 btnEdit.setOnAction(e -> {
                     SessionRow row = getTableView().getItems().get(getIndex());
                     handleEditSession(row);
@@ -359,11 +381,14 @@ public class AdminPanelController implements Initializable {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty ? null : box);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(box);
+                }
             }
         });
     }
-
     private void setupFilters() {
         cmbRoleFilter.setItems(FXCollections.observableArrayList(
                 "Tất cả", "ADMIN", "SELLER", "BIDDER"));
@@ -446,25 +471,25 @@ public class AdminPanelController implements Initializable {
         }, "load-admin-auctions").start();
     }
 
-    /** Toggle between the two panels and update tab-button styles. */
     private void showPanel(boolean usersTab) {
         panelUsers.setVisible(usersTab);
         panelUsers.setManaged(usersTab);
         panelSessions.setVisible(!usersTab);
         panelSessions.setManaged(!usersTab);
 
-        String active   = "-fx-background-color: #16a34a; -fx-text-fill: white;"
+        // Nút ĐANG CHỌN: Màu xanh lá tươi sáng giống nút "+ Thêm" (#16a34a)
+        String active = "-fx-background-color: #16a34a; -fx-text-fill: white;"
                 + " -fx-font-size: 13; -fx-font-weight: bold;"
                 + " -fx-background-radius: 7; -fx-cursor: hand; -fx-padding: 7 0 7 0;";
-        String inactive = "-fx-background-color: transparent; -fx-text-fill: rgba(255,255,255,0.5);"
-                + " -fx-border-color: rgba(255,255,255,0.2);"
-                + " -fx-border-radius: 7; -fx-background-radius: 7;"
-                + " -fx-font-size: 13; -fx-cursor: hand; -fx-padding: 7 0 7 0;";
 
-        tabBtnUsers.setStyle(usersTab    ? active : inactive);
+        // Nút KHÔNG CHỌN: Màu xám sáng rõ ràng, chữ đen đậm đậm nét (Không bị mờ chìm)
+        String inactive = "-fx-background-color: #e0e0e0; -fx-text-fill: #1f2937;"
+                + " -fx-font-size: 13; -fx-font-weight: bold;"
+                + " -fx-background-radius: 7; -fx-cursor: hand; -fx-padding: 7 0 7 0;";
+
+        tabBtnUsers.setStyle(usersTab ? active : inactive);
         tabBtnSessions.setStyle(usersTab ? inactive : active);
     }
-
     /** Recalculate and display summary stats. */
     private void refreshStats() {
         lblTotalUsers.setText(String.valueOf(allUsers.size()));
@@ -492,12 +517,44 @@ public class AdminPanelController implements Initializable {
     }
 
     private <T> void styleTable(TableView<T> table) {
+        // 1. TRẢ LẠI MÀU XANH LỤC ĐẬM NỀN BẢN CHO BẢNG VÀ ÉP CHỮ MÀU ĐEN
         table.setStyle(
-                "-fx-background-color: #0f3d2a;"
-                        + "-fx-control-inner-background: #0f3d2a;"
-                        + "-fx-table-cell-border-color: #1e5e38;"
-                        + "-fx-text-fill: white;");
+                "-fx-background-color: #0f3d2a;" // Màu xanh đậm ngoài cùng của bảng
+                        + "-fx-control-inner-background: #0f3d2a;" // Màu nền của vùng trống bên trong bảng
+                        + "-fx-table-cell-border-color: transparent;" // Ẩn các đường kẻ mặc định của dòng trống
+                        + "-fx-text-background-color: #000000;" // Ép cứng màu chữ của cell có dữ liệu thành màu đen
+        );
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        // 2. Quản lý màu sắc động cho từng dòng (RowFactory)
+        table.setRowFactory(tv -> {
+            javafx.scene.control.TableRow<T> row = new javafx.scene.control.TableRow<>();
+
+            row.itemProperty().addListener((obs, oldItem, newItem) -> {
+                if (newItem == null) {
+                    // Dòng rỗng -> Cho suốt hoàn toàn để lộ nền xanh đậm #0f3d2a phía dưới
+                    row.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+                } else {
+                    // Dòng có dữ liệu -> Đổ nền trắng hoàn hảo, chữ đen, kẻ viền xám mỏng bên dưới
+                    row.setStyle("-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-text-fill: #000000;");
+                }
+            });
+
+            // Hiệu ứng đổi màu nhẹ khi click chọn dòng dữ liệu
+            row.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+                if (row.getItem() != null) {
+                    if (isNowSelected) {
+                        // Khi được chọn: Nền xanh ngọc nhạt, giữ chữ đen
+                        row.setStyle("-fx-background-color: #c8f5e1; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-text-fill: #000000;");
+                    } else {
+                        // Khi bỏ chọn: Trả về nền trắng
+                        row.setStyle("-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-text-fill: #000000;");
+                    }
+                }
+            });
+
+            return row;
+        });
     }
 
     private Button createActionBtn(String text, String bgColor) {

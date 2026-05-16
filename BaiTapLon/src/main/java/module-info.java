@@ -7,6 +7,10 @@ module com.code {
     // ── Java I/O & SQL ────────────────────────────────────────────────────────
     requires java.sql;
 
+    // ── Mở com.code để javafx.graphics có thể gọi Application.start() ─────────
+    // FIX: thiếu dòng này → NullPointerException khi launch ClientApp
+    opens com.code to javafx.fxml, javafx.graphics;
+
     // ── Controllers cần mở để JavaFX inject @FXML ─────────────────────────────
     opens com.code.controllers to javafx.fxml, javafx.base;
 

@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   THÊM MỚI: CSS cho LineChart trong LiveBidding
+   Dán đoạn này vào file application.css (hoặc file CSS chính của project).
+   Nếu chưa có file CSS, tạo mới và import vào Main.java:
+       scene.getStylesheets().add(getClass()
+           .getResource("/com/code/styles/application.css").toExternalForm());
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Nền vùng vẽ chart */
+.chart-plot-background {
+    -fx-background-color: #002222;
+}
+
+/* Nền tổng thể chart — transparent để thấy card bên dưới */
+.chart-background {
+    -fx-background-color: transparent;
+}
+
+/* Màu đường của series đầu tiên */
+.default-color0.chart-series-line {
+    -fx-stroke: #6ee7b7;
+    -fx-stroke-width: 2px;
+}
+
+/* Màu chấm tròn tại mỗi điểm */
+.default-color0.chart-line-symbol {
+    -fx-background-color: #6ee7b7, #002222;
+    -fx-background-radius: 4px;
+    -fx-padding: 4px;
+}
+
+/* Grid ngang — nhạt để không lấn át đường dữ liệu */
+.chart-horizontal-grid-lines {
+    -fx-stroke: rgba(110, 231, 183, 0.2);
+    -fx-stroke-dash-array: 4 4;
+}
+
+/* Ẩn grid dọc */
+.chart-vertical-grid-lines {
+    -fx-stroke: transparent;
+}
+
+/* Màu chữ trục */
+.axis-label {
+    -fx-text-fill: #c8f5e1;
+    -fx-font-size: 10px;
+}
+
+.axis .tick-mark {
+    -fx-stroke: #4a9a7a;
+}
+
+.axis .tick-label {
+    -fx-fill: #c8f5e1;
+    -fx-font-size: 10px;
+}
+
+/* Viền chart */
+.chart {
+    -fx-padding: 4 4 4 4;
+}
