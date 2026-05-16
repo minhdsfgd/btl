@@ -17,6 +17,8 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -51,11 +53,14 @@ public class SellerDashboardController implements Initializable {
     @FXML private TableColumn<LotRow, Void>   colAction;
 
     @FXML private VBox vboxActivities;
+    @FXML private AnchorPane rootPane;
+    @FXML private ImageView backgroundImage;
 
     @FXML private Button btnMenuOverview;
     @FXML private Button btnMenuLots;
     @FXML private Button btnMenuNotif;
     @FXML private Button btnMenuActivity;
+
     private final ObservableList<LotRow>  allLots              = FXCollections.observableArrayList();
     private final ObservableList<String>  activities           = FXCollections.observableArrayList();
     private final ObservableList<String>  notificationHistory  = FXCollections.observableArrayList();
@@ -68,7 +73,13 @@ public class SellerDashboardController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        if (backgroundImage != null && rootPane != null) {
+            backgroundImage.fitWidthProperty().bind(rootPane.widthProperty());
+            backgroundImage.fitHeightProperty().bind(rootPane.heightProperty());
+        }
+
         lblUsernameNav.setText(SessionManager.getUsername());
+
         if (SessionManager.getUser() != null) {
             long bal = (long) SessionManager.getUser().getBalance();
             java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
@@ -176,6 +187,24 @@ public class SellerDashboardController implements Initializable {
     }
 
     private void showNotificationHistoryDialog() {
+        ListView<String> listView = new ListView<>();
+        listView.setItems(notificationHistory.isEmpty()
+                ? FXCollections.observableArrayList("Chưa có thông báo nào.")
+                : notificationHistory);
+        listView.setPrefHeight(300);
+
+        BorderPane root = new BorderPane(listView);
+        root.setPadding(new Insets(10));
+
+        Label title = new Label("🔔 Lịch sử thông báo");
+        title.setStyle("-fx-font-size: 14; -fx-font-weight: bold; -fx-padding: 0 0 8 0;");
+        root.setTop(title);
+
+        Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Thông báo hệ thống");
+        dialog.setScene(new Scene(root, 500, 360));
+        dialog.showAndWait();
     }
 
     @FXML
@@ -268,12 +297,22 @@ public class SellerDashboardController implements Initializable {
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
         colTimeInfo.setCellValueFactory(new PropertyValueFactory<>("timeInfo"));
 
-        // Cột hành động: nút Hủy (nếu phiên OPEN/RUNNING)
+        // ─── CĂN GIỮA CÁC CỘT ───
+        colId.setStyle("-fx-alignment: CENTER;");
+        colPrice.setStyle("-fx-alignment: CENTER;");
+        colStatus.setStyle("-fx-alignment: CENTER;");
+        colTimeInfo.setStyle("-fx-alignment: CENTER;");
+        colAction.setStyle("-fx-alignment: CENTER;");
+
+        // Gọi hàm trang trí bảng chuẩn Admin Panel
+        styleTable(tableLots);
+
+        // Cột hành động: nút Hủy
         colAction.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
             private final Button btnCancel = new Button("Hủy phiên");
             {
                 btnCancel.setStyle("-fx-background-color:#c62828; -fx-text-fill:white;"
-                        + "-fx-font-size:10; -fx-background-radius:4; -fx-padding:3 6;");
+                        + "-fx-font-size:10; -fx-background-radius:4; -fx-padding:3 6; -fx-cursor: hand;");
                 btnCancel.setOnAction(e -> {
                     LotRow row = getTableView().getItems().get(getIndex());
                     handleCancelLot(row);
@@ -282,16 +321,55 @@ public class SellerDashboardController implements Initializable {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) { setGraphic(null); return; }
-                LotRow row = getTableView().getItems().get(getIndex());
-                boolean canCancel = "Đang đấu giá".equals(row.getStatus())
-                        || "Sắp mở".equals(row.getStatus());
-                setGraphic(canCancel ? btnCancel : null);
+                // GIẤU NÚT KHI DÒNG TRỐNG
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                } else {
+                    LotRow row = getTableView().getItems().get(getIndex());
+                    boolean canCancel = "Đang đấu giá".equals(row.getStatus())
+                            || "Sắp mở".equals(row.getStatus());
+                    setGraphic(canCancel ? btnCancel : null);
+                }
             }
         });
+    }
 
-        tableLots.setItems(allLots);
-        tableLots.setColumnResizePolicy(javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY);
+    // ─── HÀM STYLE BẢNG CHUẨN ADMIN PANEL ───
+    private <T> void styleTable(TableView<T> table) {
+        // Trả lại nền xanh lục nhạt (#006633) cho phần trống của bảng
+        table.setStyle(
+                "-fx-background-color: #006633;"
+                        + "-fx-control-inner-background: #006633;"
+                        + "-fx-table-cell-border-color: transparent;"
+                        + "-fx-text-background-color: #000000;"
+        );
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        table.setRowFactory(tv -> {
+            javafx.scene.control.TableRow<T> row = new javafx.scene.control.TableRow<>();
+
+            row.itemProperty().addListener((obs, oldItem, newItem) -> {
+                if (newItem == null) {
+                    // Dòng rỗng -> Tàng hình vào nền xanh
+                    row.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+                } else {
+                    // Dòng có dữ liệu -> Nền trắng, chữ đen
+                    row.setStyle("-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-text-fill: #000000;");
+                }
+            });
+
+            row.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+                if (row.getItem() != null) {
+                    if (isNowSelected) {
+                        row.setStyle("-fx-background-color: #c8f5e1; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-text-fill: #000000;");
+                    } else {
+                        row.setStyle("-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-text-fill: #000000;");
+                    }
+                }
+            });
+
+            return row;
+        });
     }
 
      private void refreshStats() {

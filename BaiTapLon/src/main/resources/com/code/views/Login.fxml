@@ -13,57 +13,65 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="500.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.LoginController">
+<AnchorPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.LoginController">
    <children>
       <!-- Hình nền được đưa lên đầu danh sách children để nằm dưới cùng giao diện -->
-      <ImageView fitHeight="500.0" fitWidth="800.0" pickOnBounds="true" preserveRatio="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <ImageView fitHeight="937.0" fitWidth="1586.0" pickOnBounds="true" preserveRatio="false" AnchorPane.bottomAnchor="-35.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="1.0" AnchorPane.topAnchor="0.0">
          <image>
-            <Image url="@../images/loginn.jpg" />
+            <Image url="@../images/screen.jpg" />
          </image>
       </ImageView>
 
-      <VBox layoutX="61.0" layoutY="50.0" prefWidth="350.0" spacing="20.0" AnchorPane.bottomAnchor="49.83999695312508" AnchorPane.leftAnchor="61.0" AnchorPane.rightAnchor="389.04798626562547" AnchorPane.topAnchor="50.0">
+      <VBox layoutX="51.0" layoutY="238.0" prefHeight="357.0" prefWidth="588.0" spacing="20.0" AnchorPane.leftAnchor="51.0" AnchorPane.topAnchor="238.0">
          <padding>
             <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
          </padding>
          <children>
-            <VBox prefHeight="200.0" prefWidth="100.0" spacing="5.0">
+            <VBox prefHeight="288.0" prefWidth="389.0" spacing="5.0">
                <children>
                   <Label text="Tên đăng nhập">
                      <font>
-                        <Font size="13.0" />
+                        <Font size="14.0" />
                      </font>
                   </Label>
-                  <TextField fx:id="usernameField" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="15.0" prefWidth="300.0" promptText="username" style="-fx-background-color: #99D1D3; -fx-text-fill: #000080; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8; -fx-prompt-text-fill: #103667;">
+                  <TextField fx:id="usernameField" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="469.0" promptText="username" style="-fx-background-color: #99D1D3; -fx-text-fill: #000080; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8; -fx-prompt-text-fill: #707070;">
                      <font>
-                        <Font size="13.0" />
+                        <Font size="12.0" />
                      </font>
                   </TextField>
-                  <VBox prefHeight="73.0" prefWidth="290.0" spacing="5.0">
+                  <VBox prefHeight="93.0" prefWidth="528.0" spacing="5.0">
                      <children>
-                        <Label text="Mật khẩu" textFill="#252323">
+                        <Label prefHeight="24.0" prefWidth="66.0" text="Mật khẩu" textFill="#252323">
                            <font>
-                              <Font size="13.0" />
+                              <Font size="14.0" />
                            </font>
                         </Label>
-                        <PasswordField fx:id="passwordField" maxWidth="300.0" promptText="password" style="-fx-background-color: #99D1D3; -fx-text-fill: #000080; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8;" />
+                        <PasswordField fx:id="passwordField" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="471.0" promptText="password" style="-fx-background-color: #99D1D3; -fx-text-fill: #000080; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8;">
+                           <font>
+                              <Font size="12.0" />
+                           </font>
+                        </PasswordField>
                      </children>
                   </VBox>
+                  <Button fx:id="loginButton" alignment="CENTER" mnemonicParsing="false" prefHeight="25.0" prefWidth="101.0" style="-fx-background-color: #006633; -fx-border-color: #555555; -fx-border-radius: 8; -fx-background-radius: 8; -fx-cursor: hand;" text="Đăng nhập" textFill="#f0f0f0">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Button>
+                  <HBox alignment="CENTER_LEFT" prefHeight="51.0" prefWidth="523.0" spacing="5.0">
+                     <children>
+                        <Label contentDisplay="CENTER" prefHeight="19.0" prefWidth="113.0" text="Chưa có tài khoản" textFill="#0b0b0b" />
+                        <Hyperlink fx:id="linkRegister" text="Đăng ký" textFill="#1b55db" />
+                     </children>
+                  </HBox>
                </children>
             </VBox>
-            <Button fx:id="loginButton" alignment="CENTER" mnemonicParsing="false" prefHeight="12.0" prefWidth="105.0" style="-fx-background-color: #006633; -fx-border-color: #555555; -fx-border-radius: 8; -fx-background-radius: 8; -fx-cursor: hand;" text="Đăng nhập" textFill="#f0f0f0">
-               <font>
-                  <Font size="14.0" />
-               </font>
-            </Button>
-            <HBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="200.0" spacing="5.0">
-               <children>
-                  <Label contentDisplay="CENTER" prefHeight="19.0" prefWidth="113.0" text="Chưa có tài khoản" textFill="#0b0b0b" />
-                  <Hyperlink fx:id="linkRegister" text="Đăng ký" textFill="#1b55db" />
-               </children>
-            </HBox>
-            <HBox alignment="BASELINE_LEFT" prefHeight="100.0" prefWidth="528.0" />
          </children>
       </VBox>
+      <ImageView fitHeight="503.0" fitWidth="678.0" layoutX="774.0" layoutY="77.0" pickOnBounds="true" preserveRatio="false">
+         <image>
+            <Image url="@../images/loginn.jpg" />
+         </image>
+      </ImageView>
    </children>
 </AnchorPane>

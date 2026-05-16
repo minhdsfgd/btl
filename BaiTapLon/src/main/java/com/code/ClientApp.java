@@ -9,6 +9,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
+import java.net.URL;
+
 public class ClientApp extends Application {
     private static final double WIDTH  = 800;
     private static final double HEIGHT = 600;
@@ -39,8 +41,17 @@ public class ClientApp extends Application {
             return;
         }
 
-        FXMLLoader fxmlLoader = new FXMLLoader(
-                getClass().getResource("/com/code/views/Login.fxml"));
+        // FIX: kiểm tra null trước khi load — tránh NullPointerException dòng 46
+        URL fxmlUrl = getClass().getResource("/com/code/views/Login.fxml");
+        if (fxmlUrl == null) {
+            throw new IllegalStateException(
+                    "Không tìm thấy Login.fxml!\n" +
+                            "Kiểm tra: src/main/resources/com/code/views/Login.fxml có tồn tại không?\n" +
+                            "Và đã chạy 'mvn clean package' chưa?"
+            );
+        }
+
+        FXMLLoader fxmlLoader = new FXMLLoader(fxmlUrl);
         Scene scene = new Scene(fxmlLoader.load(), WIDTH, HEIGHT);
 
         stage.setTitle("UET Auction System");
