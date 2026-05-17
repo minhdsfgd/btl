@@ -265,10 +265,24 @@ public class SellerDashboardController implements Initializable {
 
     @FXML
     private void handleLogout() {
-        try { SocketClient.getInstance().sendAsync(Request.of(RequestType.LOGOUT)); }
-        catch (Exception ignored) {}
-        SessionManager.clear();
-        navigateTo("/com/code/views/Login.fxml");
+        new Thread(() -> {
+            try {
+                // QUAN TRỌNG:
+                // dùng sendRequest để đọc Response từ server
+                com.code.client.SocketClient.getInstance()
+                        .sendRequest(com.code.network.Request.of(
+                                com.code.network.RequestType.LOGOUT));
+
+            } catch (Exception e) {
+                System.err.println("Lỗi logout: " + e.getMessage());
+            }
+
+            javafx.application.Platform.runLater(() -> {
+                com.code.client.SessionManager.clear();
+                navigateTo("/com/code/views/Login.fxml");
+            });
+
+        }, "logout-thread").start();
     }
 
     // ── Public APIs ───────────────────────────────────────────────────────────
