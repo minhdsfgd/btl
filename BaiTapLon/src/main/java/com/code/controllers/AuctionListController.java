@@ -355,7 +355,7 @@ public class AuctionListController {
                     a.getItem().getName(),
                     a.getItem().getDescription(),
                     imageUrl,                          // THÊM MỚI
-                    a.getCurrentPrice() - a.getBidIncrement(),
+                    a.getItem().getStartingPrice(),
                     a.getCurrentPrice(),
                     a.getBidIncrement(),
                     Math.max(remaining, 0),
