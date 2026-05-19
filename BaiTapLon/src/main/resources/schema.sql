@@ -102,14 +102,14 @@ CREATE TABLE IF NOT EXISTS bids (
 CREATE TABLE IF NOT EXISTS transactions (
                                             id             INT           AUTO_INCREMENT PRIMARY KEY,
                                             from_user_id   INT           DEFAULT NULL,
-                                            to_user_id     INT           NOT NULL,
+                                            to_user_id     INT           DEFAULT NULL,   -- NULL = hệ thống giữ (BID_HOLD)
                                             amount         DECIMAL(15,2) NOT NULL,
     auction_id     INT           DEFAULT NULL,
     type           ENUM('AUCTION_PAYMENT','REFUND','DEPOSIT','ADJUSTMENT') NOT NULL,
     created_at     DATETIME      NOT NULL,
 
     FOREIGN KEY (from_user_id) REFERENCES users(id)    ON DELETE SET NULL,
-    FOREIGN KEY (to_user_id)   REFERENCES users(id)    ON DELETE RESTRICT,
+    FOREIGN KEY (to_user_id)   REFERENCES users(id)    ON DELETE SET NULL,
     FOREIGN KEY (auction_id)   REFERENCES auctions(id) ON DELETE SET NULL,
 
     INDEX idx_from   (from_user_id),
@@ -121,3 +121,67 @@ CREATE TABLE IF NOT EXISTS transactions (
 -- Password "admin123" — đổi trước khi deploy thật
 INSERT IGNORE INTO users (username, password, balance, active, banned, roles)
 VALUES ('admin', 'admin123', 0.00, 1, 0, 'ADMIN');
+
+-- ── 6. user_audit_log ────────────────────────────────────────
+-- Ghi nhận mọi thay đổi thuộc tính của user.
+-- changed_by = NULL  → hệ thống tự đổi (scheduler, BidService...)
+-- changed_by = id    → admin hoặc chính user thực hiện
+CREATE TABLE IF NOT EXISTS user_audit_log (
+    id          INT           AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT           NOT NULL,
+    field_name  VARCHAR(50)   NOT NULL,     -- 'balance' | 'banned' | 'roles' | 'active'
+    old_value   VARCHAR(255)  DEFAULT NULL,
+    new_value   VARCHAR(255)  DEFAULT NULL,
+    changed_by  INT           DEFAULT NULL, -- NULL = hệ thống
+    changed_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id)    REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL,
+
+    INDEX idx_audit_user    (user_id),
+    INDEX idx_audit_field   (field_name),
+    INDEX idx_audit_time    (changed_at)
+) ENGINE=InnoDB;
+
+-- ── Trigger: tự động ghi audit khi MySQL UPDATE users ────────
+-- Bắt các thay đổi từ mọi nguồn (Java code, tool DB...).
+-- changed_by luôn NULL ở đây vì trigger không biết actor;
+-- Java sẽ ghi thêm row với changed_by đầy đủ khi cần.
+DELIMITER $$
+
+CREATE TRIGGER IF NOT EXISTS trg_users_after_update
+AFTER UPDATE ON users
+FOR EACH ROW
+BEGIN
+    -- balance thay đổi
+    IF OLD.balance <> NEW.balance THEN
+        INSERT INTO user_audit_log (user_id, field_name, old_value, new_value)
+        VALUES (NEW.id, 'balance',
+                CAST(OLD.balance AS CHAR),
+                CAST(NEW.balance AS CHAR));
+    END IF;
+
+    -- banned thay đổi
+    IF OLD.banned <> NEW.banned THEN
+        INSERT INTO user_audit_log (user_id, field_name, old_value, new_value)
+        VALUES (NEW.id, 'banned',
+                CAST(OLD.banned AS CHAR),
+                CAST(NEW.banned AS CHAR));
+    END IF;
+
+    -- roles thay đổi
+    IF OLD.roles <> NEW.roles THEN
+        INSERT INTO user_audit_log (user_id, field_name, old_value, new_value)
+        VALUES (NEW.id, 'roles', OLD.roles, NEW.roles);
+    END IF;
+
+    -- active thay đổi
+    IF OLD.active <> NEW.active THEN
+        INSERT INTO user_audit_log (user_id, field_name, old_value, new_value)
+        VALUES (NEW.id, 'active',
+                CAST(OLD.active AS CHAR),
+                CAST(NEW.active AS CHAR));
+    END IF;
+END$$
+
+DELIMITER ;
