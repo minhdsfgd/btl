@@ -53,6 +53,7 @@ public class ClientApp extends Application {
 
         FXMLLoader fxmlLoader = new FXMLLoader(fxmlUrl);
         Scene scene = new Scene(fxmlLoader.load(), WIDTH, HEIGHT);
+        primaryStage.setMaximized(true);
 
         stage.setTitle("UET Auction System");
         stage.setScene(scene);
