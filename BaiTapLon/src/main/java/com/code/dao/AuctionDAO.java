@@ -229,7 +229,7 @@ public class AuctionDAO {
         String sql = """
             SELECT 1 FROM auctions 
             WHERE item_id = ? 
-              AND status IN ('OPEN', 'RUNNING', 'PAID')
+              AND status IN ('OPEN', 'RUNNING', 'FINISHED', 'PAID')
             LIMIT 1
             """;
         try (PreparedStatement ps = conn().prepareStatement(sql)) {
