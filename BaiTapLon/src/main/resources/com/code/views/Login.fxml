@@ -8,70 +8,95 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.LoginController">
-   <children>
-      <!-- Hình nền được đưa lên đầu danh sách children để nằm dưới cùng giao diện -->
-      <ImageView fitHeight="937.0" fitWidth="1586.0" pickOnBounds="true" preserveRatio="false" AnchorPane.bottomAnchor="-35.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="1.0" AnchorPane.topAnchor="0.0">
-         <image>
-            <Image url="@../images/screen.jpg" />
-         </image>
-      </ImageView>
+<!--
+            Layout: StackPane (root)
+              Layer 1 — Hình nền (tự co giãn theo cửa sổ)
+              Layer 2 — HBox chia đôi màn hình:
+                          Trái: Form đăng nhập
+                          Phải: Hình minh hoạ
+        -->
 
-      <VBox layoutX="51.0" layoutY="238.0" prefHeight="357.0" prefWidth="588.0" spacing="20.0" AnchorPane.leftAnchor="51.0" AnchorPane.topAnchor="238.0">
+<StackPane minHeight="500" minWidth="800" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.LoginController">
+
+   <!-- ═══ LAYER 1: Hình nền (luôn phủ đầy cửa sổ) ═══ -->
+   <ImageView fitHeight="1080" fitWidth="1920" pickOnBounds="true" preserveRatio="false" StackPane.alignment="CENTER">
+      <!-- fitWidth/fitHeight lớn để không bị pixel scale khi zoom;
+           StackPane tự clip phần thừa ra ngoài cửa sổ.
+           preserveRatio="false" + StackPane fill = cover effect. -->
+      <image>
+         <Image url="@../images/screen.jpg" />
+      </image>
+   </ImageView>
+
+   <!-- ═══ LAYER 2: Nội dung ═══ -->
+   <HBox alignment="CENTER" spacing="0">
+
+      <!-- ── Nửa trái: Form đăng nhập ── -->
+      <VBox alignment="CENTER" maxWidth="520" spacing="18" HBox.hgrow="ALWAYS">
          <padding>
-            <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+            <Insets bottom="60" left="50" right="50" top="60" />
          </padding>
-         <children>
-            <VBox prefHeight="288.0" prefWidth="389.0" spacing="5.0">
-               <children>
-                  <Label text="Tên đăng nhập">
-                     <font>
-                        <Font size="14.0" />
-                     </font>
-                  </Label>
-                  <TextField fx:id="usernameField" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="469.0" promptText="username" style="-fx-background-color: #99D1D3; -fx-text-fill: #000080; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8; -fx-prompt-text-fill: #707070;">
-                     <font>
-                        <Font size="12.0" />
-                     </font>
-                  </TextField>
-                  <VBox prefHeight="93.0" prefWidth="528.0" spacing="5.0">
-                     <children>
-                        <Label prefHeight="24.0" prefWidth="66.0" text="Mật khẩu" textFill="#252323">
-                           <font>
-                              <Font size="14.0" />
-                           </font>
-                        </Label>
-                        <PasswordField fx:id="passwordField" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="471.0" promptText="password" style="-fx-background-color: #99D1D3; -fx-text-fill: #000080; -fx-border-color: #555555; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8;">
-                           <font>
-                              <Font size="12.0" />
-                           </font>
-                        </PasswordField>
-                     </children>
-                  </VBox>
-                  <Button fx:id="loginButton" alignment="CENTER" mnemonicParsing="false" prefHeight="25.0" prefWidth="101.0" style="-fx-background-color: #006633; -fx-border-color: #555555; -fx-border-radius: 8; -fx-background-radius: 8; -fx-cursor: hand;" text="Đăng nhập" textFill="#f0f0f0">
-                     <font>
-                        <Font size="14.0" />
-                     </font>
-                  </Button>
-                  <HBox alignment="CENTER_LEFT" prefHeight="51.0" prefWidth="523.0" spacing="5.0">
-                     <children>
-                        <Label contentDisplay="CENTER" prefHeight="19.0" prefWidth="113.0" text="Chưa có tài khoản" textFill="#0b0b0b" />
-                        <Hyperlink fx:id="linkRegister" text="Đăng ký" textFill="#1b55db" />
-                     </children>
-                  </HBox>
-               </children>
-            </VBox>
-         </children>
+
+         <!-- Tiêu đề -->
+         <Label textFill="#003322">
+            <font><Font name="System Bold" size="28" /></font>
+         </Label>
+
+         <!-- Tên đăng nhập -->
+         <VBox fillWidth="true" maxWidth="Infinity" spacing="5">
+            <Label text="Tên đăng nhập" textFill="#111111">
+               <font><Font size="14" /></font>
+            </Label>
+            <TextField fx:id="usernameField" maxWidth="Infinity" prefHeight="44" promptText="username" style="-fx-background-color: #c6e8ea;                                   -fx-text-fill: #000080;                                   -fx-border-color: #555555;                                   -fx-border-radius: 6;                                   -fx-background-radius: 6;                                   -fx-padding: 8;                                   -fx-prompt-text-fill: #707070;">
+               <font><Font size="13" /></font>
+            </TextField>
+         </VBox>
+
+         <!-- Mật khẩu -->
+         <VBox fillWidth="true" maxWidth="Infinity" spacing="5">
+            <Label text="Mật khẩu" textFill="#111111">
+               <font><Font size="14" /></font>
+            </Label>
+            <PasswordField fx:id="passwordField" maxWidth="Infinity" prefHeight="44" promptText="Nhập mật khẩu" style="-fx-background-color: #c6e8ea;                                       -fx-text-fill: #000080;                                       -fx-border-color: #555555;                                       -fx-border-radius: 6;                                       -fx-background-radius: 6;                                       -fx-padding: 8;">
+               <font><Font size="13" /></font>
+            </PasswordField>
+         </VBox>
+
+         <!-- Nút đăng nhập -->
+         <Button fx:id="loginButton" maxWidth="175.0" prefHeight="20.0" style="-fx-background-color: #006633;                            -fx-text-fill: #f0f0f0;                            -fx-border-radius: 8;                            -fx-background-radius: 8;                            -fx-cursor: hand;                            -fx-font-size: 15;" text="Đăng nhập">
+         </Button>
+
+         <!-- Link đăng ký -->
+         <HBox alignment="CENTER" spacing="4">
+            <Label text="Chưa có tài khoản?" textFill="#222222">
+               <font><Font size="13" /></font>
+            </Label>
+            <Hyperlink fx:id="linkRegister" text="Đăng ký" textFill="#1b55db">
+               <font><Font size="13" /></font>
+            </Hyperlink>
+         </HBox>
       </VBox>
-      <ImageView fitHeight="503.0" fitWidth="678.0" layoutX="774.0" layoutY="77.0" pickOnBounds="true" preserveRatio="false">
-         <image>
-            <Image url="@../images/loginn.jpg" />
-         </image>
-      </ImageView>
-   </children>
-</AnchorPane>
+
+      <!-- Spacer đẩy hình sang phải -->
+      <Region HBox.hgrow="ALWAYS" />
+
+      <!-- ── Nửa phải: Hình minh hoạ ── -->
+      <VBox alignment="CENTER" maxWidth="700" HBox.hgrow="ALWAYS">
+         <padding>
+            <Insets bottom="40" left="0" right="40" top="40" />
+         </padding>
+         <ImageView fitHeight="500" fitWidth="600" pickOnBounds="true" preserveRatio="true">
+            <image>
+               <Image url="@../images/loginn.jpg" />
+            </image>
+         </ImageView>
+      </VBox>
+
+   </HBox>
+</StackPane>
