@@ -4,6 +4,7 @@ import com.code.dao.UserDAO;
 import com.code.exception.AuthenticationException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -22,7 +23,6 @@ import java.util.List;
 public class UserService {
 
     private final UserDAO userDAO;
-
     public UserService(UserDAO userDAO) {
         this.userDAO = userDAO;
     }

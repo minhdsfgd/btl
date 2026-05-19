@@ -590,20 +590,21 @@ public class RequestProcessor {
     //  BID HANDLERS
     // ════════════════════════════════════════════════════════════════════════
 
+    // RequestProcessor.java — handlePlaceBid
     private Response handlePlaceBid(Request req, ClientHandler handler) {
-        // FIX #5: kiểm tra login
         Response check = requireLogin(handler);
         if (check != null) return check;
 
         try {
             PlaceBidData data = req.getDataAs(PlaceBidData.class);
-            Auction auction = auctionService.getAuction(data.auctionId);
-            bidService.placeBid(handler.currentUser, auction, data.amount);
 
-            // Refresh session user từ DB
+            // ✅ KEY FIX: always use the live cached Auction instance
+            // so notifyObservers() reaches all registered ClientHandler observers
+            Auction auction = auctionService.getAuction(data.auctionId);
+
+            bidService.placeBid(handler.currentUser, auction, data.amount);
             handler.currentUser = userDAO.findById(handler.currentUser.getUserId());
 
-            // Trả về user mới nhất (bid đã broadcast qua BID_PLACED event rồi)
             return Response.ok(
                     String.format("Dat gia %,.0f VND thanh cong!", data.amount),
                     handler.currentUser);

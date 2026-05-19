@@ -13,12 +13,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Quản lý vòng đời phiên đấu giá — Singleton (double-checked locking).
  * KHÔNG xử lý logic đặt giá — việc đó là của {@link BidService}.
  */
 public class AuctionService {
+    private final ConcurrentHashMap<Integer, Auction> liveAuctions = new ConcurrentHashMap<>();
 
     // ── Singleton ─────────────────────────────────────────────────────────────
 
@@ -92,6 +94,8 @@ public class AuctionService {
                     item.getStartingPrice(), bidIncrement, startTime, endTime
             );
             auctionDAO.save(auction);
+            // Inside createAuction(), after auctionDAO.save(auction):
+            liveAuctions.put(auction.getAuctionId(), auction);
 
             return auction;
         } catch (SQLException e) {
@@ -105,10 +109,15 @@ public class AuctionService {
     // ── Truy vấn ─────────────────────────────────────────────────────────────
 
     public Auction getAuction(int auctionId) throws AuctionClosedException {
-        try{
+        // Return cached live instance if present (preserves observers)
+        Auction cached = liveAuctions.get(auctionId);
+        if (cached != null) return cached;
+
+        try {
             Auction a = auctionDAO.findById(auctionId);
             if (a == null)
                 throw new AuctionClosedException("Không tìm thấy phiên đấu giá #" + auctionId);
+            liveAuctions.put(auctionId, a);
             return a;
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
@@ -165,7 +174,7 @@ public class AuctionService {
             try {
                 auction.updateStatus(AuctionStatus.FINISHED);
                 auctionDAO.update(auction);
-
+                liveAuctions.remove(auctionId);
                 int winnerId = auction.getLeadingBidderId();
                 if (winnerId != -1) {
                     try {
@@ -210,6 +219,7 @@ public class AuctionService {
         try {
             auction.updateStatus(AuctionStatus.CANCELED);
             auctionDAO.update(auction);   // ← Lưu vào DB
+            liveAuctions.remove(auction.getAuctionId());
             auction.notifyObservers(AuctionEvent.auctionCanceled(auctionId));
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB khi hủy phiên: " + e.getMessage(), e);
@@ -263,16 +273,17 @@ public class AuctionService {
                 for (Auction a : auctionDAO.findAll()) {
 
                     // OPEN → RUNNING
+
                     if (a.getStatus() == AuctionStatus.OPEN
                             && !a.isBanned()
                             && a.getStartTime() != null
                             && !now.isBefore(a.getStartTime())) {
+                        Auction live = liveAuctions.computeIfAbsent(a.getAuctionId(), id -> a);
                         managerLock.lock();
                         try {
-                            a.updateStatus(AuctionStatus.RUNNING);
-                            auctionDAO.update(a);  // ← THÊM DÒNG NÀY
-                            a.notifyObservers(
-                                    AuctionEvent.statusChanged(a.getAuctionId(), AuctionStatus.RUNNING));
+                            live.updateStatus(AuctionStatus.RUNNING);
+                            auctionDAO.update(live);
+                            live.notifyObservers(AuctionEvent.statusChanged(live.getAuctionId(), AuctionStatus.RUNNING));
                         } catch (Exception e) {
                             System.err.println("[Scheduler] OPEN→RUNNING phiên #"
                                     + a.getAuctionId() + ": " + e.getMessage());
@@ -283,7 +294,8 @@ public class AuctionService {
                     if (a.getStatus() == AuctionStatus.RUNNING
                             && a.getEndTime() != null
                             && now.isAfter(a.getEndTime())) {
-                        finishAuction(a.getAuctionId());
+                        Auction live = liveAuctions.getOrDefault(a.getAuctionId(), a);
+                        finishAuction(live.getAuctionId()); // finishAuction already calls auctionDAO.findById internally
                     }
                 }
             } catch (Exception e) {

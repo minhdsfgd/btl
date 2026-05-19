@@ -11,6 +11,7 @@ import com.code.client.SocketClient;
 import com.code.models.AuctionEvent;
 import com.code.models.Bid;
 import com.code.models.User;
+import com.code.models.Auction;
 import com.code.network.PlaceBidData;
 import com.code.network.Request;
 import com.code.network.RequestType;
@@ -40,6 +41,8 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 
 import javafx.util.Duration;
+
+import static com.code.util.ControllerUtils.navigateTo;
 
 public class LiveBiddingController implements Initializable {
 
@@ -116,7 +119,7 @@ public class LiveBiddingController implements Initializable {
         setupBidChart();           // THÊM MỚI: khởi tạo chart
         clearError();
         applyPendingSessionData();
-        startWatchingAndListening();
+
     }
 
     // =========================================================================
@@ -198,7 +201,15 @@ public class LiveBiddingController implements Initializable {
                         Request.of(RequestType.WATCH_AUCTION, currentAuctionId));
                 System.out.println("[Live] WATCH_AUCTION: " + watchRes.getMessage());
 
+                // Load bid history từ Auction trả về — TRƯỚC khi start listener
+                if (watchRes.isSuccess() && watchRes.getData() instanceof Auction auction) {
+                    Platform.runLater(() -> populateBidHistory(auction.getBids()));
+                }
+
+                // Start listener SAU — từ đây không được gọi sendRequest() nữa
                 SocketClient.getInstance().startListening(obj -> {
+                    System.out.println("[Live] Listener nhận obj: "
+                            + (obj == null ? "null" : obj.getClass().getSimpleName()));
                     Platform.runLater(() -> {
                         if (obj instanceof AuctionEvent event) {
                             handleServerEvent(event);
@@ -218,7 +229,29 @@ public class LiveBiddingController implements Initializable {
         }, "watch-auction-thread").start();
     }
 
+    // Thay loadBidHistory() bằng hàm này — nhận data có sẵn, không gọi network
+    private void populateBidHistory(List<Bid> bids) {
+        if (bids == null) return;
+        bidHistory.clear();
+        bidSeries.getData().clear();
+        bidPointCount = 0;
+
+        for (int i = bids.size() - 1; i >= 0; i--) {
+            Bid bid = bids.get(i);
+            String username = bid.getUserId() == SessionManager.getUserId()
+                    ? currentUsername : "Người khác #" + bid.getUserId();
+            String time = bid.getTimestamp().format(TIME_FMT);
+            bidHistory.add(new BidRow(username, time, formatPrice(bid.getAmount())));
+            bidPointCount++;
+            bidSeries.getData().add(new XYChart.Data<>(bidPointCount, bid.getAmount()));
+        }
+
+        if (bidSeries.getNode() != null)
+            bidSeries.getNode().setStyle("-fx-stroke:#6ee7b7; -fx-stroke-width:2px;");
+    }
+
     private void handleServerEvent(AuctionEvent event) {
+        System.out.println("[Live] Nhận event: " + event.getType());
         switch (event.getType()) {
             case BID_PLACED -> {
                 double amount = event.getBid().getAmount();
@@ -383,7 +416,7 @@ public class LiveBiddingController implements Initializable {
         stopCountdown();
         sendUnwatch();
         SocketClient.getInstance().stopListening();
-        com.code.util.ControllerUtils.navigateTo("/com/code/views/AuctionList.fxml");
+        navigateTo("/com/code/views/AuctionList.fxml");
     }
 
     private void sendUnwatch() {
@@ -521,22 +554,18 @@ public class LiveBiddingController implements Initializable {
         this.currentAuctionId = pendingSessionData.auctionId;
         setCurrentUser(pendingSessionData.username);
         setSessionName(pendingSessionData.sessionName);
-
-        //  truyền imageUrl vào setProduct
         setProduct(pendingSessionData.productName,
                 pendingSessionData.description,
                 pendingSessionData.imageUrl);
-
         setStartPrice(pendingSessionData.startPrice);
         setCurrentPrice(pendingSessionData.currentPrice, pendingSessionData.leadingBidder);
         setMinimumStep(pendingSessionData.minStep);
         startCountdown(pendingSessionData.countdownSeconds);
-
-        //  cả balanceLiveLabel2 ở card đặt giá
         updateBalanceLabel();
-
-        loadBidHistory();
+        // KHÔNG gọi loadBidHistory() ở đây nữa
         pendingSessionData = null;
+
+        startWatchingAndListening(); // bid history sẽ load từ bên trong hàm này
     }
 
     private void loadBidHistory() {
