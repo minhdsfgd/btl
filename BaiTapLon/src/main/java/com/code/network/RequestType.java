@@ -15,6 +15,10 @@ package com.code.network;
  */
 public enum RequestType {
 
+    // ── User Info ─────────────────────────────────────────────────────────────
+    /** Lấy thông tin user hiện tại (refresh balance) — data: null */
+    GET_MY_INFO,
+
     // ── Auth ──────────────────────────────────────────────────────────────────
     /** Đăng ký tài khoản mới — data: {@code LoginData(username, password, role)} */
     REGISTER,

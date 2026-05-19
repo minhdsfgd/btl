@@ -36,7 +36,9 @@ public class TransactionDAO {
             if (t.getFromUserId() == -1) ps.setNull(1, Types.INTEGER);
             else                         ps.setInt (1, t.getFromUserId());
 
-            ps.setInt      (2, t.getToUserId());
+            // to_user_id: -1 trong model → NULL trong DB (hệ thống giữ tiền)
+            if (t.getToUserId() == -1) ps.setNull(2, Types.INTEGER);
+            else                       ps.setInt (2, t.getToUserId());
             ps.setDouble   (3, t.getAmount());
 
             // auction_id: -1 trong model → NULL trong DB
@@ -112,6 +114,11 @@ public class TransactionDAO {
         Object fuid = rs.getObject("from_user_id");
         if (fuid != null) fromUserId = (int) fuid;
 
+        // to_user_id cũng có thể NULL (BID_HOLD: hệ thống giữ tiền)
+        int toUserId = -1;
+        Object tuid = rs.getObject("to_user_id");
+        if (tuid != null) toUserId = (int) tuid;
+
         int auctionId = -1;
         Object aid = rs.getObject("auction_id");
         if (aid != null) auctionId = (int) aid;
@@ -119,7 +126,7 @@ public class TransactionDAO {
         return new Transaction(
                 rs.getInt      ("id"),
                 fromUserId,
-                rs.getInt      ("to_user_id"),
+                toUserId,
                 rs.getDouble   ("amount"),
                 auctionId,
                 Transaction.Type.valueOf(rs.getString("type"))

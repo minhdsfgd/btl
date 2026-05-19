@@ -10,6 +10,7 @@ import com.code.client.SessionManager;
 import com.code.client.SocketClient;
 import com.code.models.AuctionEvent;
 import com.code.models.Bid;
+import com.code.models.User;
 import com.code.network.PlaceBidData;
 import com.code.network.Request;
 import com.code.network.RequestType;
@@ -229,23 +230,40 @@ public class LiveBiddingController implements Initializable {
             }
             case AUCTION_FINISHED -> {
                 stopCountdown();
-                countdownLabel.setText("KẾT THÚC");
+                countdownLabel.setText("KET THUC");
                 countdownLabel.setStyle("-fx-text-fill:#ef5350; -fx-font-size:22; -fx-font-weight:bold;");
-                sessionStatusLabel.setText("Đã kết thúc");
-                setQuickBidDisabled(true); // THÊM MỚI: disable nút nhanh khi kết thúc
+                sessionStatusLabel.setText("Da ket thuc");
+                setQuickBidDisabled(true);
                 bidAmountField.setDisable(true);
                 int winner = event.getWinnerBidderId();
                 String winnerName;
                 if (winner == -1) {
-                    winnerName = "Không có người đặt giá";
+                    winnerName = "Khong co nguoi dat gia";
                 } else if (winner == SessionManager.getUserId()) {
                     winnerName = currentUsername;
                 } else {
-                    winnerName = "Người khác #" + winner;
+                    winnerName = "Nguoi khac #" + winner;
                 }
                 String winMsg = winner == SessionManager.getUserId()
-                        ? "🏆 Bạn đã thắng phiên đấu giá này!"
-                        : "Phiên kết thúc. Người thắng: " + winnerName;
+                        ? "Ban da thang phien dau gia nay!"
+                        : "Phien ket thuc. Nguoi thang: " + winnerName;
+
+                // Refresh balance từ server (seller vừa nhận tiền, winner vừa trả tiền)
+                new Thread(() -> {
+                    try {
+                        Response infoRes = SocketClient.getInstance().sendRequest(
+                                Request.of(RequestType.GET_MY_INFO, null));
+                        if (infoRes.isSuccess() && infoRes.getData() instanceof User freshUser) {
+                            Platform.runLater(() -> {
+                                SessionManager.setUser(freshUser);
+                                updateBalanceLabel();
+                            });
+                        }
+                    } catch (Exception ex) {
+                        System.err.println("[Live] Khong refresh duoc balance: " + ex.getMessage());
+                    }
+                }, "balance-refresh-thread").start();
+
                 showAlert(winMsg);
             }
             case AUCTION_CANCELED -> {
@@ -263,10 +281,26 @@ public class LiveBiddingController implements Initializable {
 
     private void handleBidResponse(Response response) {
         if (!response.isSuccess()) {
-            showError("Đặt giá thất bại: " + response.getMessage());
+            showError("Dat gia that bai: " + response.getMessage());
         } else {
             clearError();
+            // Server trả về User mới nhất — cập nhật SessionManager và UI ngay
+            if (response.getData() instanceof User updatedUser) {
+                SessionManager.setUser(updatedUser);
+                updateBalanceLabel();
+            }
         }
+    }
+
+    /** Đọc balance từ SessionManager và cập nhật cả 2 label trên UI. */
+    private void updateBalanceLabel() {
+        User u = SessionManager.getUser();
+        if (u == null) return;
+        java.text.NumberFormat nf =
+                java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
+        String balanceText = nf.format((long) u.getBalance()) + " \u20ab";
+        balanceLiveLabel.setText(balanceText);
+        if (balanceLiveLabel2 != null) balanceLiveLabel2.setText(balanceText);
     }
 
     private void showAlert(String msg) {
@@ -499,13 +533,7 @@ public class LiveBiddingController implements Initializable {
         startCountdown(pendingSessionData.countdownSeconds);
 
         //  cả balanceLiveLabel2 ở card đặt giá
-        if (SessionManager.getUser() != null) {
-            java.text.NumberFormat nf =
-                    java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
-            String balanceText = nf.format((long) SessionManager.getUser().getBalance()) + " ₫";
-            balanceLiveLabel.setText(balanceText);
-            if (balanceLiveLabel2 != null) balanceLiveLabel2.setText(balanceText);
-        }
+        updateBalanceLabel();
 
         loadBidHistory();
         pendingSessionData = null;

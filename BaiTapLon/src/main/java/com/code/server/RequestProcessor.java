@@ -80,6 +80,7 @@ public class RequestProcessor {
 
                 // ── Balance ────────────────────────────────────────────────────
                 case DEPOSIT -> handleDeposit(request, handler);
+                case GET_MY_INFO -> handleGetMyInfo(handler);
 
                 // ── Item ───────────────────────────────────────────────────────
                 case GET_MY_ITEMS  -> handleGetMyItems(handler);
@@ -326,6 +327,21 @@ public class RequestProcessor {
             return Response.fail(e.getMessage());
         } catch (Exception e) {
             return Response.fail("Lỗi nạp tiền: " + e.getMessage());
+        }
+    }
+
+    private Response handleGetMyInfo(ClientHandler handler) {
+        Response check = requireLogin(handler);
+        if (check != null) return check;
+
+        try {
+            // Luôn lấy bản mới nhất từ DB để client có balance chính xác
+            User freshUser = userDAO.findById(handler.currentUser.getUserId());
+            if (freshUser == null) return Response.fail("Không tìm thấy user.");
+            handler.currentUser = freshUser;
+            return Response.ok("OK", freshUser);
+        } catch (Exception e) {
+            return Response.fail("Lỗi lấy thông tin user: " + e.getMessage());
         }
     }
 
@@ -582,21 +598,22 @@ public class RequestProcessor {
         try {
             PlaceBidData data = req.getDataAs(PlaceBidData.class);
             Auction auction = auctionService.getAuction(data.auctionId);
-            Bid bid = bidService.placeBid(handler.currentUser, auction, data.amount);
+            bidService.placeBid(handler.currentUser, auction, data.amount);
 
-            // Cập nhật balance trong DB sau khi đặt giá thành công
-            userDAO.update(handler.currentUser);
+            // Refresh session user từ DB
+            handler.currentUser = userDAO.findById(handler.currentUser.getUserId());
 
+            // Trả về user mới nhất (bid đã broadcast qua BID_PLACED event rồi)
             return Response.ok(
-                    String.format("Đặt giá %,.0f VNĐ thành công!", data.amount), bid);
+                    String.format("Dat gia %,.0f VND thanh cong!", data.amount),
+                    handler.currentUser);
 
-            // FIX #8: bỏ AuctionClosedException trùng lặp, gộp vào 1 catch gọn
         } catch (UserBannedException | InvalidBidException |
                  SelfBidException | AuctionClosedException |
                  InsufficientBalanceException e) {
             return Response.fail(e.getMessage());
         } catch (Exception e) {
-            return Response.fail("Lỗi đặt giá: " + e.getMessage());
+            return Response.fail("Loi dat gia: " + e.getMessage());
         }
     }
 

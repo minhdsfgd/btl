@@ -40,7 +40,8 @@ class BidServiceTest {
         fakeAuctionDAO = new FakeAuctionDAO();
 
         // userDAO không dùng trong BidService.placeBid()  truyền null
-        bidService = new BidService(fakeBidDAO, fakeAuctionDAO, null);
+        // txService cũng dùng null trong test (không kiểm tra transaction log)
+        bidService = new BidService(fakeBidDAO, fakeAuctionDAO, null, null);
 
         //tạpo user
         bidder = new RegularUser(10, "alice", "pass123", BIDDER_BALANCE, Role.BIDDER);

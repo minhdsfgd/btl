@@ -18,7 +18,6 @@ public class TransactionService {
      * Ghi nhận lúc user nạp tiền vô ví.
      */
     public void logDeposit(int userId, double amount) {
-        // Class của bạn có sẵn hàm static deposit() xịn xò rứa thì mần luôn
         Transaction tx = Transaction.deposit(
                 0,
                 userId,

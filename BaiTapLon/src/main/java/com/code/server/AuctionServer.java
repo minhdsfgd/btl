@@ -53,7 +53,7 @@ public class AuctionServer {
         // ── Bước 2: Khởi tạo tất cả Service (inject DAO vào) ────────────────
         UserService        userService = new UserService(userDAO);
         TransactionService txService   = new TransactionService(txDAO);
-        BidService         bidService  = new BidService(bidDAO, auctionDAO, userDAO);
+        BidService         bidService  = new BidService(bidDAO, auctionDAO, userDAO, txService);
         ItemService        itemService = new ItemService(itemDAO);
 
         // AuctionService là Singleton — init với đủ dependency

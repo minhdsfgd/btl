@@ -164,14 +164,40 @@ public class AuctionService {
             managerLock.lock();
             try {
                 auction.updateStatus(AuctionStatus.FINISHED);
-                auctionDAO.update(auction);  // ← Lưu FINISHED vào DB
+                auctionDAO.update(auction);
+
+                int winnerId = auction.getLeadingBidderId();
+                if (winnerId != -1) {
+                    try {
+                        User seller = userDAO.findById(auction.getSellerId());
+                        if (seller != null) {
+                            double winningAmount = auction.getCurrentPrice();
+                            seller.deposit(winningAmount);
+                            userDAO.update(seller);
+                            txService.logPaymentToSeller(
+                                    winnerId,
+                                    seller.getUserId(),
+                                    winningAmount,
+                                    auctionId
+                            );
+                            System.out.println("[Auction] Phan #" + auctionId
+                                    + ": chuyen " + winningAmount
+                                    + " VND tu bidder #" + winnerId
+                                    + " -> seller #" + seller.getUserId());
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[Auction] Loi thanh toan phan #"
+                                + auctionId + ": " + e.getMessage());
+                    }
+                }
+
                 auction.notifyObservers(
-                        AuctionEvent.auctionFinished(auctionId, auction.getLeadingBidderId()));
+                        AuctionEvent.auctionFinished(auctionId, winnerId));
             } finally {
                 managerLock.unlock();
             }
         } catch (SQLException e) {
-            System.err.println("[Scheduler] Lỗi kết thúc phiên #" + auctionId + ": " + e.getMessage());
+            System.err.println("[Scheduler] Loi ket thuc phan #" + auctionId + ": " + e.getMessage());
         }
     }
 

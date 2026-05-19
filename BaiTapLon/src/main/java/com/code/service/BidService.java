@@ -3,6 +3,7 @@ package com.code.service;
 import com.code.dao.*;
 import com.code.exception.*;
 import com.code.models.*;
+import com.code.service.TransactionService;
 
 
 import java.sql.SQLException;
@@ -28,12 +29,15 @@ public class BidService {
     private final BidDAO bidDAO;
     private final AuctionDAO auctionDAO;
     private final UserDAO userDAO;
+    private final TransactionService txService;
 
     /** Constructor — inject BidRepository. */
-    public BidService(BidDAO bidDAO,AuctionDAO auctionDAO, UserDAO userDAO) {
-        this.bidDAO= bidDAO;
+    public BidService(BidDAO bidDAO, AuctionDAO auctionDAO, UserDAO userDAO,
+                      TransactionService txService) {
+        this.bidDAO = bidDAO;
         this.auctionDAO = auctionDAO;
         this.userDAO = userDAO;
+        this.txService = txService;
     }
 
     // ── Đặt giá ───────────────────────────────────────────────────────────────
@@ -102,21 +106,30 @@ public class BidService {
             int currentLeaderId = auction.getLeadingBidderId();
             double oldPrice = auction.getCurrentPrice();
 
+            // Capture trước khi recordBid() thay đổi leadingBidderId
+            boolean isSelfOutbid = (currentLeaderId == user.getUserId());
+
 // ================================
 // CASE 1: Tự vượt giá chính mình
 // ================================
             if (currentLeaderId == user.getUserId()) {
 
-                // Hoàn lại tiền bid cũ
-                user.deposit(oldPrice);
+                // Chỉ trừ thêm phần chênh lệch (không hoàn + trừ lại toàn bộ)
+                double extraNeeded = amount - oldPrice;
 
-                // Kiểm tra đủ tiền cho bid mới
-                if (user.getBalance() < amount) {
-                    throw new IllegalArgumentException("Không đủ số dư");
+                if (user.getBalance() < extraNeeded) {
+                    throw new InsufficientBalanceException(
+                            "Không đủ số dư để tăng giá thêm " + extraNeeded + " VNĐ");
                 }
 
-                // Giữ lại toàn bộ bid mới
-                user.deductBalance(amount);
+                user.deductBalance(extraNeeded);
+
+                // Ghi log: giữ thêm tiền chênh lệch
+                txService.logBidHold(
+                        user.getUserId(),
+                        extraNeeded,
+                        auction.getAuctionId()
+                );
             }
 
 // ================================
@@ -132,6 +145,13 @@ public class BidService {
                         if (prevLeader != null) {
                             prevLeader.deposit(oldPrice);
                             userDAO.update(prevLeader);
+
+                            // Ghi log: hoàn tiền cho người bị vượt giá
+                            txService.logRefund(
+                                    prevLeader.getUserId(),
+                                    oldPrice,
+                                    auction.getAuctionId()
+                            );
                         }
 
                     } catch (SQLException e) {
@@ -144,11 +164,18 @@ public class BidService {
 
                 // Kiểm tra bidder mới đủ tiền
                 if (user.getBalance() < amount) {
-                    throw new IllegalArgumentException("Không đủ số dư");
+                    throw new InsufficientBalanceException("Không đủ số dư");
                 }
 
                 // Giữ tiền bidder mới
                 user.deductBalance(amount);
+
+                // Ghi log: giữ tiền bid mới
+                txService.logBidHold(
+                        user.getUserId(),
+                        amount,
+                        auction.getAuctionId()
+                );
             }
 // Update auction
             auction.setCurrentPrice(amount);
@@ -165,6 +192,12 @@ public class BidService {
                 userDAO.update(user);
 
             } catch (SQLException e) {
+                // Rollback balance trong bộ nhớ nếu DB lỗi
+                if (isSelfOutbid) {
+                    user.deposit(amount - oldPrice); // hoàn phần extraNeeded đã trừ
+                } else {
+                    user.deposit(amount);            // hoàn toàn bộ amount đã trừ
+                }
                 throw new RuntimeException("Lỗi lưu bid: " + e.getMessage(), e);
             }
 
