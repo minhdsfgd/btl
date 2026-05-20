@@ -8,7 +8,6 @@ import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
