@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-class AuctionModelTest {
+class AuctionTest {
 
     private Auction auction;
     private Item    item;
@@ -24,8 +24,8 @@ class AuctionModelTest {
 
     @BeforeEach
     void setUp() {
-        item = new Electronics(1, SELLER_ID, "iPhone 15 Pro",
-                "Màn hình 6.1 inch, chip A17 Pro", START_PRICE);
+        item = new Electronics(1, SELLER_ID, "Máy rung lắc châu phi cực mạnh",
+                "1000W, 220V, 100Hz ", START_PRICE);
 
         auction = new Auction(
                 1, item, SELLER_ID,
