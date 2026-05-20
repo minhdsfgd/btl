@@ -648,8 +648,33 @@ public class LiveBiddingController implements Initializable {
         colTime.setCellValueFactory(new PropertyValueFactory<>("time"));
         colAmount.setCellValueFactory(new PropertyValueFactory<>("amount"));
 
-        colAmount.setStyle("-fx-alignment:CENTER_RIGHT; -fx-text-fill:#4caf50;");
+        colAmount.setStyle("-fx-alignment:CENTER_RIGHT;");
         colTime.setStyle("-fx-alignment:CENTER;");
+
+        // Text trắng cho từng cột khi có dữ liệu
+        colUsername.setCellFactory(col -> new javafx.scene.control.TableCell<BidRow, String>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) { setText(null); setStyle(""); }
+                else { setText(item); setStyle("-fx-text-fill: white;"); }
+            }
+        });
+
+        colTime.setCellFactory(col -> new javafx.scene.control.TableCell<BidRow, String>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) { setText(null); setStyle(""); }
+                else { setText(item); setStyle("-fx-text-fill: white; -fx-alignment: CENTER;"); }
+            }
+        });
+
+        colAmount.setCellFactory(col -> new javafx.scene.control.TableCell<BidRow, String>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) { setText(null); setStyle(""); }
+                else { setText(item); setStyle("-fx-text-fill: white; -fx-alignment: CENTER_RIGHT;"); }
+            }
+        });
 
         bidHistoryTable.setItems(bidHistory);
         bidHistoryTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
