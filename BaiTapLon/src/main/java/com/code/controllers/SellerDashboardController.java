@@ -545,12 +545,20 @@ public class SellerDashboardController implements Initializable {
         // Start time
         DatePicker dpStartDate = new DatePicker(java.time.LocalDate.now());
         Spinner<Integer> spStartHour = new Spinner<>(0, 23, 12);
+        spStartHour.setEditable(true);
+        spStartHour.setPrefWidth(70);
         Spinner<Integer> spStartMin = new Spinner<>(0, 59, 0);
+        spStartMin.setEditable(true);
+        spStartMin.setPrefWidth(70);
 
         // End time
         DatePicker dpEndDate = new DatePicker(java.time.LocalDate.now().plusDays(1));
         Spinner<Integer> spEndHour = new Spinner<>(0, 23, 12);
+        spEndHour.setEditable(true);
+        spEndHour.setPrefWidth(70);
         Spinner<Integer> spEndMin = new Spinner<>(0, 59, 0);
+        spEndMin.setEditable(true);
+        spEndMin.setPrefWidth(70);
 
         // Layout
         vbox.getChildren().addAll(
@@ -577,13 +585,19 @@ public class SellerDashboardController implements Initializable {
 
         btnCancel.setOnAction(e -> dialog.close());
         btnCreate.setOnAction(e -> {
+            // commit để tránh mất giá trị khi gõ tay chưa nhấn Enter
+            spStartHour.commitValue();
+            spStartMin.commitValue();
+            spEndHour.commitValue();
+            spEndMin.commitValue();
+
             createAuctionSession(itemMap, cmbItem.getValue(), tfBidIncrement.getText(),
                     dpStartDate.getValue(), spStartHour.getValue(), spStartMin.getValue(),
                     dpEndDate.getValue(), spEndHour.getValue(), spEndMin.getValue(), dialog);
         });
 
         btnBox.getChildren().addAll(btnCreate, btnCancel);
-        ((VBox) vbox).getChildren().add(btnBox);
+        vbox.getChildren().add(btnBox);
 
         dialog.showAndWait();
     }
