@@ -432,15 +432,18 @@ public class LiveBiddingController implements Initializable {
     }
 
     @FXML
-    private void handleExitRoom() { leave(); }
+    private void handleExitRoom() throws InterruptedException { leave(); }
 
     @FXML
-    private void handleBackToList() { leave(); }
+    private void handleBackToList() throws InterruptedException { leave(); }
 
-    private void leave() {
+    private void leave() throws InterruptedException {
         stopCountdown();
-        sendUnwatch();
         SocketClient.getInstance().stopListening();
+        sendUnwatch();
+        try{
+            Thread.sleep(100);
+        }catch (InterruptedException ignored){}
         navigateTo("/com/code/views/AuctionList.fxml");
     }
 
