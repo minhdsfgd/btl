@@ -11,7 +11,9 @@ import com.code.network.Response;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.Region;
 
 import static com.code.util.ControllerUtils.navigateTo;
 import static com.code.util.ControllerUtils.showAlert;
@@ -22,9 +24,16 @@ public class LoginController {
     @FXML private PasswordField passwordField;
     @FXML private Button        loginButton;
     @FXML private Hyperlink     linkRegister;
+    @FXML ImageView backgroundImage;
+    @FXML Region rootPane;
 
     @FXML
     public void initialize() {
+        if (backgroundImage != null && rootPane != null) {
+            backgroundImage.fitWidthProperty().bind(rootPane.widthProperty());
+            backgroundImage.fitHeightProperty().bind(rootPane.heightProperty());
+        }
+        
         usernameField.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) passwordField.requestFocus();
         });

@@ -22,6 +22,7 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
@@ -92,6 +93,25 @@ public class LiveBiddingController implements Initializable {
     @FXML private NumberAxis                xAxis;
     @FXML private NumberAxis                yAxis;
 
+
+    // ── Auto-bid fields ──────────────────────────────────────────────────
+    @FXML private TextField autoBidMaxField;
+    @FXML private TextField autoBidStepField;
+    @FXML private Button    autoStep1;
+    @FXML private Button    autoStep2;
+    @FXML private Button    autoStep3;
+    @FXML private Button    toggleAutoBidButton;
+    @FXML private Label     autoBidStatusBadge;
+    @FXML private Label     autoBidMaxDisplay;
+    @FXML private Label     autoBidStepDisplay;
+    @FXML private Label     autoBidLastBidDisplay;
+    @FXML private Label     autoBidErrorLabel;
+
+    // ── Auto-bid handlers ────────────────────────────────────────────────
+    @FXML private void handleAutoStep1() {}
+    @FXML private void handleAutoStep2() {}
+    @FXML private void handleAutoStep3() {}
+
     // ── Internal state ─────────────────────────────────────────────────────────
     private final ObservableList<BidRow> bidHistory = FXCollections.observableArrayList();
     private Timeline countdownTimeline;
@@ -108,6 +128,7 @@ public class LiveBiddingController implements Initializable {
 
     private static final DateTimeFormatter TIME_FMT =
             DateTimeFormatter.ofPattern("HH:mm:ss");
+    private int auctionOwnerId;
 
     // =========================================================================
     //  Initializable
@@ -180,11 +201,11 @@ public class LiveBiddingController implements Initializable {
                                       String imageUrl,          // THÊM MỚI tham số này
                                       double startPrice, double currentPrice,
                                       double minStep, long countdownSeconds,
-                                      String leadingBidder) {
+                                      String leadingBidder, int ownerId) {
         pendingSessionData = new SessionData(
                 auctionId, username, sessionName, productName, description,
                 imageUrl,                                        // THÊM MỚI
-                startPrice, currentPrice, minStep, countdownSeconds, leadingBidder
+                startPrice, currentPrice, minStep, countdownSeconds, leadingBidder, ownerId
         );
     }
 
@@ -236,14 +257,19 @@ public class LiveBiddingController implements Initializable {
         bidSeries.getData().clear();
         bidPointCount = 0;
 
+        for (int i = 0; i < bids.size(); i++) {
+            Bid bid = bids.get(i);
+            bidPointCount++;
+            bidSeries.getData().add(new XYChart.Data<>(bidPointCount, bid.getAmount()));
+        }
+
+        // Vòng 2: Bảng — duyệt MỚI→CŨ (index giảm dần) → mới nhất lên đầu
         for (int i = bids.size() - 1; i >= 0; i--) {
             Bid bid = bids.get(i);
             String username = bid.getUserId() == SessionManager.getUserId()
                     ? currentUsername : "Người khác #" + bid.getUserId();
             String time = bid.getTimestamp().format(TIME_FMT);
             bidHistory.add(new BidRow(username, time, formatPrice(bid.getAmount())));
-            bidPointCount++;
-            bidSeries.getData().add(new XYChart.Data<>(bidPointCount, bid.getAmount()));
         }
 
         if (bidSeries.getNode() != null)
@@ -351,9 +377,8 @@ public class LiveBiddingController implements Initializable {
     @FXML
     private void handlePlaceBid() {
         clearError();
-
-        if (bidAmountField.isDisabled()) {
-            showError("Phiên đấu giá đã kết thúc hoặc bị hủy.");
+        if (SessionManager.getUserId() == auctionOwnerId) {
+            showError("Bạn không thể đặt giá cho sản phẩm của chính mình.");
             return;
         }
 
@@ -552,6 +577,7 @@ public class LiveBiddingController implements Initializable {
     private void applyPendingSessionData() {
         if (pendingSessionData == null) return;
         this.currentAuctionId = pendingSessionData.auctionId;
+        this.auctionOwnerId   = pendingSessionData.ownerId;
         setCurrentUser(pendingSessionData.username);
         setSessionName(pendingSessionData.sessionName);
         setProduct(pendingSessionData.productName,
@@ -678,6 +704,9 @@ public class LiveBiddingController implements Initializable {
     private void clearError()          { errorLabel.setText(""); }
     private String formatPrice(double p) { return String.format("%,.0f VND", p); }
 
+    @FXML
+    private void handleToggleAutoBid() {}
+
     // =========================================================================
     //  Inner classes
     // =========================================================================
@@ -713,12 +742,13 @@ public class LiveBiddingController implements Initializable {
         final double minStep;
         final long   countdownSeconds;
         final String leadingBidder;
+        final int    ownerId;
 
         SessionData(int auctionId, String username, String sessionName,
                     String productName, String description,
                     String imageUrl,   // THÊM MỚI
                     double startPrice, double currentPrice,
-                    double minStep, long countdownSeconds, String leadingBidder) {
+                    double minStep, long countdownSeconds, String leadingBidder,int ownerId) {
             this.auctionId        = auctionId;
             this.username         = username;
             this.sessionName      = sessionName;
@@ -730,6 +760,7 @@ public class LiveBiddingController implements Initializable {
             this.minStep          = minStep;
             this.countdownSeconds = countdownSeconds;
             this.leadingBidder    = leadingBidder;
+            this.ownerId          = ownerId;
         }
     }
 }

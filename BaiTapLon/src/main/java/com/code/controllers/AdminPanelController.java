@@ -265,38 +265,6 @@ public class AdminPanelController implements Initializable {
         return req;
     }
 
-    @FXML
-    private void handleCreateSession() {
-        // Admin tạo phiên: cần chọn item từ tất cả items trong hệ thống
-        new Thread(() -> {
-            try {
-                Response res = com.code.client.SocketClient.getInstance()
-                        .sendRequest(com.code.network.Request.of(
-                                com.code.network.RequestType.GET_ALL_ITEMS));
-                Platform.runLater(() -> {
-                    if (!res.isSuccess()) {
-                        Alert alert = new Alert(Alert.AlertType.ERROR, "Lỗi tải sản phẩm: " + res.getMessage());
-                        alert.showAndWait();
-                        return;
-                    }
-                    @SuppressWarnings("unchecked")
-                    java.util.List<com.code.models.Item> items = res.getDataAs(java.util.List.class);
-                    if (items == null || items.isEmpty()) {
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION,
-                                "Chưa có sản phẩm nào trong hệ thống.\nVui lòng tạo sản phẩm trước.");
-                        alert.showAndWait();
-                        return;
-                    }
-                    showAdminCreateSessionForm(items);
-                });
-            } catch (Exception ex) {
-                Platform.runLater(() -> {
-                    Alert a = new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage());
-                    a.showAndWait();
-                });
-            }
-        }, "admin-load-items").start();
-    }
 
     // ========================================================================
     //  Private helpers
@@ -833,95 +801,6 @@ public class AdminPanelController implements Initializable {
         }
     }
 
-    private void showAdminCreateSessionForm(java.util.List<com.code.models.Item> items) {
-        javafx.scene.layout.VBox vbox = new javafx.scene.layout.VBox(10);
-        vbox.setPadding(new javafx.geometry.Insets(15));
-
-        ComboBox<String> cmbItem = new ComboBox<>();
-        java.util.Map<String, Integer> itemMap = new java.util.LinkedHashMap<>();
-        for (com.code.models.Item item : items) {
-            String display = "#" + item.getItemId() + " - " + item.getName()
-                    + " (" + String.format("%,.0f đ", item.getStartingPrice()) + ")";
-            cmbItem.getItems().add(display);
-            itemMap.put(display, item.getItemId());
-        }
-        cmbItem.getSelectionModel().selectFirst();
-
-        TextField tfBidIncrement = new TextField();
-        tfBidIncrement.setPromptText("Bậc tăng giá (VNĐ), ví dụ: 50000");
-
-        javafx.scene.control.DatePicker dpStart = new javafx.scene.control.DatePicker(java.time.LocalDate.now());
-        javafx.scene.control.Spinner<Integer> spStartH = new javafx.scene.control.Spinner<>(0, 23, 12);
-        javafx.scene.control.Spinner<Integer> spStartM = new javafx.scene.control.Spinner<>(0, 59, 0);
-
-        javafx.scene.control.DatePicker dpEnd = new javafx.scene.control.DatePicker(java.time.LocalDate.now().plusDays(1));
-        javafx.scene.control.Spinner<Integer> spEndH = new javafx.scene.control.Spinner<>(0, 23, 12);
-        javafx.scene.control.Spinner<Integer> spEndM = new javafx.scene.control.Spinner<>(0, 59, 0);
-
-        Label lblErr = new Label();
-        lblErr.setStyle("-fx-text-fill: #c62828; -fx-font-size: 11;");
-
-        vbox.getChildren().addAll(
-                new Label("Sản phẩm:"), cmbItem,
-                new Label("Bậc tăng giá (VNĐ):"), tfBidIncrement,
-                new Label("Bắt đầu:"), new javafx.scene.layout.HBox(5, dpStart,
-                        new Label("Giờ:"), spStartH, new Label("Phút:"), spStartM),
-                new Label("Kết thúc:"), new javafx.scene.layout.HBox(5, dpEnd,
-                        new Label("Giờ:"), spEndH, new Label("Phút:"), spEndM),
-                lblErr
-        );
-
-        javafx.scene.layout.HBox btnBox = new javafx.scene.layout.HBox(10);
-        btnBox.setAlignment(javafx.geometry.Pos.CENTER);
-        Button btnCreate = new Button("Tạo phiên");
-        Button btnCancel = new Button("Huỷ");
-        btnBox.getChildren().addAll(btnCreate, btnCancel);
-        vbox.getChildren().add(btnBox);
-
-        javafx.stage.Stage dialog = new javafx.stage.Stage();
-        dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-        dialog.setTitle("Tạo phiên đấu giá (Admin)");
-        dialog.setScene(new javafx.scene.Scene(vbox, 600, 380));
-
-        btnCancel.setOnAction(e -> dialog.close());
-        btnCreate.setOnAction(e -> {
-            try {
-                double bidInc = Double.parseDouble(tfBidIncrement.getText().trim());
-                if (bidInc <= 0) throw new NumberFormatException();
-                java.time.LocalDateTime startTime = java.time.LocalDateTime.of(
-                        dpStart.getValue(), java.time.LocalTime.of(spStartH.getValue(), spStartM.getValue()));
-                java.time.LocalDateTime endTime = java.time.LocalDateTime.of(
-                        dpEnd.getValue(), java.time.LocalTime.of(spEndH.getValue(), spEndM.getValue()));
-                if (!endTime.isAfter(startTime)) { lblErr.setText("Thời gian kết thúc phải sau bắt đầu"); return; }
-                if (startTime.isBefore(java.time.LocalDateTime.now())) { lblErr.setText("Thời gian bắt đầu phải ở tương lai"); return; }
-
-                int itemId = itemMap.get(cmbItem.getValue());
-                com.code.network.CreateAuctionData data = new com.code.network.CreateAuctionData(itemId, bidInc, startTime, endTime);
-
-                new Thread(() -> {
-                    try {
-                        Response res = com.code.client.SocketClient.getInstance()
-                                .sendRequest(com.code.network.Request.of(com.code.network.RequestType.CREATE_AUCTION, data));
-                        Platform.runLater(() -> {
-                            if (res.isSuccess()) {
-                                dialog.close();
-                                lblSessionMsg.setText("Tạo phiên đấu giá thành công!");
-                                loadDataFromServer();
-                            } else {
-                                lblErr.setText("Lỗi: " + res.getMessage());
-                            }
-                        });
-                    } catch (Exception ex) {
-                        Platform.runLater(() -> lblErr.setText("Lỗi kết nối: " + ex.getMessage()));
-                    }
-                }, "admin-create-session").start();
-            } catch (NumberFormatException ex) {
-                lblErr.setText("Bậc tăng giá không hợp lệ (phải > 0)");
-            }
-        });
-
-        dialog.showAndWait();
-    }
 
     // ========================================================================
     //  Inner model classes (replace with your real model / DTO if needed)

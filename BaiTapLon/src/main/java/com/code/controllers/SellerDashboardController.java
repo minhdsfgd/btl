@@ -60,6 +60,8 @@ public class SellerDashboardController implements Initializable {
     @FXML private Button btnMenuLots;
     @FXML private Button btnMenuNotif;
     @FXML private Button btnMenuActivity;
+    @FXML private Button modeBuyerButton;
+    @FXML private Button modeSellerButton;
 
     private final ObservableList<LotRow>  allLots              = FXCollections.observableArrayList();
     private final ObservableList<String>  activities           = FXCollections.observableArrayList();
@@ -87,8 +89,22 @@ public class SellerDashboardController implements Initializable {
         }
         configureTable();
         setActiveMenu(btnMenuOverview);
+        // Highlight nút Người bán vì đang ở trang seller
+        setSellerToggleActive();
         loadMyAuctions();
     }
+    private void setSellerToggleActive() {
+        if (modeBuyerButton == null || modeSellerButton == null) return;
+        modeBuyerButton.setStyle(
+                "-fx-background-color:transparent;" +
+                        "-fx-text-fill:rgba(255,255,255,0.8); -fx-font-size:12;" +
+                        "-fx-background-radius:16; -fx-padding:4 12; -fx-cursor:hand;");
+        modeSellerButton.setStyle(
+                "-fx-background-color:white; -fx-text-fill:#065f3b;" +
+                        "-fx-font-weight:bold; -fx-font-size:12;" +
+                        "-fx-background-radius:16; -fx-padding:4 12; -fx-cursor:hand;");
+    }
+
 
     // ── Load từ server ────────────────────────────────────────────────────────
 

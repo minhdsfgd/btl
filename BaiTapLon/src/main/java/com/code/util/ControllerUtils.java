@@ -1,6 +1,7 @@
 package com.code.util;
 
 import com.code.ClientApp;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -11,6 +12,9 @@ import java.io.IOException;
 
 public class ControllerUtils {
     public static void navigateTo(String fxmlPath) {
+        navigateTo(fxmlPath, false);
+    }
+    public static void navigateTo(String fxmlPath, boolean resetSize) {
         try {
             //load giao deẹn mới
             Parent root = FXMLLoader.load(ControllerUtils.class.getResource(fxmlPath));
@@ -27,15 +31,20 @@ public class ControllerUtils {
             stage.setScene(new Scene(root));
 
             //TRẢ LẠI KÍCH THƯỚC CŨ
-            if (isMaximized) {
-                stage.setMaximized(true);
-            } else {
+            if (resetSize) {
+                stage.setMaximized(false);
+                stage.sizeToScene();
+                stage.centerOnScreen();
+            } else if (isMaximized) {
+                // Phải set false trước rồi mới set true lại
+                // nếu không JavaFX đôi khi bỏ qua lệnh setMaximized(true)
+                stage.setMaximized(false);
+                Platform.runLater(() -> stage.setMaximized(true));
                 // Chỉ set lại kích thước nếu giá trị hợp lệ (tránh lúc ứng dụng vừa khởi động chưa có size)
-                if (!Double.isNaN(currentWidth) && currentWidth > 0) {
+            } else if (!Double.isNaN(currentWidth) && currentWidth > 0) {
                     stage.setWidth(currentWidth);
                     stage.setHeight(currentHeight);
                 }
-            }
 
         } catch (IOException e) {
             e.printStackTrace();

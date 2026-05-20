@@ -59,6 +59,7 @@ public class ClientApp extends Application {
         stage.setScene(scene);
         stage.setResizable(true);
         stage.centerOnScreen();
+        stage.setMaximized(true);
 
         stage.setOnCloseRequest(e -> {
             try { SocketClient.getInstance().disconnect(); } catch (Exception ignored) {}

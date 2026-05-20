@@ -359,7 +359,7 @@ public class AuctionListController {
                     a.getCurrentPrice(),
                     a.getBidIncrement(),
                     Math.max(remaining, 0),
-                    leaderName
+                    leaderName,a.getItem().getSellerId()
             );
 
             navigateTo("/com/code/views/LiveBidding.fxml");
