@@ -53,7 +53,7 @@ public class BidService {
             InsufficientBalanceException {
 
         // 1. User bị ban
-        if (user.isBanned())
+        if (!user.isActive())
             throw new UserBannedException(user.getUsername());
 
         // 2. Thiếu role BIDDER
@@ -221,7 +221,7 @@ public class BidService {
      * @throws IllegalArgumentException nếu amount <= 0  (unchecked — lỗi lập trình viên)
      */
     public Transaction deposit(User user, double amount) throws UserBannedException {
-        if (user.isBanned())
+        if (!user.isActive())
             throw new UserBannedException(user.getUsername());
         if (amount <= 0)
             // FIX: dùng IllegalArgumentException thay vì InvalidBidException

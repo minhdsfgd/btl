@@ -224,11 +224,7 @@ public class SocketClient {
     public synchronized void stopListening() {
 
         listening = false;
-
-        if (listenerThread != null) {
-            listenerThread.interrupt();
-            listenerThread = null;
-        }
+        listenerThread = null;
     }
 
     // ── Đóng kết nối ─────────────────────────────────────────────────────────

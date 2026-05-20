@@ -388,7 +388,7 @@ public class AdminPanelController implements Initializable {
                                                     .map(Enum::name)
                                                     .reduce((a, b) -> a + ", " + b)
                                                     .orElse(""),
-                                            u.isBanned() ? "Bị cấm" : "Hoạt động"
+                                            u.isActive() ? "Hoạt động" : "Bị cấm"
                                     ))
                                     .collect(java.util.stream.Collectors.toList());
                             setUsers(rows);
@@ -725,14 +725,14 @@ public class AdminPanelController implements Initializable {
             CheckBox cbActive = new CheckBox("Kích hoạt");
             cbActive.setSelected(user.isActive());
 
-            CheckBox cbBanned = new CheckBox("Bị cấm");
-            cbBanned.setSelected(user.isBanned());
+            //CheckBox cbBanned = new CheckBox("This button is for decoration");
+            //cbBanned.setSelected(user.isBanned());
 
             vbox.getChildren().addAll(
                     new Label("Tên đăng nhập:"), tfUsername,
                     new Label("Mật khẩu mới:"), pfPassword,
                     new Label("Số dư:"), tfBalance,
-                    cbActive, cbBanned
+                    cbActive
             );
 
             javafx.scene.Scene scene = new javafx.scene.Scene(vbox, 400, 350);
@@ -749,7 +749,7 @@ public class AdminPanelController implements Initializable {
             btnCancel.setOnAction(e -> dialog.close());
             btnSave.setOnAction(e -> {
                 saveUserChanges(user, tfUsername.getText(), pfPassword.getText(),
-                        tfBalance.getText(), cbActive.isSelected(), cbBanned.isSelected(), dialog);
+                        tfBalance.getText(), cbActive.isSelected(), false, dialog);
             });
 
             btnBox.getChildren().addAll(btnSave, btnCancel);

@@ -76,7 +76,7 @@ public class AuctionService {
                                  LocalDateTime endTime)
             throws Exception {
 
-        if (seller.isBanned()) throw new UserBannedException(seller.getUsername());
+        if (!seller.isActive()) throw new UserBannedException(seller.getUsername());
         if (!seller.hasRole(Role.SELLER))
             throw new AuctionClosedException("Cần vai trò SELLER để tạo phiên đấu giá.");
         if (item.getSellerId() != seller.getUserId()) {
@@ -152,7 +152,7 @@ public class AuctionService {
 
     public void startAuction(int auctionId, User requester)
             throws UserBannedException, AuctionClosedException {
-        if (requester.isBanned()) throw new UserBannedException(requester.getUsername());
+        if (!requester.isActive()) throw new UserBannedException(requester.getUsername());
         Auction auction = getAuction(auctionId);
         requireOwnerOrAdmin(auction, requester, "bắt đầu");
         managerLock.lock();
@@ -212,7 +212,7 @@ public class AuctionService {
 
     public void cancelAuction(int auctionId, User requester)
             throws UserBannedException, AuctionClosedException {
-        if (requester.isBanned()) throw new UserBannedException(requester.getUsername());
+        if (!requester.isActive()) throw new UserBannedException(requester.getUsername());
         Auction auction = getAuction(auctionId);
         requireOwnerOrAdmin(auction, requester, "hủy");
         managerLock.lock();
@@ -250,7 +250,7 @@ public class AuctionService {
 
     public void banAuction(int auctionId, User admin)
             throws UserBannedException, AuctionClosedException {
-        if (admin.isBanned()) throw new UserBannedException(admin.getUsername());
+        if (!admin.isActive()) throw new UserBannedException(admin.getUsername());
         if (!admin.hasRole(Role.ADMIN))
             throw new AuctionClosedException("Chỉ Admin được ban phiên đấu giá.");
         Auction  auction = getAuction(auctionId);

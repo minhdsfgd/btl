@@ -14,7 +14,7 @@ public abstract class User implements Serializable {
     private String password;
     private double balance;
     private boolean active = true;
-    private boolean banned;
+    private boolean banned = false;
     private final Set<Role> roles;
 
     protected User(int userId, String username,
