@@ -21,7 +21,7 @@ public final class AuthGuard {
      */
     public static void requireNotBanned(User user) throws UserBannedException {
         Objects.requireNonNull(user, "User chưa đăng nhập.");
-        if (user.isBanned())
+        if (!user.isActive())
             throw new UserBannedException(user.getUsername());
     }
 

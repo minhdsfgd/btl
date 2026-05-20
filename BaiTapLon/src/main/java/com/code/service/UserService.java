@@ -129,7 +129,7 @@ public class UserService {
         User target = getOrThrow(userId);
         if (target.hasRole(Role.ADMIN))
             throw new AuthenticationException("Không thể ban tài khoản Admin khác.");
-        target.setBanned(true);
+        target.setActive(false);
         try{
             userDAO.update(target);
         } catch (SQLException e) {
@@ -145,7 +145,7 @@ public class UserService {
     public void unbanUser(User admin, int userId)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        getOrThrow(userId).setBanned(false);
+        getOrThrow(userId).setActive(true);
         try{
             userDAO.update(getOrThrow(userId));
         } catch (SQLException e) {
@@ -252,7 +252,7 @@ public class UserService {
 
     private void requireAdmin(User admin)
             throws UserBannedException, AuthenticationException {
-        if (admin.isBanned()) throw new UserBannedException(admin.getUsername());
+        if (!admin.isActive()) throw new UserBannedException(admin.getUsername());
         if (!admin.hasRole(Role.ADMIN))
             throw new AuthenticationException("Chỉ Admin được thực hiện thao tác này.");
     }

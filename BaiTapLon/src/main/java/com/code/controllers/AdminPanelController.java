@@ -725,7 +725,7 @@ public class AdminPanelController implements Initializable {
             CheckBox cbActive = new CheckBox("Kích hoạt");
             cbActive.setSelected(user.isActive());
 
-            CheckBox cbBanned = new CheckBox("Bị cấm");
+            CheckBox cbBanned = new CheckBox("This button is for decoration");
             cbBanned.setSelected(user.isBanned());
 
             vbox.getChildren().addAll(

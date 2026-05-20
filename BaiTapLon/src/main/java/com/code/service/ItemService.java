@@ -31,7 +31,7 @@ public class ItemService {
             throw new AuthenticationException("User chưa đăng nhập");
         }
 
-        if (currentUser.isBanned()) {
+        if (!currentUser.isActive()) {
             throw new UserBannedException(currentUser.getUsername());
         }
 
@@ -88,7 +88,7 @@ public class ItemService {
                 throw new AuthenticationException("User chưa đăng nhập");
             }
 
-            if (currentUser.isBanned()) {
+            if (!currentUser.isActive()) {
                 throw new UserBannedException(currentUser.getUsername());
             }
 
@@ -119,7 +119,7 @@ public class ItemService {
                 throw new AuthenticationException("User chưa đăng nhập");
             }
 
-            if (currentUser.isBanned()) {
+            if (!currentUser.isActive()) {
                 throw new UserBannedException(currentUser.getUsername());
             }
 
