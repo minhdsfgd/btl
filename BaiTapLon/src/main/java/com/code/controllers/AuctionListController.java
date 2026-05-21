@@ -50,6 +50,7 @@ public class AuctionListController {
     @FXML private AnchorPane rootPane;
     @FXML private ImageView  backgroundImage;
     @FXML private Label      navTitleLabel;
+    @FXML private Button filterPendingPaymentButton;
 
     private String currentFilter   = "ALL";
     private String currentCategory = "Tất cả";

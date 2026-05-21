@@ -98,6 +98,9 @@
             <Button fx:id="filterEndedButton"
                     style="-fx-background-color:#065f3b; -fx-text-fill:#9fe6c8; -fx-background-radius:8; -fx-padding:5 12; -fx-cursor:hand;"
                     text="✓ Kết thúc"/>
+            <Button fx:id="filterPendingPaymentButton"
+                    style="-fx-background-color:#065f3b; -fx-text-fill:#9fe6c8; -fx-background-radius:8; -fx-padding:5 12; -fx-cursor:hand;"
+                    text="⏳ Chờ thanh toán"/>
 
             <Region HBox.hgrow="ALWAYS"/>
 
