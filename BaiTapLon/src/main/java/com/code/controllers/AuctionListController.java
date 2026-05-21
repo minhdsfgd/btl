@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static com.code.models.AuctionStatus.*;
 import static com.code.util.ControllerUtils.navigateTo;
 import static com.code.util.ControllerUtils.showAlert;
 
@@ -303,12 +304,13 @@ public class AuctionListController {
         Label statusBadge = new Label(statusStr);
         statusBadge.setStyle(getStatusStyle(a.getStatus()));
 
-        Button actionBtn = new Button(getActionText(a.getStatus()));
+        Button actionBtn = new Button(getActionText(a));
         actionBtn.setMaxWidth(Double.MAX_VALUE);
         actionBtn.setStyle("-fx-background-color:#16a34a; -fx-text-fill:white;"
                 + "-fx-background-radius:8; -fx-padding:6 12; -fx-cursor:hand;");
-        actionBtn.setDisable(a.getStatus() == AuctionStatus.CANCELED);
-        actionBtn.setOnAction(e -> handleAction(a));
+        actionBtn.setDisable(a.getStatus() == CANCELED);
+        // Sửa dòng này: truyền thêm chính nó (statusBadge) vào hàm handleAction
+        actionBtn.setOnAction(e -> handleAction(a, actionBtn, statusBadge));
 
         VBox card = new VBox(6, catLabel, idLabel, nameLabel, priceLabel,
                 startPriceLabel, bidCountLabel, timeLabel,
@@ -325,8 +327,8 @@ public class AuctionListController {
     //  THAY ĐỔI: sửa lỗi cú pháp + thêm imageUrl vào prepareSession()
     // =========================================================================
 
-    private void handleAction(Auction a) {
-        if (a.getStatus() == AuctionStatus.RUNNING) {
+    private void handleAction(Auction a, Button actionBtn, Label statusBadge) {
+        if (a.getStatus() == RUNNING) {
 
             long remaining = ChronoUnit.SECONDS.between(
                     LocalDateTime.now(), a.getEndTime());
@@ -365,7 +367,7 @@ public class AuctionListController {
 
             navigateTo("/com/code/views/LiveBidding.fxml");
 
-        } else if (a.getStatus() == AuctionStatus.OPEN) {
+        } else if (a.getStatus() == OPEN) {
             String info = "Sản phẩm: "   + a.getItem().getName()
                     + "\nMô tả: "        + (a.getItem().getDescription() != null
                     ? a.getItem().getDescription() : "Không có")
@@ -377,7 +379,39 @@ public class AuctionListController {
             showAlert(Alert.AlertType.INFORMATION,
                     "Chi tiết phiên #" + a.getAuctionId(), info);
 
-        } else {
+        } else if (a.getStatus() == FINISHED && a.getLeadingBidderId() == SessionManager.getUserId()) {
+
+            new Thread(() -> {
+                try {
+                    Response res = SocketClient.getInstance()
+                            .sendRequest(Request.of(RequestType.MARK_AS_PAID, a.getAuctionId()));
+                    Platform.runLater(() -> {
+                        if (res.isSuccess()) {
+                            actionBtn.setText("Xem chi tiết");
+                            a.updateStatus(PAID);
+                            statusBadge.setText(mapStatus(PAID)); // Sẽ thành "✅ Đã thanh toán"
+                            statusBadge.setStyle(getStatusStyle(PAID)); // Đổi sang style màu đỏ/xanh tương ứng
+                            showAlert(Alert.AlertType.INFORMATION,
+                                    "Thanh toán thành công",
+                                    "Bạn đã thực hiện thanh toán cho phiên #" + a.getAuctionId());
+                        } else {
+                            Alert err = new Alert(Alert.AlertType.ERROR, "Lỗi: " + res.getMessage());
+                            err.showAndWait();
+                        }
+                    });
+                } catch (Exception ex) {
+                    Platform.runLater(() -> {
+                        Alert err = new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage());
+                        err.showAndWait();
+                    });
+                }
+            }, "mark-as-paid-lot").start();
+
+            // THÊM MỚI: Chuyển text của nút thành "Xem chi tiết" ngay lập tức sau khi nhấn
+
+        }
+
+        else {
             // FINISHED / PAID / CANCELED
             int bidCount = a.getBids().size();
             String winnerInfo = "";
@@ -447,10 +481,22 @@ public class AuctionListController {
         };
     }
 
-    private String getActionText(AuctionStatus s) {
-        return switch (s) {
+    private String getActionText(Auction a) {
+        return switch (a.getStatus()) {
             case RUNNING -> "Vào phòng đấu giá →";
             case OPEN    -> "Xem chi tiết";
+            case FINISHED -> {
+                // Nếu người dùng hiện tại là người thắng cuộc
+                if (a.getLeadingBidderId() == SessionManager.getUserId()) {
+                    LocalDateTime now = LocalDateTime.now();
+                    // Nếu hiện tại vẫn nằm trong thời hạn 24h sau khi kết thúc
+                    if (now.isBefore(a.getEndTime().plusHours(24))) {
+                        yield "Thanh toán";
+                    }
+                }
+                // Quá 24h hoặc không phải người thắng
+                yield "Xem kết quả";
+            }
             default      -> "Xem kết quả";
         };
     }

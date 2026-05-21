@@ -91,7 +91,7 @@ public class BidService {
 
             // ── Tất cả hợp lệ ─────────────────────────────────────────────────
 
-
+            // amount *= 0.1; // cọc (mai sửa)
 
             Bid bid = new Bid(
                     0,

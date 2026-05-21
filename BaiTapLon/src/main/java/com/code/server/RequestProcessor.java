@@ -549,13 +549,13 @@ public class RequestProcessor {
         try {
             // FIX #4: AuctionService.markAsPaid() chỉ nhận 1 tham số (int auctionId)
             //         kiểm tra quyền Admin ở đây trước khi gọi
-            AuthGuard.requireAdmin(handler.currentUser);
+            //AuthGuard.requireAdmin(handler.currentUser);
+            // Update: người có quyền đánh dấu là bidder thắng cuộc
+            AuthGuard.requireNotBanned(handler.currentUser);
             int auctionId = req.getDataAs(Integer.class);
             auctionService.markAsPaid(auctionId);
             return Response.ok("Phiên #" + auctionId + " đã được xác nhận thanh toán.");
-        } catch (AuthenticationException | UserBannedException e) {
-            return Response.fail(e.getMessage());
-        } catch (AuctionClosedException e) {
+        } catch ( UserBannedException e) {
             return Response.fail(e.getMessage());
         } catch (Exception e) {
             return Response.fail("Lỗi xác nhận thanh toán: " + e.getMessage());
