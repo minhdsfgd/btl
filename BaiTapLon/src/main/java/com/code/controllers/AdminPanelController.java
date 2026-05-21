@@ -287,19 +287,15 @@ public class AdminPanelController implements Initializable {
 
         // Action column: Edit + Delete buttons
         colUserAction.setCellFactory(col -> new TableCell<>() {
-            private final Button btnEdit   = createActionBtn("Sửa",  "#388e3c");
-            private final Button btnDelete = createActionBtn("Xoá",  "#c62828");
-            private final HBox   box       = new HBox(4, btnEdit, btnDelete);
+            private final Button btnEdit   = createActionBtn("Xem",  "#388e3c");
+            //private final Button btnDelete = createActionBtn("Xoá",  "#c62828");
+            private final HBox   box       = new HBox(4, btnEdit);
 
             {
                 box.setAlignment(Pos.CENTER); // Căn giữa các nút bấm bên trong khung chứa
                 btnEdit.setOnAction(e -> {
                     UserRow row = getTableView().getItems().get(getIndex());
                     handleEditUser(row);
-                });
-                btnDelete.setOnAction(e -> {
-                    UserRow row = getTableView().getItems().get(getIndex());
-                    handleDeleteUser(row);
                 });
             }
 
@@ -330,19 +326,15 @@ public class AdminPanelController implements Initializable {
         styleTable(tableSessions);
 
         colSessionAction.setCellFactory(col -> new TableCell<>() {
-            private final Button btnEdit   = createActionBtn("Sửa",    "#388e3c");
-            private final Button btnDelete = createActionBtn("Xoá",    "#c62828");
-            private final HBox   box       = new HBox(4, btnEdit, btnDelete);
+            private final Button btnEdit   = createActionBtn("Xem",    "#388e3c");
+            //private final Button btnDelete = createActionBtn("Xoá",    "#c62828");
+            private final HBox   box       = new HBox(4, btnEdit);
 
             {
                 box.setAlignment(Pos.CENTER); // Căn giữa các nút bấm bên trong khung chứa
                 btnEdit.setOnAction(e -> {
                     SessionRow row = getTableView().getItems().get(getIndex());
                     handleEditSession(row);
-                });
-                btnDelete.setOnAction(e -> {
-                    SessionRow row = getTableView().getItems().get(getIndex());
-                    handleDeleteSession(row);
                 });
             }
 
@@ -615,6 +607,7 @@ public class AdminPanelController implements Initializable {
         }
 
         // Nút Đánh dấu đã thanh toán (MARK_AS_PAID)
+        /*
         if ("FINISHED".equals(row.getStatus())) {
             Button btnPaid = createActionBtn("✅ Đánh dấu thanh toán", "#388e3c");
             btnPaid.setPrefWidth(160);
@@ -622,6 +615,8 @@ public class AdminPanelController implements Initializable {
                     com.code.network.RequestType.MARK_AS_PAID, row.getId(), row, dialog, lblMsg));
             btnBox.getChildren().add(btnPaid);
         }
+
+         */
 
         Button btnClose = new Button("Đóng");
         btnClose.setOnAction(e -> dialog.close());
