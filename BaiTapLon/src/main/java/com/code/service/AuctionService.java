@@ -215,15 +215,48 @@ public class AuctionService {
         if (!requester.isActive()) throw new UserBannedException(requester.getUsername());
         Auction auction = getAuction(auctionId);
         requireOwnerOrAdmin(auction, requester, "hủy");
+
         managerLock.lock();
         try {
+            // 1. Lấy thông tin người dẫn đầu và số tiền cần hoàn
+            int leadingBidderId = auction.getLeadingBidderId();
+            double refundAmount = auction.getCurrentPrice();
+
+            // 2. Cập nhật trạng thái hủy
             auction.updateStatus(AuctionStatus.CANCELED);
             auctionDAO.update(auction);   // ← Lưu vào DB
+
+            // 3. Xử lý hoàn tiền cho người dẫn đầu (nếu có)
+            if (leadingBidderId != -1) {
+                try {
+                    User leadingBidder = userDAO.findById(leadingBidderId);
+                    if (leadingBidder != null) {
+                        leadingBidder.deposit(refundAmount); // Trả lại tiền vào ví
+                        userDAO.update(leadingBidder);       // Cập nhật DB
+
+                        // Tuỳ chọn: Ghi log hoàn tiền nếu TransactionService có hỗ trợ
+                        // txService.logRefund(leadingBidderId, refundAmount, auctionId);
+
+                        System.out.println("[Auction] Phiên #" + auctionId
+                                + " bị hủy: Đã hoàn " + refundAmount
+                                + " VND cho bidder #" + leadingBidderId);
+                    }
+                } catch (Exception e) {
+                    // Try-catch riêng để đảm bảo lỗi hoàn tiền không làm crash toàn bộ luồng hủy phiên
+                    System.err.println("[Auction] Lỗi hoàn tiền khi hủy phiên #"
+                            + auctionId + ": " + e.getMessage());
+                }
+            }
+
+            // 4. Dọn dẹp cache và thông báo
             liveAuctions.remove(auction.getAuctionId());
             auction.notifyObservers(AuctionEvent.auctionCanceled(auctionId));
+
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB khi hủy phiên: " + e.getMessage(), e);
-        } finally { managerLock.unlock(); }
+        } finally {
+            managerLock.unlock();
+        }
     }
 
     public void markAsPaid(int auctionId)
