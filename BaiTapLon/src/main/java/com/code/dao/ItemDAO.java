@@ -65,8 +65,8 @@ public class ItemDAO {
         String sql = """
             INSERT INTO items
                 (seller_id, name, description, starting_price, item_type,
-                 brand, warranty_months, artist_name, medium, license_plate, year_made)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 brand, warranty_months, artist_name, medium, license_plate, year_made, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
             """;
         try (PreparedStatement ps = conn().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt   (1, item.getSellerId());
@@ -75,6 +75,7 @@ public class ItemDAO {
             ps.setDouble(4, item.getStartingPrice());
             ps.setString(5, item.getType().name());
             setSubclassFields(ps, item); // fill field riêng của subclass từ index 6
+            ps.setString(12, item.getImageUrl());
             ps.executeUpdate();
 
             // Lấy ID vừa tạo từ DB
@@ -93,7 +94,7 @@ public class ItemDAO {
             SET name = ?, description = ?, starting_price = ?,
                 brand = ?, warranty_months = ?,
                 artist_name = ?, medium = ?,
-                license_plate = ?, year_made = ?
+                license_plate = ?, year_made = ?,image_url = ?
             WHERE id = ?
             """;
         try (PreparedStatement ps = conn().prepareStatement(sql)) {
@@ -126,7 +127,8 @@ public class ItemDAO {
                 ps.setNull(9, Types.INTEGER);
             }
 
-            ps.setInt(10, item.getItemId());
+            ps.setString(10, item.getImageUrl());
+            ps.setInt(11, item.getItemId());
             ps.executeUpdate();
         }
     }
@@ -153,8 +155,9 @@ public class ItemDAO {
         String description   = rs.getString("description");
         double startingPrice = rs.getDouble("starting_price");
         String typeStr       = rs.getString("item_type");
+        String imageUrl      = rs.getString("image_url"); // THÊM
 
-        return switch (ItemType.valueOf(typeStr)) {
+        Item item = switch (ItemType.valueOf(typeStr)) {
             case ELECTRONICS -> new Electronics(
                     id, sellerId, name, description, startingPrice,
                     rs.getString("brand"),
@@ -171,6 +174,9 @@ public class ItemDAO {
                     rs.getInt   ("year_made")
             );
         };
+
+        item.setImageUrl(imageUrl); // THÊM
+        return item;
     }
 
     /** Set field riêng theo subclass (dùng trong save). */

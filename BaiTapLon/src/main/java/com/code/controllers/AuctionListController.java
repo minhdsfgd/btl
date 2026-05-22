@@ -271,20 +271,53 @@ public class AuctionListController {
         String catIcon       = getCategoryIcon(a.getItem().getType().name());
         int    bidCount      = a.getBids().size();
 
+        // ── Ảnh sản phẩm ──────────────────────────────────────────────────────
+        ImageView cardImage = new ImageView();
+        cardImage.setFitWidth(226);
+        cardImage.setFitHeight(130);
+        cardImage.setPreserveRatio(true);
+        cardImage.setStyle(
+                "-fx-effect:dropshadow(gaussian,rgba(0,200,100,0.18),8,0,0,3);"
+        );
+
+        String imageUrl = a.getItem().getImageUrl();
+        System.out.println("[DEBUG] Card imageUrl: " + imageUrl);
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            new Thread(() -> {
+                try {
+                    java.io.File imgFile = new java.io.File(imageUrl);
+                    if (!imgFile.exists()) return;
+                    javafx.scene.image.Image img = new javafx.scene.image.Image(
+                            imgFile.toURI().toString(), 226, 130, true, true, true
+                    );
+                    Platform.runLater(() -> {
+                        if (!img.isError()) cardImage.setImage(img);
+                    });
+                } catch (Exception ignored) {}
+            }, "card-img-" + a.getAuctionId()).start();
+        }
+
+        // ── Labels ────────────────────────────────────────────────────────────
         Label catLabel = new Label(catIcon + " " + a.getItem().getType().name());
-        catLabel.setStyle("-fx-background-color:#99D1D3; -fx-text-fill:#000022;"
-                + "-fx-font-size:10; -fx-background-radius:6; -fx-padding:2 8 2 8;");
+        catLabel.setStyle(
+                "-fx-background-color:#99D1D3; -fx-text-fill:#000022;"
+                        + "-fx-font-size:10; -fx-background-radius:6; -fx-padding:2 8 2 8;"
+        );
 
         Label idLabel = new Label("Phiên " + a.getAuctionId());
         idLabel.setStyle("-fx-text-fill:#f0f2f1; -fx-font-size:10;");
 
         Label nameLabel = new Label(a.getItem().getName());
-        nameLabel.setStyle("-fx-text-fill:white; -fx-font-size:13; -fx-font-weight:bold;");
+        nameLabel.setStyle(
+                "-fx-text-fill:white; -fx-font-size:13; -fx-font-weight:bold;"
+        );
         nameLabel.setWrapText(true);
         nameLabel.setMaxWidth(200);
 
         Label priceLabel = new Label("💰 " + priceStr);
-        priceLabel.setStyle("-fx-text-fill:#6ee7b7; -fx-font-size:13; -fx-font-weight:bold;");
+        priceLabel.setStyle(
+                "-fx-text-fill:#6ee7b7; -fx-font-size:13; -fx-font-weight:bold;"
+        );
 
         Label startPriceLabel = new Label("Khởi điểm: " + startPriceStr);
         startPriceLabel.setStyle("-fx-text-fill:#9fe6c8; -fx-font-size:10;");
@@ -295,10 +328,14 @@ public class AuctionListController {
         Label timeLabel = new Label("⏱ " + timeInfo);
         timeLabel.setStyle("-fx-text-fill:#9fe6c8; -fx-font-size:11;");
 
-        Label startTimeLabel = new Label("Bắt đầu: " + a.getStartTime().format(FMT));
+        Label startTimeLabel = new Label(
+                "Bắt đầu: " + a.getStartTime().format(FMT)
+        );
         startTimeLabel.setStyle("-fx-text-fill:#c8f5e1; -fx-font-size:9;");
 
-        Label endTimeLabel = new Label("Kết thúc: " + a.getEndTime().format(FMT));
+        Label endTimeLabel = new Label(
+                "Kết thúc: " + a.getEndTime().format(FMT)
+        );
         endTimeLabel.setStyle("-fx-text-fill:#c8f5e1; -fx-font-size:9;");
 
         Label statusBadge = new Label(statusStr);
@@ -306,19 +343,27 @@ public class AuctionListController {
 
         Button actionBtn = new Button(getActionText(a));
         actionBtn.setMaxWidth(Double.MAX_VALUE);
-        actionBtn.setStyle("-fx-background-color:#16a34a; -fx-text-fill:white;"
-                + "-fx-background-radius:8; -fx-padding:6 12; -fx-cursor:hand;");
+        actionBtn.setStyle(
+                "-fx-background-color:#16a34a; -fx-text-fill:white;"
+                        + "-fx-background-radius:8; -fx-padding:6 12; -fx-cursor:hand;"
+        );
         actionBtn.setDisable(a.getStatus() == CANCELED);
-        // Sửa dòng này: truyền thêm chính nó (statusBadge) vào hàm handleAction
         actionBtn.setOnAction(e -> handleAction(a, actionBtn, statusBadge));
 
-        VBox card = new VBox(6, catLabel, idLabel, nameLabel, priceLabel,
-                startPriceLabel, bidCountLabel, timeLabel,
-                startTimeLabel, endTimeLabel, statusBadge, actionBtn);
+        // ── Ghép card ─────────────────────────────────────────────────────────
+        VBox card = new VBox(6,
+                cardImage,
+                catLabel, idLabel, nameLabel,
+                priceLabel, startPriceLabel, bidCountLabel,
+                timeLabel, startTimeLabel, endTimeLabel,
+                statusBadge, actionBtn
+        );
         card.setPrefWidth(250);
-        card.setStyle("-fx-background-color:#003333; -fx-padding:12;"
-                + "-fx-background-radius:12;"
-                + "-fx-border-color:#6ee7b7; -fx-border-radius:12; -fx-border-width:1;");
+        card.setStyle(
+                "-fx-background-color:#003333; -fx-padding:12;"
+                        + "-fx-background-radius:12;"
+                        + "-fx-border-color:#6ee7b7; -fx-border-radius:12; -fx-border-width:1;"
+        );
         return card;
     }
 
@@ -343,13 +388,7 @@ public class AuctionListController {
                 leaderName = "Người khác #" + a.getLeadingBidderId();
             }
 
-            // THAY ĐỔI: thêm tham số imageUrl (tham số thứ 6)
-            // Nếu model Item của bạn có getImageUrl() thì dùng: a.getItem().getImageUrl()
-            // Nếu chưa có thì truyền null tạm thời — ảnh sẽ không hiển thị nhưng không crash
-            String imageUrl = null;
-            try {
-//imageUrl = a.getItem().getImageUrl(); // bỏ dòng này nếu chưa có method
-            } catch (Exception ignored) {}
+            String imageUrl = a.getItem().getImageUrl();
 
             LiveBiddingController.prepareSession(
                     a.getAuctionId(),
@@ -407,7 +446,6 @@ public class AuctionListController {
                 }
             }, "mark-as-paid-lot").start();
 
-            // THÊM MỚI: Chuyển text của nút thành "Xem chi tiết" ngay lập tức sau khi nhấn
 
         }
 

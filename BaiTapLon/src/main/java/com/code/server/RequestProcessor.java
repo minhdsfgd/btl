@@ -384,6 +384,20 @@ public class RequestProcessor {
 
         try {
             Item item = req.getDataAs(Item.class);
+            //THEEM MOI, XU LY ANHR BASE 64
+            String base64 = item.getImageUrl();
+            if (base64 != null && !base64.isEmpty()) {
+                try {
+                    byte[] bytes = java.util.Base64.getDecoder().decode(base64);
+                    String fileName = "item_" + System.currentTimeMillis() + ".jpg";
+                    java.nio.file.Path path = java.nio.file.Paths.get("images/" + fileName);
+                    java.nio.file.Files.createDirectories(path.getParent());
+                    java.nio.file.Files.write(path, bytes);
+                    item.setImageUrl("images/" + fileName); // đổi base64 → đường dẫn thật
+                } catch (Exception e) {
+                    item.setImageUrl(null); // lỗi đọc ảnh → bỏ qua, không crash
+                }
+            }
             // FIX #2: ItemService.createItem() chỉ nhận 1 tham số Item
             //         truyền thêm currentUser để validate quyền SELLER bên trong
             itemService.createItem(item, handler.currentUser);
