@@ -16,35 +16,19 @@ public class ControllerUtils {
     }
     public static void navigateTo(String fxmlPath, boolean resetSize) {
         try {
-            //load giao deẹn mới
             Parent root = FXMLLoader.load(ControllerUtils.class.getResource(fxmlPath));
-
-            // lấy stage hiện tại từ client app
             Stage stage = ClientApp.getStage();
 
-            // LƯU LẠI KÍCH THƯỚC VÀ TRẠNG THÁI TRƯỚC KHI CHUYỂN TRANG
-            double currentWidth = stage.getWidth();
-            double currentHeight = stage.getHeight();
-            boolean isMaximized = stage.isMaximized();
-
-            //Đặt giao diện mới vào
-            stage.setScene(new Scene(root));
-
-            //TRẢ LẠI KÍCH THƯỚC CŨ
             if (resetSize) {
+                // Màn hình login/splash cần reset kích thước → vẫn dùng scene mới
                 stage.setMaximized(false);
+                stage.setScene(new Scene(root));
                 stage.sizeToScene();
                 stage.centerOnScreen();
-            } else if (isMaximized) {
-                // Phải set false trước rồi mới set true lại
-                // nếu không JavaFX đôi khi bỏ qua lệnh setMaximized(true)
-                stage.setMaximized(false);
-                Platform.runLater(() -> stage.setMaximized(true));
-                // Chỉ set lại kích thước nếu giá trị hợp lệ (tránh lúc ứng dụng vừa khởi động chưa có size)
-            } else if (!Double.isNaN(currentWidth) && currentWidth > 0) {
-                    stage.setWidth(currentWidth);
-                    stage.setHeight(currentHeight);
-                }
+            } else {
+                // Chỉ đổi root, stage không bị động gì cả
+                stage.getScene().setRoot(root);
+            }
 
         } catch (IOException e) {
             e.printStackTrace();

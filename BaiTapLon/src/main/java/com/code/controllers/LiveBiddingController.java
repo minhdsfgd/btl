@@ -659,7 +659,7 @@ public class LiveBiddingController implements Initializable {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setText(null); setStyle(""); }
-                else { setText(item); setStyle("-fx-text-fill: white;"); }
+                else { setText(item); setStyle("-fx-text-fill:  #1a1a1a;"); }
             }
         });
 
@@ -667,7 +667,7 @@ public class LiveBiddingController implements Initializable {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setText(null); setStyle(""); }
-                else { setText(item); setStyle("-fx-text-fill: white; -fx-alignment: CENTER;"); }
+                else { setText(item); setStyle("-fx-text-fill:  #065f3b; -fx-alignment: CENTER;"); }
             }
         });
 
@@ -675,7 +675,7 @@ public class LiveBiddingController implements Initializable {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setText(null); setStyle(""); }
-                else { setText(item); setStyle("-fx-text-fill: white; -fx-alignment: CENTER_RIGHT;"); }
+                else { setText(item); setStyle("-fx-text-fill:  #065f3b; -fx-alignment: CENTER_RIGHT;"); }
             }
         });
 
@@ -689,11 +689,11 @@ public class LiveBiddingController implements Initializable {
             @Override
             protected void updateItem(BidRow row, boolean empty) {
                 super.updateItem(row, empty);
-                if (empty || row == null) setStyle("");
+                if (empty || row == null) setStyle("-fx-background-color: #003333;");
                 else if (row.getUsername().equals(currentUsername))
-                    setStyle("-fx-background-color:#1b4d30;");
+                    setStyle("-fx-background-color:white;");
                 else
-                    setStyle("-fx-background-color:#0f3d2a;");
+                    setStyle("-fx-background-color:white;");
             }
         });
     }
