@@ -442,7 +442,7 @@ public class LiveBiddingController implements Initializable {
         SocketClient.getInstance().stopListening();
         sendUnwatch();
         try{
-            Thread.sleep(100);
+            Thread.sleep(500);
         }catch (InterruptedException ignored){}
         navigateTo("/com/code/views/AuctionList.fxml");
     }

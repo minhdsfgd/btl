@@ -180,7 +180,8 @@ public class AuctionService {
 
     private void finishAuction(int auctionId) {
         try {
-            Auction auction = auctionDAO.findById(auctionId);
+            Auction auction = liveAuctions.get(auctionId);
+            if (auction == null) {auction = auctionDAO.findById(auctionId);}
             if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) return;
             managerLock.lock();
             try {
@@ -192,7 +193,7 @@ public class AuctionService {
                     try {
                         User seller = userDAO.findById(auction.getSellerId());
                         if (seller != null) {
-                            double winningAmount = auction.getCurrentPrice()*auction.getRatio();
+                            double winningAmount = auction.getCurrentPrice()*Auction.getRatio();
                             seller.deposit(winningAmount);
                             userDAO.update(seller);
                             txService.logPaymentToSeller(
@@ -232,7 +233,7 @@ public class AuctionService {
         try {
             // 1. Lấy thông tin người dẫn đầu và số tiền cần hoàn
             int leadingBidderId = auction.getLeadingBidderId();
-            double refundAmount = auction.getCurrentPrice();
+            double refundAmount = auction.getCurrentPrice()*auction.getRatio();
 
             // 2. Cập nhật trạng thái hủy
             auction.updateStatus(AuctionStatus.CANCELED);
@@ -275,7 +276,9 @@ public class AuctionService {
             throws AuctionClosedException, UserBannedException, AuthenticationException, InsufficientBalanceException{
         managerLock.lock();
         try {
-            Auction auction = getAuction(auctionId);
+            Auction auction = liveAuctions.get(auctionId);
+            if  (auction == null) {auction = getAuction(auctionId);}
+
 
             if (auction.getStatus() != AuctionStatus.FINISHED) {
                 throw new AuctionClosedException(

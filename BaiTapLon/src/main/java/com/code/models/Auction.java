@@ -168,7 +168,7 @@ public class Auction implements Serializable {
     public boolean        isBanned()           { return banned; }
     public int            getLeadingBidderId() { return leadingBidderId; }
     public List<Bid>      getBids()            { return Collections.unmodifiableList(bids); }
-    public double         getRatio()           { return ratio;}
+    public static double         getRatio()           { return ratio;}
 
     /** Thêm bid vào danh sách (internal use, dùng khi load từ DB) */
     public void addBidToList(Bid bid) {
