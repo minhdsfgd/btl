@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
+import com.code.client.SocketClient;
 import com.code.models.Role;
 import com.code.network.Request;
+import com.code.network.RequestType;
 import com.code.network.Response;
 import static com.code.util.ControllerUtils.navigateTo;
 import com.code.network.UpdateUserData;
@@ -774,9 +776,9 @@ public class AdminPanelController implements Initializable {
                     null
             );
 
-            com.code.network.Response res = com.code.client.SocketClient.getInstance()
-                    .sendRequest(com.code.network.Request.of(
-                            com.code.network.RequestType.UPDATE_USER, data));
+            Response res = SocketClient.getInstance()
+                    .sendRequest(Request.of(
+                            RequestType.UPDATE_USER, data));
 
             Platform.runLater(() -> {
                 if (res.isSuccess()) {

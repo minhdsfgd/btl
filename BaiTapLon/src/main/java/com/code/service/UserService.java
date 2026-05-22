@@ -1,6 +1,7 @@
 package com.code.service;
 
 import com.code.dao.UserDAO;
+import com.code.exception.AuctionClosedException;
 import com.code.exception.AuthenticationException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
@@ -126,7 +127,7 @@ public class UserService {
     public void banUser(User admin, int userId)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        User target = getOrThrow(userId);
+        User target = getUser(userId);
         if (target.hasRole(Role.ADMIN))
             throw new AuthenticationException("Không thể ban tài khoản Admin khác.");
         target.setActive(false);
@@ -145,9 +146,9 @@ public class UserService {
     public void unbanUser(User admin, int userId)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        getOrThrow(userId).setActive(true);
+        getUser(userId).setActive(true);
         try{
-            userDAO.update(getOrThrow(userId));
+            userDAO.update(getUser(userId));
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
@@ -162,7 +163,7 @@ public class UserService {
         requireAdmin(admin);
         if (role == Role.ADMIN)
             throw new AuthenticationException("Dùng createAdmin() để tạo Admin mới.");
-        getOrThrow(userId).addRole(role);
+        getUser(userId).addRole(role);
     }
 
     /**
@@ -171,7 +172,7 @@ public class UserService {
     public void removeRole(User admin, int userId, Role role)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        getOrThrow(userId).removeRole(role);
+        getUser(userId).removeRole(role);
     }
 
     /**
@@ -196,7 +197,7 @@ public class UserService {
                           Double balance, Boolean active, String rolesStr)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        User target = getOrThrow(userId);
+        User target = getUser(userId);
         
         if (target.hasRole(Role.ADMIN) && !admin.equals(target))
             throw new AuthenticationException("Không thể sửa tài khoản Admin khác.");
@@ -237,7 +238,7 @@ public class UserService {
         requireAdmin(admin);
         if (userId == admin.getUserId())
             throw new AuthenticationException("Không thể xóa chính mình.");
-        User target = getOrThrow(userId);
+        User target = getUser(userId);
         if (target.hasRole(Role.ADMIN))
             throw new AuthenticationException("Không thể xóa tài khoản Admin.");
         
@@ -257,7 +258,7 @@ public class UserService {
             throw new AuthenticationException("Chỉ Admin được thực hiện thao tác này.");
     }
 
-    private User getOrThrow(int userId) {
+    public User getUser(int userId) {
         try{
             User u = userDAO.findById(userId);
             if (u == null)
@@ -266,7 +267,5 @@ public class UserService {
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
-
-
     }
 }

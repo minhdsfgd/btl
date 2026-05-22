@@ -1,11 +1,21 @@
 package com.code.service;
+import com.code.client.SocketClient;
 import com.code.dao.UserDAO;
 import com.code.dao.AuctionDAO;
 import com.code.exception.AuctionClosedException;
+import com.code.exception.AuthenticationException;
+import com.code.exception.InsufficientBalanceException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
 import com.code.dao.*;
+import com.code.network.Request;
+import com.code.network.RequestType;
+import com.code.network.Response;
+import com.code.network.UpdateUserData;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +24,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.code.client.SessionManager.getUser;
 
 /**
  * Quản lý vòng đời phiên đấu giá — Singleton (double-checked locking).
@@ -180,7 +192,7 @@ public class AuctionService {
                     try {
                         User seller = userDAO.findById(auction.getSellerId());
                         if (seller != null) {
-                            double winningAmount = auction.getCurrentPrice();
+                            double winningAmount = auction.getCurrentPrice()*auction.getRatio();
                             seller.deposit(winningAmount);
                             userDAO.update(seller);
                             txService.logPaymentToSeller(
@@ -260,7 +272,7 @@ public class AuctionService {
     }
 
     public void markAsPaid(int auctionId)
-            throws AuctionClosedException {
+            throws AuctionClosedException, UserBannedException, AuthenticationException, InsufficientBalanceException{
         managerLock.lock();
         try {
             Auction auction = getAuction(auctionId);
@@ -271,9 +283,35 @@ public class AuctionService {
                 );
             }
 
+            User bidder = userDAO.findById(auction.getLeadingBidderId());
+            User seller = userDAO.findById(auction.getSellerId());
+
+            if (bidder == null || seller == null) {
+                throw new IllegalArgumentException("Không tìm thấy thông tin bidder hoặc seller.");
+            }
+            
+            if (bidder.equals(seller)) {throw new AuthenticationException("Bidder và seller là cùng 1 người");
+            }
+            if (!bidder.isActive()) throw new UserBannedException(bidder.getUsername());
+            if (!seller.isActive()) throw new UserBannedException(seller.getUsername());
+
+            double amount = auction.getCurrentPrice();
+            double actualPayAmount = amount * (1 - auction.getRatio());
+
+            if (bidder.getBalance() < amount*(1-auction.getRatio())) {
+                throw new InsufficientBalanceException("Tài khoản ko đủ số dư");
+            }
+            // --- BẮT ĐẦU PHẦN SỬA LỖI ---
+            // Cập nhật số dư trực tiếp trên object User
+            bidder.setBalance(bidder.getBalance() - actualPayAmount);
+            seller.setBalance(seller.getBalance() + actualPayAmount);
+
+            // Lưu trực tiếp xuống Database qua DAO (Server-side)
+            userDAO.update(bidder);
+            userDAO.update(seller);
+
             auction.updateStatus(AuctionStatus.PAID);
             auctionDAO.update(auction);   // ← Lưu vào DB
-
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB khi đánh dấu đã thanh toán: " + e.getMessage(), e);
         } finally {
@@ -340,7 +378,7 @@ public class AuctionService {
     public void shutdown() { scheduler.shutdownNow(); }
 
     // ── Helper ───────────────────────────────────────────────────────────────
-
+    //TODO: Move to AuthGuard
     private void requireOwnerOrAdmin(Auction auction, User user, String action)
             throws AuctionClosedException {
         boolean isOwner = auction.getSellerId() == user.getUserId();

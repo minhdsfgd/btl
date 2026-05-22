@@ -115,11 +115,11 @@ public class BidService {
             if (currentLeaderId == user.getUserId()) {
 
                 // Chỉ trừ thêm phần chênh lệch (không hoàn + trừ lại toàn bộ)
-                double extraNeeded = amount - oldPrice;
+                double extraNeeded = (amount - oldPrice)*auction.getRatio();
 
                 if (user.getBalance() < extraNeeded) {
                     throw new InsufficientBalanceException(
-                            "Không đủ số dư để tăng giá thêm " + extraNeeded + " VNĐ");
+                            "Không đủ số dư để tăng giá thêm " + extraNeeded/auction.getRatio() + " VNĐ");
                 }
 
                 user.deductBalance(extraNeeded);
@@ -143,13 +143,13 @@ public class BidService {
                         User prevLeader = userDAO.findById(currentLeaderId);
 
                         if (prevLeader != null) {
-                            prevLeader.deposit(oldPrice);
+                            prevLeader.deposit(oldPrice*auction.getRatio());
                             userDAO.update(prevLeader);
 
                             // Ghi log: hoàn tiền cho người bị vượt giá
                             txService.logRefund(
                                     prevLeader.getUserId(),
-                                    oldPrice,
+                                    oldPrice*auction.getRatio(),
                                     auction.getAuctionId()
                             );
                         }
@@ -163,17 +163,17 @@ public class BidService {
                 }
 
                 // Kiểm tra bidder mới đủ tiền
-                if (user.getBalance() < amount) {
+                if (user.getBalance() < amount*auction.getRatio()) {
                     throw new InsufficientBalanceException("Không đủ số dư");
                 }
 
                 // Giữ tiền bidder mới
-                user.deductBalance(amount);
+                user.deductBalance(amount*auction.getRatio());
 
                 // Ghi log: giữ tiền bid mới
                 txService.logBidHold(
                         user.getUserId(),
-                        amount,
+                        amount*auction.getRatio(),
                         auction.getAuctionId()
                 );
             }
@@ -220,6 +220,8 @@ public class BidService {
      * @throws UserBannedException   nếu tài khoản bị ban
      * @throws IllegalArgumentException nếu amount <= 0  (unchecked — lỗi lập trình viên)
      */
+
+    // it shouldn't be here, refactor it.
     public Transaction deposit(User user, double amount) throws UserBannedException {
         if (!user.isActive())
             throw new UserBannedException(user.getUsername());

@@ -24,6 +24,7 @@ public class Auction implements Serializable {
     private LocalDateTime endTime;
     private AuctionStatus status;
     private boolean banned;
+    private static double ratio = 0.1;
 
     /** userId người dẫn đầu; -1 nếu chưa có bid */
     private int leadingBidderId = -1;
@@ -167,6 +168,7 @@ public class Auction implements Serializable {
     public boolean        isBanned()           { return banned; }
     public int            getLeadingBidderId() { return leadingBidderId; }
     public List<Bid>      getBids()            { return Collections.unmodifiableList(bids); }
+    public double         getRatio()           { return ratio;}
 
     /** Thêm bid vào danh sách (internal use, dùng khi load từ DB) */
     public void addBidToList(Bid bid) {
