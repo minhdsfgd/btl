@@ -142,6 +142,29 @@ CREATE TABLE IF NOT EXISTS user_audit_log (
     INDEX idx_audit_field   (field_name),
     INDEX idx_audit_time    (changed_at)
 ) ENGINE=InnoDB;
+CREATE TABLE audit_logs (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+
+                            admin_id INT NOT NULL,
+                            target_user_id INT NOT NULL,
+
+                            action VARCHAR(50) NOT NULL,
+                            old_value TEXT,
+                            new_value TEXT,
+
+
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                            CONSTRAINT fk_audit_admin
+                                FOREIGN KEY (admin_id)
+                                    REFERENCES users(id)
+                                    ON DELETE CASCADE,
+
+                            CONSTRAINT fk_audit_target_user
+                                FOREIGN KEY (target_user_id)
+                                    REFERENCES users(id)
+                                    ON DELETE CASCADE
+);
 
 -- ── Trigger: tự động ghi audit khi MySQL UPDATE users ────────
 -- Bắt các thay đổi từ mọi nguồn (Java code, tool DB...).
