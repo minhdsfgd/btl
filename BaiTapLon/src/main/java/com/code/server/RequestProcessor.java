@@ -313,7 +313,7 @@ public class RequestProcessor {
 
             // FIX #1: bidService.deposit() cập nhật balance + tạo Transaction
             //         txService.save(tx) lưu Transaction vào DB — đã thêm method save()
-            Transaction tx = bidService.deposit(handler.currentUser, amount);
+            Transaction tx = txService.deposit(handler.currentUser, amount);;
             txService.save(tx);
 
             // Cập nhật balance mới vào DB

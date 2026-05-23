@@ -52,7 +52,7 @@ public class AuctionServer {
 
         // ── Bước 2: Khởi tạo tất cả Service (inject DAO vào) ────────────────
         UserService        userService = new UserService(userDAO);
-        TransactionService txService   = new TransactionService(txDAO);
+        TransactionService txService   = new TransactionService(txDAO,userDAO);
         BidService         bidService  = new BidService(bidDAO, auctionDAO, userDAO, txService);
         ItemService        itemService = new ItemService(itemDAO);
 

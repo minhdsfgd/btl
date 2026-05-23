@@ -1,17 +1,24 @@
 package com.code.service;
 
 import com.code.dao.TransactionDAO;
+import com.code.dao.UserDAO;
+import com.code.exception.InsufficientBalanceException;
+import com.code.exception.UserBannedException;
 import com.code.models.Transaction;
+import com.code.models.User;
 
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class TransactionService {
 
     private final TransactionDAO transactionDAO;
+    private final UserDAO userDAO;
 
-    public TransactionService(TransactionDAO transactionDAO) {
+    public TransactionService(TransactionDAO transactionDAO, UserDAO userDAO) {
         this.transactionDAO = transactionDAO;
+        this.userDAO = userDAO;
     }
 
     /**
@@ -110,6 +117,43 @@ public class TransactionService {
             transactionDAO.save(tx);
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB khi lưu transaction: " + e.getMessage(), e);
+        }
+    }
+    // TransactionService.java
+    public Transaction deposit(User user, double amount)
+            throws UserBannedException, SQLException, InsufficientBalanceException {
+
+        // Validate
+        if (!user.isActive())
+            throw new UserBannedException(user.getUsername());
+
+        if (amount <= 0)
+            throw new IllegalArgumentException("Số tiền phải > 0");
+
+        // Update user balance in memory
+        user.deposit(amount);
+
+        try {
+            // Lưu user xuống DB
+            userDAO.update(user);
+
+            Transaction tx = Transaction.deposit(
+                    0,                      // id = 0 (auto-increment từ DB)
+                    user.getUserId(),       // toUserId
+                    amount
+            );
+
+            // Save transaction (id sẽ được set bởi DAO)
+            transactionDAO.save(tx);
+
+            return tx;
+
+        } catch (SQLException e) {
+            // Rollback balance in memory
+            user.deductBalance(amount);
+
+            throw new RuntimeException(
+                    "Lỗi lưu deposit transaction: " + e.getMessage(), e);
         }
     }
 }

@@ -212,24 +212,7 @@ public class BidService {
         }
     }
 
-    // ── Nạp tiền ──────────────────────────────────────────────────────────────
 
-    /**
-     * Nạp tiền vào tài khoản.
-     *
-     * @throws UserBannedException   nếu tài khoản bị ban
-     * @throws IllegalArgumentException nếu amount <= 0  (unchecked — lỗi lập trình viên)
-     */
 
-    // it shouldn't be here, refactor it.
-    public Transaction deposit(User user, double amount) throws UserBannedException {
-        if (!user.isActive())
-            throw new UserBannedException(user.getUsername());
-        if (amount <= 0)
-            // FIX: dùng IllegalArgumentException thay vì InvalidBidException
-            throw new IllegalArgumentException("Số tiền nạp phải > 0 VNĐ.");
 
-        user.deposit(amount);
-        return Transaction.deposit(0, user.getUserId(), amount);
-    }
 }
