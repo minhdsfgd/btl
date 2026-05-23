@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -128,6 +129,7 @@ public class AuctionListController {
                         List<Auction> list = res.getDataAs(List.class);
                         allAuctions.clear();
                         if (list != null) allAuctions.addAll(list);
+                        Collections.reverse(allAuctions);
                         handleSearch();
                     } else {
                         showLoading("Lỗi tải dữ liệu: " + res.getMessage());
