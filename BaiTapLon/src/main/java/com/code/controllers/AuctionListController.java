@@ -96,6 +96,7 @@ public class AuctionListController {
         filterActiveButton  .setOnAction(e -> handleFilter("ACTIVE",   filterActiveButton));
         filterUpcomingButton.setOnAction(e -> handleFilter("UPCOMING", filterUpcomingButton));
         filterEndedButton   .setOnAction(e -> handleFilter("ENDED",    filterEndedButton));
+        filterPendingPaymentButton.setOnAction(e -> handleFilter("PENDING_PAYMENT", filterPendingPaymentButton));
 
         categoryComboBox.getItems().addAll("Tất cả", "ELECTRONICS", "ART", "VEHICLE");
         categoryComboBox.setValue("Tất cả");
@@ -230,9 +231,10 @@ public class AuctionListController {
 
     private boolean matchesFilter(Auction a) {
         return switch (currentFilter) {
-            case "ACTIVE"   -> a.getStatus() == AuctionStatus.RUNNING;
-            case "UPCOMING" -> a.getStatus() == AuctionStatus.OPEN;
+            case "ACTIVE"   -> a.getStatus() == RUNNING;
+            case "UPCOMING" -> a.getStatus() == OPEN;
             case "ENDED"    -> a.getStatus().isTerminal();
+            case "PENDING_PAYMENT" -> a.getStatus() == FINISHED && a.getLeadingBidderId() == SessionManager.getUserId();
             default         -> true;
         };
     }
@@ -566,6 +568,7 @@ public class AuctionListController {
         filterActiveButton  .setStyle(inactive);
         filterUpcomingButton.setStyle(inactive);
         filterEndedButton   .setStyle(inactive);
+        filterPendingPaymentButton.setStyle(inactive);
         activeBtn.setStyle(active);
     }
 }
