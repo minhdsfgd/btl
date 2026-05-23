@@ -34,6 +34,7 @@ public class Auction implements Serializable {
     // transient — không Serializable
     private transient ReentrantLock lock;
     private transient List<AuctionObserver> observers;
+    private static final long MAX_AUCTION_DAYS = 90;
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -53,6 +54,10 @@ public class Auction implements Serializable {
         // kiểm tra logic tgian
         if (!endTime.isAfter(startTime))
             throw new IllegalArgumentException("endTime phải sau startTime");
+        long days = java.time.temporal.ChronoUnit.DAYS.between(startTime, endTime);
+        if (days > MAX_AUCTION_DAYS)
+            throw new IllegalArgumentException(
+                    "Phiên không được vượt quá " + MAX_AUCTION_DAYS + " ngày");
 
         this.auctionId    = auctionId;
         this.item         = item;

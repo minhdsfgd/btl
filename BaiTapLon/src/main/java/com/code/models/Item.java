@@ -17,6 +17,7 @@ public abstract class Item implements Serializable {
     private String name;
     private String description;
     private double startingPrice;
+    private String imageUrl;
 
     protected Item(int itemId, int sellerId, String name,
                    String description, double startingPrice) {
@@ -28,6 +29,10 @@ public abstract class Item implements Serializable {
         this.description   = description != null ? description : "";
         this.startingPrice = startingPrice;
     }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
 
     /** Subclass override để trả về loại sản phẩm — thể hiện polymorphism. */
     public abstract ItemType getType();

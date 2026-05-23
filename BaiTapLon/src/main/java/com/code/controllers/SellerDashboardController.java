@@ -148,30 +148,30 @@ public class SellerDashboardController implements Initializable {
         }, "load-seller-auctions").start();
     }
 
-     private LotRow auctionToLotRow(Auction a) {
-         String timeInfo = formatAuctionTime(a);
-         return new LotRow(
-                 "#" + a.getAuctionId(),
-                 a.getItem().getName(),
-                 String.format("%,.0f đ", a.getCurrentPrice()),
-                 mapStatus(a),
-                 timeInfo
-         );
-     }
+    private LotRow auctionToLotRow(Auction a) {
+        String timeInfo = formatAuctionTime(a);
+        return new LotRow(
+                "#" + a.getAuctionId(),
+                a.getItem().getName(),
+                String.format("%,.0f đ", a.getCurrentPrice()),
+                mapStatus(a),
+                timeInfo
+        );
+    }
 
-     private String formatAuctionTime(Auction a) {
-         LocalDateTime now = LocalDateTime.now();
-         if (a.getStatus() == RUNNING) {
-             long mins = java.time.temporal.ChronoUnit.MINUTES.between(now, a.getEndTime());
-             return mins > 0 ? mins + " phút còn lại" : "Sắp kết thúc";
-         }
-         if (a.getStatus() == OPEN) {
-             long mins = java.time.temporal.ChronoUnit.MINUTES.between(now, a.getStartTime());
-             if (mins <= 0) return "Bắt đầu ngay";
-             return "Bắt đầu trong " + mins + " phút";
-         }
-         return "Kết thúc";
-     }
+    private String formatAuctionTime(Auction a) {
+        LocalDateTime now = LocalDateTime.now();
+        if (a.getStatus() == RUNNING) {
+            long mins = java.time.temporal.ChronoUnit.MINUTES.between(now, a.getEndTime());
+            return mins > 0 ? mins + " phút còn lại" : "Sắp kết thúc";
+        }
+        if (a.getStatus() == OPEN) {
+            long mins = java.time.temporal.ChronoUnit.MINUTES.between(now, a.getStartTime());
+            if (mins <= 0) return "Bắt đầu ngay";
+            return "Bắt đầu trong " + mins + " phút";
+        }
+        return "Kết thúc";
+    }
 
     private String mapStatus(Auction a) {
         return switch (a.getStatus()) {
@@ -402,20 +402,20 @@ public class SellerDashboardController implements Initializable {
         });
     }
 
-     private void refreshStats() {
-         long total  = allLots.size();
-         long active = allLots.stream().filter(l -> "Đang đấu giá".equals(l.getStatus())).count();
-         long sold   = allLots.stream().filter(l -> "Đã bán".equals(l.getStatus())).count();
-         lblTotalLots.setText(String.valueOf(total));
-         lblActiveLots.setText(String.valueOf(active));
-         lblSoldLots.setText(String.valueOf(sold));
-     }
+    private void refreshStats() {
+        long total  = allLots.size();
+        long active = allLots.stream().filter(l -> "Đang đấu giá".equals(l.getStatus())).count();
+        long sold   = allLots.stream().filter(l -> "Đã bán".equals(l.getStatus())).count();
+        lblTotalLots.setText(String.valueOf(total));
+        lblActiveLots.setText(String.valueOf(active));
+        lblSoldLots.setText(String.valueOf(sold));
+    }
 
-     private void setActiveMenu(Button activeBtn) {
-         for (Button btn : new Button[] { btnMenuOverview, btnMenuLots, btnMenuNotif, btnMenuActivity }) {
-             btn.setStyle(btn == activeBtn ? MENU_ACTIVE : MENU_INACTIVE);
-         }
-     }
+    private void setActiveMenu(Button activeBtn) {
+        for (Button btn : new Button[] { btnMenuOverview, btnMenuLots, btnMenuNotif, btnMenuActivity }) {
+            btn.setStyle(btn == activeBtn ? MENU_ACTIVE : MENU_INACTIVE);
+        }
+    }
 
     private void renderActivities() {
         vboxActivities.getChildren().clear();
@@ -431,7 +431,7 @@ public class SellerDashboardController implements Initializable {
             vboxActivities.getChildren().add(label);
         }
     }
-    
+
     @FXML
     private void handleShowActivities() {
         setActiveMenu(btnMenuActivity);
@@ -456,7 +456,7 @@ public class SellerDashboardController implements Initializable {
         dialog.setScene(new Scene(root, 500, 360));
         dialog.showAndWait();
     }
-    
+
 
     private void showCreateAuctionDialog() {
         // Load seller's items
@@ -532,7 +532,7 @@ public class SellerDashboardController implements Initializable {
         Map<String, Integer> itemMap = new HashMap<>();
         for (Item item : items) {
             String display = "#" + item.getItemId() + " - " + item.getName() +
-                           " (" + String.format("%,.0f đ", item.getStartingPrice()) + ")";
+                    " (" + String.format("%,.0f đ", item.getStartingPrice()) + ")";
             cmbItem.getItems().add(display);
             itemMap.put(display, item.getItemId());
         }
@@ -603,9 +603,9 @@ public class SellerDashboardController implements Initializable {
     }
 
     private void createAuctionSession(Map<String, Integer> itemMap, String selectedItem,
-                                     String bidIncrementStr, LocalDate startDate,
-                                     int startHour, int startMin, LocalDate endDate,
-                                     int endHour, int endMin, Stage dialog) {
+                                      String bidIncrementStr, LocalDate startDate,
+                                      int startHour, int startMin, LocalDate endDate,
+                                      int endHour, int endMin, Stage dialog) {
         try {
             if (selectedItem == null || selectedItem.isEmpty()) {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "Vui lòng chọn sản phẩm");
@@ -698,7 +698,6 @@ public class SellerDashboardController implements Initializable {
         TextField tfStartPrice = new TextField();
         tfStartPrice.setPromptText("Giá khởi điểm (VNĐ)");
 
-        // Trường đặc thù theo loại
         Label lblExtra1 = new Label("Thương hiệu:");
         TextField tfExtra1 = new TextField();
         tfExtra1.setPromptText("VD: Samsung, Picasso, Toyota...");
@@ -707,7 +706,6 @@ public class SellerDashboardController implements Initializable {
         TextField tfExtra2 = new TextField();
         tfExtra2.setPromptText("VD: 12 (tháng), Sơn dầu, 2020");
 
-        // Cập nhật nhãn khi đổi loại
         cmbType.setOnAction(e -> {
             switch (cmbType.getValue()) {
                 case "ELECTRONICS" -> { lblExtra1.setText("Thương hiệu:"); lblExtra2.setText("Bảo hành (tháng):"); tfExtra2.setPromptText("VD: 12"); }
@@ -716,8 +714,55 @@ public class SellerDashboardController implements Initializable {
             }
         });
 
+        // ── Chọn ảnh ──────────────────────────────────────────────────────────
+        // Dùng mảng 1 phần tử để lambda có thể ghi vào
+        final String[] chosenBase64 = {null};
+
+        javafx.scene.image.ImageView previewImageView = new javafx.scene.image.ImageView();
+        previewImageView.setFitWidth(180);
+        previewImageView.setFitHeight(110);
+        previewImageView.setPreserveRatio(true);
+
+        Label imagePathLabel = new Label("Chưa chọn ảnh");
+        imagePathLabel.setStyle("-fx-text-fill:#555; -fx-font-size:11;");
+
+        Button btnChooseImage = new Button("📁 Chọn ảnh sản phẩm");
+        btnChooseImage.setStyle(
+                "-fx-background-color:#065f3b; -fx-text-fill:white;"
+                        + "-fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;"
+        );
+        btnChooseImage.setOnAction(e -> {
+            javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
+            fc.setTitle("Chọn ảnh sản phẩm");
+            fc.getExtensionFilters().add(
+                    new javafx.stage.FileChooser.ExtensionFilter(
+                            "Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp"
+                    )
+            );
+            java.io.File file = fc.showOpenDialog(btnChooseImage.getScene().getWindow());
+            if (file != null) {
+                try {
+                    // Đọc file → encode Base64 → gửi lên server
+                    byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+                    chosenBase64[0] = java.util.Base64.getEncoder().encodeToString(bytes);
+                    imagePathLabel.setText(file.getName());
+                    previewImageView.setImage(
+                            new javafx.scene.image.Image(
+                                    file.toURI().toString(), 180, 110, true, true
+                            )
+                    );
+                } catch (Exception ex) {
+                    imagePathLabel.setText("Lỗi đọc file: " + ex.getMessage());
+                    chosenBase64[0] = null;
+                }
+            }
+        });
+
+        HBox imageBox = new HBox(10, btnChooseImage, imagePathLabel);
+        imageBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
         Label lblErr = new Label();
-        lblErr.setStyle("-fx-text-fill: #c62828; -fx-font-size: 11;");
+        lblErr.setStyle("-fx-text-fill:#c62828; -fx-font-size:11;");
 
         vbox.getChildren().addAll(
                 new Label("Loại sản phẩm:"), cmbType,
@@ -726,6 +771,9 @@ public class SellerDashboardController implements Initializable {
                 new Label("Giá khởi điểm (VNĐ):"), tfStartPrice,
                 lblExtra1, tfExtra1,
                 lblExtra2, tfExtra2,
+                new Label("Ảnh sản phẩm:"),
+                imageBox,
+                previewImageView,
                 lblErr
         );
 
@@ -739,7 +787,12 @@ public class SellerDashboardController implements Initializable {
         javafx.stage.Stage dialog = new javafx.stage.Stage();
         dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         dialog.setTitle("Tạo sản phẩm mới");
-        dialog.setScene(new javafx.scene.Scene(vbox, 480, 500));
+        dialog.setScene(new javafx.scene.Scene(
+                new javafx.scene.control.ScrollPane(vbox) {{
+                    setFitToWidth(true);
+                    setStyle("-fx-background-color:white;");
+                }}, 500, 640
+        ));
 
         btnCancel.setOnAction(e -> dialog.close());
         btnCreate.setOnAction(e -> {
@@ -751,12 +804,14 @@ public class SellerDashboardController implements Initializable {
             String extra2   = tfExtra2.getText().trim();
 
             if (name.isEmpty()) { lblErr.setText("Vui lòng nhập tên sản phẩm."); return; }
+
             double startPrice;
             try {
                 startPrice = Double.parseDouble(priceStr);
                 if (startPrice <= 0) throw new NumberFormatException();
             } catch (NumberFormatException ex) {
-                lblErr.setText("Giá khởi điểm không hợp lệ (phải > 0)."); return;
+                lblErr.setText("Giá khởi điểm không hợp lệ (phải > 0).");
+                return;
             }
 
             int sellerId = SessionManager.getUserId();
@@ -764,16 +819,21 @@ public class SellerDashboardController implements Initializable {
             try {
                 item = switch (type) {
                     case "ELECTRONICS" -> {
-                        int warranty = extra2.isEmpty() ? 0 : Integer.parseInt(extra2.replaceAll("[^\\d]", ""));
-                        yield new com.code.models.Electronics(0, sellerId, name, desc, startPrice,
+                        int warranty = extra2.isEmpty() ? 0
+                                : Integer.parseInt(extra2.replaceAll("[^\\d]", ""));
+                        yield new com.code.models.Electronics(
+                                0, sellerId, name, desc, startPrice,
                                 extra1.isEmpty() ? "Unknown" : extra1, warranty);
                     }
-                    case "ART" -> new com.code.models.Art(0, sellerId, name, desc, startPrice,
+                    case "ART" -> new com.code.models.Art(
+                            0, sellerId, name, desc, startPrice,
                             extra1.isEmpty() ? "Khuyết danh" : extra1,
                             extra2.isEmpty() ? "" : extra2);
                     case "VEHICLE" -> {
-                        int year = extra2.isEmpty() ? 0 : Integer.parseInt(extra2.replaceAll("[^\\d]", ""));
-                        yield new com.code.models.Vehicle(0, sellerId, name, desc, startPrice,
+                        int year = extra2.isEmpty() ? 0
+                                : Integer.parseInt(extra2.replaceAll("[^\\d]", ""));
+                        yield new com.code.models.Vehicle(
+                                0, sellerId, name, desc, startPrice,
                                 extra1.isEmpty() ? "" : extra1, year);
                     }
                     default -> throw new IllegalStateException("Loại không hợp lệ");
@@ -784,15 +844,18 @@ public class SellerDashboardController implements Initializable {
                 lblErr.setText("Lỗi: " + ex.getMessage()); return;
             }
 
-            final Item finalItem = item;
+            // Gán Base64 vào imageUrl — server sẽ decode, lưu file, đổi thành path thật
+            item.setImageUrl(chosenBase64[0]);
+
+            final com.code.models.Item finalItem = item;
             new Thread(() -> {
                 try {
                     Response res = SocketClient.getInstance()
                             .sendRequest(Request.of(RequestType.CREATE_ITEM, finalItem));
                     Platform.runLater(() -> {
                         if (res.isSuccess()) {
-                            showAlert(Alert.AlertType.INFORMATION,"Thành công",
-                                    "Tạo sản phẩm thành công");
+                            showAlert(Alert.AlertType.INFORMATION,
+                                    "Thành công", "Tạo sản phẩm thành công");
                             dialog.close();
                             activities.add(0, "Tạo sản phẩm mới: " + name);
                             renderActivities();
@@ -801,7 +864,8 @@ public class SellerDashboardController implements Initializable {
                         }
                     });
                 } catch (Exception ex) {
-                    Platform.runLater(() -> lblErr.setText("Lỗi kết nối: " + ex.getMessage()));
+                    Platform.runLater(() ->
+                            lblErr.setText("Lỗi kết nối: " + ex.getMessage()));
                 }
             }, "create-item").start();
         });
@@ -809,27 +873,27 @@ public class SellerDashboardController implements Initializable {
         dialog.showAndWait();
     }
 
-     // ── Row Model ─────────────────────────────────────────────────────────────
+    // ── Row Model ─────────────────────────────────────────────────────────────
 
-     public static class LotRow {
-         private final String id;
-         private final String project;
-         private final String price;
-         private final String status;
-         private final String timeInfo;
+    public static class LotRow {
+        private final String id;
+        private final String project;
+        private final String price;
+        private final String status;
+        private final String timeInfo;
 
-         public LotRow(String id, String project, String price, String status, String timeInfo) {
-             this.id = id;
-             this.project = project;
-             this.price = price;
-             this.status = status;
-             this.timeInfo = timeInfo;
-         }
+        public LotRow(String id, String project, String price, String status, String timeInfo) {
+            this.id = id;
+            this.project = project;
+            this.price = price;
+            this.status = status;
+            this.timeInfo = timeInfo;
+        }
 
-         public String getId()       { return id; }
-         public String getProject()  { return project; }
-         public String getPrice()    { return price; }
-         public String getStatus()   { return status; }
-         public String getTimeInfo() { return timeInfo; }
-     }
+        public String getId()       { return id; }
+        public String getProject()  { return project; }
+        public String getPrice()    { return price; }
+        public String getStatus()   { return status; }
+        public String getTimeInfo() { return timeInfo; }
+    }
 }
