@@ -106,22 +106,18 @@
 
             <!-- ═══════════════ MENU ═══════════════ -->
             <HBox spacing="8.0" style="-fx-padding:0 10 10 10;">
-                <Button fx:id="btnMenuOverview"  onAction="#handleMenuOverview"
-                        text="Tổng quan"
-                        style="-fx-background-color:#065f3b; -fx-text-fill:white;
-                               -fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;" />
                 <Button fx:id="btnMenuLots"      onAction="#handleMenuLots"
                         text="Quản lý lô hàng"
                         style="-fx-background-color:#065f3b; -fx-text-fill:white;
-                               -fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;" />
+                   -fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;" />
                 <Button fx:id="btnMenuNotif"     onAction="#handleMenuNotif"
                         text="Thông báo"
                         style="-fx-background-color:#065f3b; -fx-text-fill:white;
-                               -fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;" />
+                   -fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;" />
                 <Button fx:id="btnMenuActivity"  onAction="#handleShowActivities"
                         text="🕐 Hoạt động gần đây"
                         style="-fx-background-color:#065f3b; -fx-text-fill:white;
-                               -fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;" />
+                   -fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;" />
             </HBox>
 
             <!-- ═══════════════ NỘI DUNG CHÍNH ═══════════════ -->
@@ -158,13 +154,14 @@
                     </TableView>
                 </VBox>
 
-                <!-- Cột phải: hoạt động gần đây -->
-                <VBox spacing="8.0" prefWidth="220" VBox.vgrow="ALWAYS"
+                <!-- Cột phải: hoạt động gần đây — ẨN mặc định -->
+                <VBox fx:id="panelActivities" spacing="8.0" prefWidth="220" VBox.vgrow="ALWAYS"
+                      managed="false" visible="false"
                       style="-fx-background-color:#003333; -fx-background-radius:8;
-                             -fx-border-color:#6ee7b7; -fx-border-radius:8;
-                             -fx-border-width:1; -fx-padding:12;">
+             -fx-border-color:#6ee7b7; -fx-border-radius:8;
+             -fx-border-width:1; -fx-padding:12;">
                     <Label text="HOẠT ĐỘNG GẦN ĐÂY"
-                           style="-fx-text-fill:#c8f5e1; -fx-font-size:10; -fx-font-weight:bold;" />
+                           style="-fx-text-fill:white; -fx-font-size:10; -fx-font-weight:bold;" />
                     <VBox fx:id="vboxActivities" spacing="6" VBox.vgrow="ALWAYS" />
                 </VBox>
 
