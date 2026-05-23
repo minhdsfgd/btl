@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.code.client.SessionManager.getUser;
+import static com.code.models.AuctionStatus.*;
 
 /**
  * Quản lý vòng đời phiên đấu giá — Singleton (double-checked locking).
@@ -185,40 +186,49 @@ public class AuctionService {
             if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) return;
             managerLock.lock();
             try {
-                auction.updateStatus(AuctionStatus.FINISHED);
+                int winnerId = auction.getLeadingBidderId();
+                if (winnerId == -1){
+                    cancelAuction(auctionId,userDAO.findById(auction.getSellerId()));
+                    return;
+                }
+                auction.updateStatus(FINISHED);
                 auctionDAO.update(auction);
                 liveAuctions.remove(auctionId);
-                int winnerId = auction.getLeadingBidderId();
-                if (winnerId != -1) {
-                    try {
-                        User seller = userDAO.findById(auction.getSellerId());
-                        if (seller != null) {
-                            double winningAmount = auction.getCurrentPrice()*Auction.getRatio();
-                            seller.deposit(winningAmount);
-                            userDAO.update(seller);
-                            txService.logPaymentToSeller(
-                                    winnerId,
-                                    seller.getUserId(),
-                                    winningAmount,
-                                    auctionId
-                            );
-                            System.out.println("[Auction] Phan #" + auctionId
-                                    + ": chuyen " + winningAmount
-                                    + " VND tu bidder #" + winnerId
-                                    + " -> seller #" + seller.getUserId());
-                        }
-                    } catch (Exception e) {
-                        System.err.println("[Auction] Loi thanh toan phan #"
-                                + auctionId + ": " + e.getMessage());
+
+
+                try {
+                    User seller = userDAO.findById(auction.getSellerId());
+                    if (seller != null) {
+                        double winningAmount = auction.getCurrentPrice()*Auction.getRatio();
+                        seller.deposit(winningAmount);
+                        userDAO.update(seller);
+                        txService.logPaymentToSeller(
+                                winnerId,
+                                seller.getUserId(),
+                                winningAmount,
+                                auctionId
+                        );
+                        System.out.println("[Auction] Phan #" + auctionId
+                                + ": chuyen " + winningAmount
+                                + " VND tu bidder #" + winnerId
+                                + " -> seller #" + seller.getUserId());
                     }
+                } catch (Exception e) {
+                    System.err.println("[Auction] Loi thanh toan phan #"
+                            + auctionId + ": " + e.getMessage());
                 }
+
 
                 auction.notifyObservers(
                         AuctionEvent.auctionFinished(auctionId, winnerId));
+            } catch (AuctionClosedException e) {
+                throw new RuntimeException(e);
+            } catch (UserBannedException e) {
+                throw new UserBannedException("user banned");
             } finally {
                 managerLock.unlock();
             }
-        } catch (SQLException e) {
+        } catch (SQLException | UserBannedException e) {
             System.err.println("[Scheduler] Loi ket thuc phan #" + auctionId + ": " + e.getMessage());
         }
     }
@@ -280,7 +290,7 @@ public class AuctionService {
             if  (auction == null) {auction = getAuction(auctionId);}
 
 
-            if (auction.getStatus() != AuctionStatus.FINISHED) {
+            if (auction.getStatus() != FINISHED) {
                 throw new AuctionClosedException(
                         "Auction phải ở trạng thái FINISHED."
                 );

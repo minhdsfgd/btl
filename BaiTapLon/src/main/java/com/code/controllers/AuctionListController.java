@@ -454,7 +454,7 @@ public class AuctionListController {
         }
 
         else {
-            // FINISHED / PAID / CANCELED
+            //PAID / CANCELED
             int bidCount = a.getBids().size();
             String winnerInfo = "";
             if (a.getLeadingBidderId() != -1) {
