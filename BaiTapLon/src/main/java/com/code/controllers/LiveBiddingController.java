@@ -467,28 +467,28 @@ public class LiveBiddingController implements Initializable {
     }
 
 
-
     public void setProduct(String name, String description, String imageUrl) {
         System.out.println("[DEBUG] imageUrl nhận được: " + imageUrl);
         productNameLabel.setText(name);
         productDescLabel.setText(description);
         productCategoryLabel.setText("Đang đấu giá");
 
-        // load ảnh thật từ server
         if (imageUrl != null && !imageUrl.isBlank()) {
             new Thread(() -> {
                 try {
-                    // true = background loading (không block UI thread)
                     java.io.File imgFile = new java.io.File(imageUrl);
                     if (!imgFile.exists()) return;
-                    Image img = new Image(imgFile.toURI().toString(), 151, 120, true, true, true);
+                    // 152×152 khớp fitWidth/fitHeight trong FXML, preserveRatio=true
+                    Image img = new Image(
+                            imgFile.toURI().toString(),
+                            152, 152,
+                            true,   // preserveRatio — không méo
+                            true, true
+                    );
                     Platform.runLater(() -> {
-                        if (!img.isError()) {
-                            productImageView.setImage(img);
-                        }
-                        // Nếu lỗi load ảnh thì giữ nguyên placeholder (không làm gì)
+                        if (!img.isError()) productImageView.setImage(img);
                     });
-                } catch (Exception ignored) { }
+                } catch (Exception ignored) {}
             }, "load-product-image").start();
         }
     }
