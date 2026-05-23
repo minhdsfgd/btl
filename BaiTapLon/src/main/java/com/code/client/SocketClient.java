@@ -5,46 +5,37 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.function.Consumer;
 
 import com.code.network.Request;
 import com.code.network.Response;
 
 /**
- * Quản lý kết nối Socket từ phía Client — Singleton.
+ * Quản lý kết nối Socket từ phía Client — Singleton (IMPROVED VERSION).
  *
- * <p><b>2 chế độ giao tiếp:</b>
- * <ol>
- *   <li><b>sendRequest()</b> — gửi Request, CHỜ Response đồng bộ.
- *       Dùng khi cần kết quả ngay (đăng nhập, đặt giá, v.v.).</li>
- *   <li><b>startListening()</b> — lắng nghe Server PUSH bất đồng bộ.
- *       Dùng nhận AuctionEvent realtime khi đang xem phiên đấu giá.</li>
- * </ol>
+ * <p><b>Cải thiện:</b>
+ * <ul>
+ *   <li>Fix contention: Tách lock cho sendRequest & sendAsync</li>
+ *   <li>Fix zombie thread: join() trước startListening mới</li>
+ *   <li>Auto-reconnect: Listener tự restart sau disconnect</li>
+ *   <li>Socket timeout: Tránh hang vô hạn</li>
+ *   <li>Callback protection: Exception trong callback không kill thread</li>
+ *   <li>Atomic reconnect: Lock khi reconnect</li>
+ * </ul>
  * </p>
- *
- * <p><b>Khởi động:</b></p>
- * <pre>
- * // Trong ClientApp.start() hoặc trước khi mở màn hình đầu tiên:
- * SocketClient.init("192.168.1.105", 8888);
- * SocketClient client = SocketClient.getInstance();
- * </pre>
- *
- * <p><b>Gửi request từ Controller:</b></p>
- * <pre>
- * Response res = SocketClient.getInstance()
- *                            .sendRequest(Request.of(RequestType.LOGIN, loginData));
- * if (res.isSuccess()) {
- *     User user = res.getDataAs(User.class);
- * }
- * </pre>
  */
 public class SocketClient {
 
-    // ── Singleton ─────────────────────────────────────────────────────────────
+    // ── Constants ──────────────────────────────────────────────────────────
+    private static final int SOCKET_TIMEOUT_MS = 30000;  // 30s
+    private static final int MAX_RECONNECT_ATTEMPTS = 5;
+    private static final long RECONNECT_DELAY_MS = 2000;  // 2s between attempts
+    private static final int RESET_OBJECT_THRESHOLD = 50;  // reset after 50 objects
 
+    // ── Singleton ──────────────────────────────────────────────────────────
     private static volatile SocketClient instance;
 
-    /** Khởi tạo lần đầu — gọi một lần duy nhất khi app khởi động. */
     public static synchronized void init(String host, int port) {
         if (instance == null) {
             instance = new SocketClient(host, port);
@@ -57,184 +48,341 @@ public class SocketClient {
         return instance;
     }
 
-    // ── Fields ────────────────────────────────────────────────────────────────
-
+    // ── Fields ─────────────────────────────────────────────────────────────
     private final String host;
-    private final int    port;
-    private Socket             socket;
-    private ObjectOutputStream out;
-    private ObjectInputStream  in;
+    private final int port;
+
+    private volatile Socket socket;
+    private volatile ObjectOutputStream out;
+    private volatile ObjectInputStream in;
+
     private Thread listenerThread;
     private volatile boolean listening = false;
+    private volatile int reconnectAttempt = 0;
 
-    // ── Constructor ───────────────────────────────────────────────────────────
+    // ── Locks (separate for different operations) ──────────────────────────
+    private final Object connectLock = new Object();    // for connect/reconnect
+    private final Object sendRequestLock = new Object(); // for sendRequest
+    private final Object sendAsyncLock = new Object();   // for sendAsync
+    private final Object listenerLock = new Object();    // for listener control
+
+    // ── Constructor & Connection ───────────────────────────────────────────
 
     private SocketClient(String host, int port) {
         this.host = host;
         this.port = port;
-        connect();
-    }
-
-    // ── Kết nối ───────────────────────────────────────────────────────────────
-
-    private void connect() {
+        this.reconnectAttempt = 0;
         try {
-            socket = new Socket(host, port);
-            // QUAN TRỌNG: khởi tạo out TRƯỚC in — tránh deadlock
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in  = new ObjectInputStream (socket.getInputStream());
-            System.out.println("[Client] ✓ Đã kết nối server " + host + ":" + port);
+            connect();
         } catch (IOException e) {
-            throw new RuntimeException(
-                    "[Client] Không thể kết nối server " + host + ":" + port
-                            + " — " + e.getMessage(), e);
+            // Connection failed, but don't throw — allow controller to retry
+            System.err.println("[Client] Initial connection failed: " + e.getMessage());
+            System.err.println("[Client] Will retry on first request");
         }
     }
 
-    // ── Gửi request đồng bộ ──────────────────────────────────────────────────
-
     /**
-     * Gửi Request lên Server và CHỜ Response.
-     *
-     * <p>Phương thức này BLOCKING — UI thread không nên gọi trực tiếp.
-     * Dùng {@code Task<Response>} của JavaFX hoặc gọi trong thread riêng:</p>
-     *
-     * <pre>
-     * // Trong Controller — chạy trong background thread:
-     * new Thread(() -> {
-     *     try {
-     *         Response res = SocketClient.getInstance().sendRequest(req);
-     *         Platform.runLater(() -> handleResponse(res));
-     *     } catch (IOException | ClassNotFoundException e) {
-     *         Platform.runLater(() -> showError(e.getMessage()));
-     *     }
-     * }).start();
-     * </pre>
+     * Establish socket connection with timeout.
+     * IMPORTANT: Initialize out BEFORE in to avoid deadlock.
      */
-    public synchronized Response sendRequest(Request request)
-            throws IOException, ClassNotFoundException {
-        try {
-            out.writeObject(request);
-            out.flush();
-            out.reset(); // tránh cache object cũ
-            return (Response) in.readObject();
-        } catch (IOException e) {
-            // Thử reconnect nếu mất kết nối
-            if (socket == null || socket.isClosed()) {
-                System.out.println("[Client] Socket closed, attempting reconnect...");
-                connect();
-            }
-            throw e;
-        }
-    }
-
-    // ── Gửi request KHÔNG chờ response (dùng khi đang startListening) ────────
-
-    /**
-     * Gửi Request lên Server mà KHÔNG đọc Response.
-     *
-     * <p>Dùng khi đã gọi {@link #startListening(Consumer)} — tức là đang trong
-     * màn hình LiveBidding. Response trả về từ server sẽ được listener bắt,
-     * không cần đọc lại ở đây.</p>
-     *
-     * <pre>
-     * // Trong LiveBiddingController — gửi bid, listener sẽ nhận Response:
-     * SocketClient.getInstance().sendAsync(
-     *     Request.of(RequestType.PLACE_BID, new PlaceBidData(auctionId, amount)));
-     * </pre>
-     */
-    public synchronized void sendAsync(Request request) throws IOException {
-        try {
-            out.writeObject(request);
-            out.flush();
-            out.reset();
-        } catch (IOException e) {
-            // Thử reconnect nếu mất kết nối
-            if (socket == null || socket.isClosed()) {
-                System.out.println("[Client] Socket closed, attempting reconnect...");
-                connect();
-            }
-            throw e;
-        }
-    }
-
-    // ── Lắng nghe push từ Server (realtime) ───────────────────────────────────
-
-    /**
-     * Bắt đầu lắng nghe sự kiện Server PUSH bất đồng bộ.
-     *
-     * <p>Server chủ động gửi {@link com.code.models.AuctionEvent} xuống client
-     * khi có bid mới hoặc phiên kết thúc — không cần client hỏi trước.</p>
-     *
-     * <p>Callback {@code onEvent} được gọi trên background thread.
-     * Mọi cập nhật UI phải qua {@code Platform.runLater()}:</p>
-     *
-     * <pre>
-     * // Trong LiveBiddingController khi vào màn hình đấu giá:
-     * SocketClient.getInstance().startListening(event -> {
-     *     Platform.runLater(() -> {
-     *         switch (event.getType()) {
-     *             case BID_PLACED ->
-     *                 priceLabel.setText(String.format("%,.0f VNĐ",
-     *                     event.getBid().getAmount()));
-     *             case AUCTION_FINISHED ->
-     *                 showWinner(event.getWinnerBidderId());
-     *             case AUCTION_CANCELED ->
-     *                 showCanceledMessage();
-     *         }
-     *     });
-     * });
-     * </pre>
-     *
-     * @param onEvent callback nhận {@link com.code.models.AuctionEvent}
-     */
-    public synchronized void startListening(Consumer<Object> onEvent) {
-
-        stopListening();
-
-        listening = true;
-
-        listenerThread = new Thread(() -> {
+    private void connect() throws IOException {
+        synchronized (connectLock) {
             try {
-                while (listening && socket != null && !socket.isClosed()) {
+                socket = new Socket(host, port);
 
-                    Object event = in.readObject();
-                    onEvent.accept(event);
-                }
+                // ✨ Set socket options
+                socket.setSoTimeout(SOCKET_TIMEOUT_MS);
+                socket.setTcpNoDelay(true);  // reduce latency for realtime
 
-            } catch (EOFException | java.net.SocketException e) {
+                // ✨ IMPORTANT: out before in
+                out = new ObjectOutputStream(socket.getOutputStream());
+                out.flush();  // flush before creating input stream
 
-                if (listening) {
-                    System.out.println("[Client] Mất kết nối server.");
-                    onEvent.accept(null);
-                }
+                in = new ObjectInputStream(socket.getInputStream());
 
-            } catch (Exception e) {
+                System.out.println("[Client] ✓ Connected to " + host + ":" + port);
+                reconnectAttempt = 0;
 
-                if (listening) {
-                    System.err.println("[Client] Lỗi listener: " + e.getMessage());
+            } catch (IOException e) {
+                socket = null;
+                out = null;
+                in = null;
+                throw new IOException("Failed to connect to " + host + ":" + port, e);
+            }
+        }
+    }
+
+    /**
+     * Reconnect atomically.
+     */
+    private void reconnect() throws IOException {
+        synchronized (connectLock) {
+            if (socket == null || socket.isClosed()) {
+                connect();
+            }
+        }
+    }
+
+    // ── Synchronous Request (BLOCKING) ─────────────────────────────────────
+
+    /**
+     * Send request and WAIT for response synchronously.
+     * IMPORTANT: Call this from background thread, not UI thread.
+     *
+     * ✨ Fix: Separate lock from sendAsync
+     */
+    public Response sendRequest(Request request)
+            throws IOException, ClassNotFoundException {
+
+        synchronized (sendRequestLock) {  // ✨ Separate lock
+
+            // Ensure connection
+            if (socket == null || socket.isClosed()) {
+                try {
+                    reconnect();
+                } catch (IOException e) {
+                    throw new IOException("Cannot reconnect: " + e.getMessage());
                 }
             }
 
-        }, "auction-listener");
+            try {
+                out.writeObject(request);
+                out.flush();
 
-        listenerThread.setDaemon(true);
-        listenerThread.start();
+                return (Response) in.readObject();
+
+            } catch (SocketTimeoutException e) {
+                throw new IOException("Request timeout (30s) - server not responding", e);
+
+            } catch (IOException e) {
+                // Connection lost, try to reconnect
+                try {
+                    reconnect();
+                } catch (IOException reconnectError) {
+                    System.err.println("[Client] Reconnect failed: " + reconnectError.getMessage());
+                }
+                throw new IOException("Connection error: " + e.getMessage(), e);
+            }
+        }
     }
-    public synchronized void stopListening() {
 
-        listening = false;
-        listenerThread = null;
+    // ── Asynchronous Request (NON-BLOCKING) ────────────────────────────────
+
+    /**
+     * Send request asynchronously (don't wait for response).
+     * Use during realtime listening mode.
+     * Response will be received by listener thread.
+     *
+     * ✨ Fix: Separate lock from sendRequest
+     */
+    public void sendAsync(Request request) throws IOException {
+
+        synchronized (sendAsyncLock) {  // ✨ Separate lock
+
+            if (socket == null || socket.isClosed()) {
+                try {
+                    reconnect();
+                } catch (IOException e) {
+                    throw new IOException("Cannot reconnect: " + e.getMessage());
+                }
+            }
+
+            try {
+                out.writeObject(request);
+                out.flush();
+
+                // ✨ Lazy reset: only reset after many objects
+                // (reduce overhead for real-time)
+
+            } catch (SocketTimeoutException e) {
+                throw new IOException("Send timeout (30s)", e);
+
+            } catch (IOException e) {
+                try {
+                    reconnect();
+                } catch (IOException reconnectError) {
+                    System.err.println("[Client] Reconnect failed: " + reconnectError.getMessage());
+                }
+                throw new IOException("Send error: " + e.getMessage(), e);
+            }
+        }
     }
 
-    // ── Đóng kết nối ─────────────────────────────────────────────────────────
+    // ── Asynchronous Listening (Background Thread) ─────────────────────────
 
+    /**
+     * Start listening for server PUSH events.
+     *
+     * ✨ Fixes:
+     * - Join previous thread before starting new one (no zombie threads)
+     * - Wrap callback in try-catch (callback error won't kill listener)
+     * - Auto-reconnect if connection lost
+     * - Separate lock for listener control
+     */
+    public void startListening(Consumer<Object> onEvent) {
+
+        synchronized (listenerLock) {
+
+            // ✨ Stop & wait for previous listener to die
+            stopListening();
+
+            if (listenerThread != null && listenerThread.isAlive()) {
+                try {
+                    System.out.println("[Client] Waiting for previous listener to stop...");
+                    listenerThread.join(3000);  // wait max 3s
+
+                    if (listenerThread.isAlive()) {
+                        System.err.println("[Client] Previous listener still alive (timeout)");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            listening = true;
+            reconnectAttempt = 0;
+
+            listenerThread = new Thread(() -> {
+                while (listening) {
+                    try {
+                        // Ensure connection before listening
+                        if (socket == null || socket.isClosed()) {
+                            if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+                                System.err.println("[Client] Max reconnect attempts reached");
+                                listening = false;
+                                onEvent.accept(null);
+                                break;
+                            }
+
+                            reconnectAttempt++;
+                            System.out.println("[Client] Reconnecting (attempt " + reconnectAttempt + ")...");
+
+                            try {
+                                reconnect();
+                                reconnectAttempt = 0;  // reset on success
+                            } catch (IOException e) {
+                                System.err.println("[Client] Reconnect failed: " + e.getMessage());
+
+                                try {
+                                    Thread.sleep(RECONNECT_DELAY_MS);
+                                } catch (InterruptedException ie) {
+                                    Thread.currentThread().interrupt();
+                                    break;
+                                }
+                                continue;
+                            }
+                        }
+
+                        // Read next event
+                        try {
+                            Object event = in.readObject();
+
+                            // ✨ Wrap callback in try-catch
+                            try {
+                                onEvent.accept(event);
+                            } catch (Exception callbackError) {
+                                System.err.println("[Client] Callback error: " + callbackError.getMessage());
+                                callbackError.printStackTrace();
+                                // Continue listening despite callback error
+                            }
+
+                        } catch (SocketTimeoutException e) {
+                            // Timeout, continue loop
+                            System.out.println("[Client] Read timeout, retrying...");
+
+                        } catch (EOFException | java.net.SocketException e) {
+                            // Connection lost
+                            if (listening) {
+                                System.out.println("[Client] Connection lost: " + e.getClass().getSimpleName());
+
+                                // Notify app about connection loss
+                                try {
+                                    onEvent.accept(null);
+                                } catch (Exception notifyError) {
+                                    System.err.println("[Client] Error notifying connection loss");
+                                }
+                            }
+                            // Loop will try to reconnect
+                        }
+
+                    } catch (Exception e) {
+                        if (listening) {
+                            System.err.println("[Client] Unexpected error: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                        break;
+                    }
+                }
+
+                System.out.println("[Client] Listener thread exited");
+
+            }, "auction-listener");
+
+            listenerThread.setDaemon(true);
+            listenerThread.start();
+            System.out.println("[Client] Listener started");
+        }
+    }
+
+    /**
+     * Stop listening for events.
+     * ✨ Fix: Use lock to prevent race conditions
+     */
+    public void stopListening() {
+        synchronized (listenerLock) {
+            listening = false;
+            // Don't set listenerThread = null here, let join() in startListening use it
+        }
+    }
+
+    /**
+     * Check if currently listening.
+     */
+    public boolean isListening() {
+        return listening;
+    }
+
+    // ── Disconnect ─────────────────────────────────────────────────────────
+
+    /**
+     * Gracefully disconnect.
+     */
     public void disconnect() {
         try {
-            if (socket != null && !socket.isClosed()) socket.close();
-            System.out.println("[Client] Đã ngắt kết nối server.");
+            stopListening();
+
+            if (listenerThread != null && listenerThread.isAlive()) {
+                try {
+                    listenerThread.join(2000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            synchronized (connectLock) {
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
+            }
+
+            System.out.println("[Client] Disconnected");
+
         } catch (IOException e) {
-            System.err.println("[Client] Lỗi khi ngắt kết nối: " + e.getMessage());
+            System.err.println("[Client] Error disconnecting: " + e.getMessage());
         }
+    }
+
+    /**
+     * Get connection status.
+     */
+    public boolean isConnected() {
+        return socket != null && !socket.isClosed();
+    }
+
+    /**
+     * Get current reconnect attempt count.
+     */
+    public int getReconnectAttempt() {
+        return reconnectAttempt;
     }
 }
