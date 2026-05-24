@@ -1,11 +1,10 @@
 package com.code.service;
 
+import com.code.dao.AuditLogDAO;
 import com.code.dao.UserDAO;
-import com.code.exception.AuctionClosedException;
 import com.code.exception.AuthenticationException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -24,8 +23,12 @@ import java.util.List;
 public class UserService {
 
     private final UserDAO userDAO;
-    public UserService(UserDAO userDAO) {
+    private final AuditLogService auditLogService;
+
+    public UserService(UserDAO userDAO, AuditLogDAO auditLogDAO) {
         this.userDAO = userDAO;
+        this.auditLogService=new  AuditLogService(auditLogDAO);
+
     }
 
     // ── Đăng ký ──────────────────────────────────────────────────────────────
@@ -72,16 +75,22 @@ public class UserService {
     public Admin createAdmin(User currentAdmin, String username, String password)
             throws AuthenticationException, UserBannedException {
         requireAdmin(currentAdmin);
-        if (username == null || username.isBlank())
-            throw new IllegalArgumentException("Username không được để trống.");
-        if (password == null || password.length() < 6)
-            throw new IllegalArgumentException("Password phải ít nhất 6 ký tự.");
-        try{
+        try {
             if (userDAO.existsByUsername(username))
                 throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
 
             Admin admin = new Admin(0, username, password, 0.0);
             userDAO.save(admin);
+
+            // ✨ LOG: Tạo Admin mới
+            auditLogService.logAction(
+                    currentAdmin.getUserId(),
+                    admin.getUserId(),
+                    AuditLog.ActionType.CREATE_ADMIN,
+                    null,
+                    admin.getUsername()
+            );
+
             return admin;
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
@@ -127,17 +136,28 @@ public class UserService {
     public void banUser(User admin, int userId)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
+
         User target = getUser(userId);
         if (target.hasRole(Role.ADMIN))
             throw new AuthenticationException("Không thể ban tài khoản Admin khác.");
+
+        boolean wasActive = target.isActive();
         target.setActive(false);
-        try{
+
+        try {
             userDAO.update(target);
+
+            // ✨ LOG với thông tin rõ ràng
+            auditLogService.logFieldChange(
+                    admin.getUserId(),
+                    userId,
+                    AuditLog.ActionType.BAN_USER,
+                    "active=" + wasActive,
+                    "active=false"
+            );
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
-
-
     }
 
     /**
@@ -146,13 +166,28 @@ public class UserService {
     public void unbanUser(User admin, int userId)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        getUser(userId).setActive(true);
-        try{
-            userDAO.update(getUser(userId));
+
+        User target = getUser(userId);
+        if (target.hasRole(Role.ADMIN))
+            throw new AuthenticationException("Không thể gỡ ban tài khoản Admin khác.");
+
+        boolean wasActive = target.isActive();
+        target.setActive(true);
+
+        try {
+            userDAO.update(target);
+
+            // ✨ FIX: Dùng UNBAN_USER thay vì BAN_USER
+            auditLogService.logFieldChange(
+                    admin.getUserId(),
+                    userId,
+                    AuditLog.ActionType.UNBAN_USER,
+                    "active=" + wasActive,
+                    "active=true"
+            );
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
-
     }
 
     /**
@@ -163,7 +198,23 @@ public class UserService {
         requireAdmin(admin);
         if (role == Role.ADMIN)
             throw new AuthenticationException("Dùng createAdmin() để tạo Admin mới.");
-        getUser(userId).addRole(role);
+
+        User target = getUser(userId);
+        target.addRole(role);
+
+        try {
+            userDAO.update(target);
+
+            auditLogService.logAction(
+                    admin.getUserId(),
+                    userId,
+                    AuditLog.ActionType.ADD_ROLE,
+                    null,
+                    role.name()
+            );
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -172,7 +223,23 @@ public class UserService {
     public void removeRole(User admin, int userId, Role role)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        getUser(userId).removeRole(role);
+
+        User target = getUser(userId);
+        target.removeRole(role);
+
+        try {
+            userDAO.update(target);
+
+            auditLogService.logAction(
+                    admin.getUserId(),
+                    userId,
+                    AuditLog.ActionType.REMOVE_ROLE,
+                    role.name(),
+                    null
+            );
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -181,49 +248,87 @@ public class UserService {
     public List<User> getAllUsers(User admin)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
-        try{
+        try {
             return userDAO.findAll();
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
-
     }
 
     /**
      * Admin cập nhật thông tin user.
      * Các trường null sẽ bị bỏ qua (không cập nhật).
      */
-    public void updateUser(User admin, int userId, String username, String password,
-                          Double balance, Boolean active, String rolesStr)
+    public void updateUser(User admin, int userId,
+                           String newUsername, String newPassword,
+                           Double newBalance, Boolean newActive, String rolesStr)
             throws UserBannedException, AuthenticationException {
         requireAdmin(admin);
+
         User target = getUser(userId);
-        
+
         if (target.hasRole(Role.ADMIN) && !admin.equals(target))
             throw new AuthenticationException("Không thể sửa tài khoản Admin khác.");
-        
-        if (username != null && !username.isBlank())
-            target.setUsername(username);
-        
-        if (password != null && password.length() >= 6)
-            target.setPassword(password);
-        
-        if (balance != null && balance >= 0)
-            target.setBalance(balance);
-        
-        if (active != null)
-            target.setActive(active);
-        
-        if (rolesStr != null && !rolesStr.isBlank()) {
-            target.getRoles().clear();
-            for (String roleStr : rolesStr.split(",")) {
-                try {
-                    target.addRole(Role.valueOf(roleStr.trim()));
-                } catch (IllegalArgumentException ignored) {}
-            }
-        }
-        
+
         try {
+            // ✨ Log từng field thay đổi
+            if (newUsername != null && !newUsername.isBlank() && !newUsername.equals(target.getUsername())) {
+                String oldUsername = target.getUsername();
+                target.setUsername(newUsername);
+                auditLogService.logFieldChange(
+                        admin.getUserId(),
+                        userId,
+                        AuditLog.ActionType.UPDATE_USERNAME,
+                        oldUsername,
+                        newUsername
+                );
+            }
+
+            if (newPassword != null && newPassword.length() >= 6) {
+                target.setPassword(newPassword);
+                auditLogService.logAction(
+                        admin.getUserId(),
+                        userId,
+                        AuditLog.ActionType.UPDATE_PASSWORD,
+                        "[HIDDEN]",  // Không log password thực tế
+                        "[CHANGED]"
+                );
+            }
+
+            if (newBalance != null && newBalance >= 0 && newBalance != target.getBalance()) {
+                double oldBalance = target.getBalance();
+                target.setBalance(newBalance);
+                auditLogService.logFieldChange(
+                        admin.getUserId(),
+                        userId,
+                        AuditLog.ActionType.UPDATE_BALANCE,
+                        String.valueOf(oldBalance),
+                        String.valueOf(newBalance)
+                );
+            }
+
+            if (newActive != null && newActive != target.isActive()) {
+                boolean oldActive = target.isActive();
+                target.setActive(newActive);
+                auditLogService.logFieldChange(
+                        admin.getUserId(),
+                        userId,
+                        AuditLog.ActionType.UPDATE_STATUS,
+                        "active=" + oldActive,
+                        "active=" + newActive
+                );
+            }
+
+            // Update roles
+            if (rolesStr != null && !rolesStr.isBlank()) {
+                target.getRoles().clear();
+                for (String roleStr : rolesStr.split(",")) {
+                    try {
+                        target.addRole(Role.valueOf(roleStr.trim()));
+                    } catch (IllegalArgumentException ignored) {}
+                }
+            }
+
             userDAO.update(target);
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
@@ -238,12 +343,21 @@ public class UserService {
         requireAdmin(admin);
         if (userId == admin.getUserId())
             throw new AuthenticationException("Không thể xóa chính mình.");
+
         User target = getUser(userId);
         if (target.hasRole(Role.ADMIN))
             throw new AuthenticationException("Không thể xóa tài khoản Admin.");
-        
+
         try {
             userDAO.delete(userId);
+
+            auditLogService.logAction(
+                    admin.getUserId(),
+                    userId,
+                    AuditLog.ActionType.DELETE_USER,
+                    target.getUsername(),
+                    null
+            );
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
@@ -258,12 +372,21 @@ public class UserService {
             throw new AuthenticationException("Chỉ Admin được thực hiện thao tác này.");
     }
 
-    public User getUser(int userId) {
-        try{
+    private User getUser(int userId) throws AuthenticationException {
+        try {
             User u = userDAO.findById(userId);
             if (u == null)
-                throw new IllegalArgumentException("Không tìm thấy user #" + userId);
+                throw new AuthenticationException("Không tìm thấy user #" + userId);
             return u;
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
+        }
+    }
+    public List<AuditLog> getUserAuditLogs(User admin, int targetUserId)
+            throws AuthenticationException, UserBannedException {
+        requireAdmin(admin);
+        try {
+            return auditLogService.getUserLogs(targetUserId);
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi DB: " + e.getMessage(), e);
         }
