@@ -26,6 +26,10 @@ public class Auction implements Serializable {
     private boolean banned;
     private static double ratio = 0.1;
 
+    private int    autoBidUserId    = -1;      // Người dùng auto bid (-1 = không)
+    private double autoBidMaxAmount = 0;       // Giá trần auto bid
+    private double autoBidStep      = 0;       // Bước tăng auto bid
+
     /** userId người dẫn đầu; -1 nếu chưa có bid */
     private int leadingBidderId = -1;
     //danh sách trống để lưu lịch sử các lượt đặt giá
@@ -232,5 +236,24 @@ public class Auction implements Serializable {
 
     public interface AuctionObserver {
         void onAuctionEvent(AuctionEvent event);
+    }
+
+    //autobid
+    public int getAutoBidUserId()        { return autoBidUserId; }
+    public double getAutoBidMaxAmount()  { return autoBidMaxAmount; }
+    public double getAutoBidStep()       { return autoBidStep; }
+
+    public void setAutoBidUserId(int userId)        { this.autoBidUserId = userId; }
+    public void setAutoBidMaxAmount(double max)     { this.autoBidMaxAmount = max; }
+    public void setAutoBidStep(double step)         { this.autoBidStep = step; }
+
+    public void clearAutoBid() {
+        this.autoBidUserId = -1;
+        this.autoBidMaxAmount = 0;
+        this.autoBidStep = 0;
+    }
+
+    public boolean hasAutoBid() {
+        return autoBidUserId != -1 && autoBidMaxAmount > 0 && autoBidStep > 0;
     }
 }

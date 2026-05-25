@@ -136,7 +136,6 @@ public class BidService {
 // CASE 2: Người khác bị vượt giá
 // ================================
             else {
-
                 // Hoàn tiền leader cũ
                 if (currentLeaderId != -1) {
                     try {
@@ -177,7 +176,7 @@ public class BidService {
                         auction.getAuctionId()
                 );
             }
-// Update auction
+            // Update auction
             auction.setCurrentPrice(amount);
             auction.recordBid(bid);
             try {
@@ -201,6 +200,37 @@ public class BidService {
                 throw new RuntimeException("Lỗi lưu bid: " + e.getMessage(), e);
             }
 
+// ── AUTO BID LOGIC ─────────────────────────────────────────────
+            // Nếu có auto bid và bidder hiện tại KHÔNG phải auto-bidder
+            if (auction.hasAutoBid() && user.getUserId() != auction.getAutoBidUserId()) {
+                int autoBidderId = auction.getAutoBidUserId();
+                double autoBidMax = auction.getAutoBidMaxAmount();
+                double autoBidStep = auction.getAutoBidStep();
+                double nextAutoBidAmount = amount + autoBidStep;
+
+                // Nếu auto bid vẫn còn dưới giá trần → tự động đặt giá
+                if (nextAutoBidAmount <= autoBidMax) {
+                    try {
+                        User autoBidder = userDAO.findById(autoBidderId);
+                        if (autoBidder != null && autoBidder.isActive() &&
+                                autoBidder.getBalance() >= nextAutoBidAmount * auction.getRatio()) {
+
+                            // TỰA ĐỘNG CALL RECURSION: đặt giá tự động
+                            // ⚠️ CẢNH CÁO: Để tránh infinite recursion, ta kiểm tra điều kiện trên
+                            placeBid(autoBidder, auction, nextAutoBidAmount);
+                        } else {
+                            // Auto bidder không đủ tiền → tắt auto bid
+                            auction.clearAutoBid();
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[Auto Bid] Lỗi: " + e.getMessage());
+                        auction.clearAutoBid();
+                    }
+                } else {
+                    // Giá đã vượt trần → tắt auto bid
+                    auction.clearAutoBid();
+                }
+            }
 
             // ── Notify qua AuctionEvent (không dùng Bid giả) ──────────────────
             auction.notifyObservers(AuctionEvent.bidPlaced(auction.getAuctionId(), bid));

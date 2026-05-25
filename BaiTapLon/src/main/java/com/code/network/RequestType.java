@@ -125,6 +125,13 @@ public enum RequestType {
     /** Dừng theo dõi phiên đấu giá hiện tại — data: null */
     UNWATCH_AUCTION,
 
+    // ── Auto Bid ───────────────────────────────────────────────────────────
+    /** Bidder bật auto bid — data: {@code AutoBidData(auctionId, maxAmount, step)} */
+    AUTOBID_SET,
+
+    /** Bidder tắt auto bid — data: {@code Integer auctionId} */
+    AUTOBID_CANCEL
+
 
 
 

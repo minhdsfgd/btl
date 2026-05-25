@@ -36,6 +36,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
+//autobid
+import com.code.network.AutoBidData;
+
 // THÊM MỚI: import chart
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
@@ -46,6 +49,9 @@ import javafx.util.Duration;
 import static com.code.util.ControllerUtils.navigateTo;
 
 public class LiveBiddingController implements Initializable {
+
+    //autobid state
+    private boolean isAutoBidActive = false;
 
     // ── Static session data (truyền từ AuctionListController) ─────────────────
     private static SessionData pendingSessionData;
@@ -108,9 +114,199 @@ public class LiveBiddingController implements Initializable {
     @FXML private Label     autoBidErrorLabel;
 
     // ── Auto-bid handlers ────────────────────────────────────────────────
-    @FXML private void handleAutoStep1() {}
-    @FXML private void handleAutoStep2() {}
-    @FXML private void handleAutoStep3() {}
+    @FXML
+    private void handleAutoStep1() {
+        if (!isAutoBidActive) {
+            autoBidStepField.setText(String.valueOf((int) minimumStep));
+        }
+    }
+
+    @FXML
+    private void handleAutoStep2() {
+        if (!isAutoBidActive) {
+            autoBidStepField.setText("500000");
+        }
+    }
+
+    @FXML
+    private void handleAutoStep3() {
+        if (!isAutoBidActive) {
+            autoBidStepField.setText("1000000");
+        }
+    }
+    @FXML
+    private void handleToggleAutoBid() {
+        // Nếu auto bid đang ON → Tắt nó
+        if (isAutoBidActive) {
+            handleAutoBidCancel();
+            return;
+        }
+
+        // Nếu auto bid đang OFF → Bật nó
+        try {
+            // Lấy giá trần và bước tăng từ text field
+            String maxText = autoBidMaxField.getText().trim();
+            String stepText = autoBidStepField.getText().trim();
+
+            if (maxText.isEmpty() || stepText.isEmpty()) {
+                showAutoBidError("Vui lòng nhập giá trần và bước tăng");
+                return;
+            }
+
+            double maxAmount = Double.parseDouble(maxText);
+            double step = Double.parseDouble(stepText);
+
+            // Validation
+            if (maxAmount <= currentPrice) {
+                showAutoBidError("Giá trần phải cao hơn giá hiện tại (" + currentPrice + ")");
+                return;
+            }
+            if (step <= 0) {
+                showAutoBidError("Bước tăng phải > 0");
+                return;
+            }
+
+            // ✅ SỬAFIX: Dùng Request.of() thay vì new Request()
+            AutoBidData data = new AutoBidData(currentAuctionId, maxAmount, step);
+            Request req = Request.of(RequestType.AUTOBID_SET, data);
+
+            new Thread(() -> {
+                try {
+                    Response res = SocketClient.getInstance().sendRequest(req);
+                    Platform.runLater(() -> {
+                        if (res.isSuccess()) {
+                            // ✅ BẬT AUTO BID THÀNH CÔNG
+                            isAutoBidActive = true;
+
+                            // Cập nhật hiển thị
+                            autoBidMaxDisplay.setText(formatPrice(maxAmount));
+                            autoBidStepDisplay.setText(formatPrice(step));
+
+                            autoBidStatusBadge.setText("🟢 BẬT");
+                            autoBidStatusBadge.setStyle(
+                                    "-fx-background-color: rgba(34, 197, 94, 0.25);"
+                                            + " -fx-text-fill: #22c55e;"
+                                            + " -fx-font-size: 11;"
+                                            + " -fx-font-weight: bold;"
+                                            + " -fx-background-radius: 6;"
+                                            + " -fx-padding: 4 12;");
+
+                            toggleAutoBidButton.setText("⛔ TẮT ĐẤU GIÁ TỰ ĐỘNG");
+                            toggleAutoBidButton.setStyle(
+                                    "-fx-background-color: #dc2626;"  // Đỏ
+                                            + " -fx-text-fill: white;"
+                                            + " -fx-font-size: 13;"
+                                            + " -fx-font-weight: bold;"
+                                            + " -fx-background-radius: 8;"
+                                            + " -fx-cursor: hand;"
+                                            + " -fx-padding: 9 0;"
+                                            + " -fx-border-color: #991b1b;"
+                                            + " -fx-border-width: 1;");
+
+                            // Khóa input khi auto bid bật
+                            autoBidMaxField.setDisable(true);
+                            autoBidStepField.setDisable(true);
+                            autoStep1.setDisable(true);
+                            autoStep2.setDisable(true);
+                            autoStep3.setDisable(true);
+
+                            clearAutoBidError();
+                        } else {
+                            showAutoBidError(res.getMessage());
+                        }
+                    });
+                } catch (Exception e) {
+                    Platform.runLater(() -> showAutoBidError("Lỗi: " + e.getMessage()));
+                }
+            }).start();
+
+        } catch (NumberFormatException e) {
+            showAutoBidError("Giá phải là số hợp lệ");
+        }
+    }
+    private void handleAutoBidCancel() {
+        try {
+            // ✅ SỬAFIX: Dùng Request.of() thay vì new Request()
+            Request req = Request.of(RequestType.AUTOBID_CANCEL, currentAuctionId);
+
+            new Thread(() -> {
+                try {
+                    Response res = SocketClient.getInstance().sendRequest(req);
+                    Platform.runLater(() -> {
+                        if (res.isSuccess()) {
+                            // ✅ TẮT AUTO BID THÀNH CÔNG
+                            isAutoBidActive = false;
+
+                            // Reset hiển thị
+                            autoBidStatusBadge.setText("🔴 TẮT");
+                            autoBidStatusBadge.setStyle(
+                                    "-fx-background-color: rgba(220, 38, 38, 0.25);"
+                                            + " -fx-text-fill: #ef4444;"
+                                            + " -fx-font-size: 11;"
+                                            + " -fx-font-weight: bold;"
+                                            + " -fx-background-radius: 6;"
+                                            + " -fx-padding: 4 12;");
+
+                            toggleAutoBidButton.setText("⚡ BẬT ĐẤU GIÁ TỰ ĐỘNG");
+                            toggleAutoBidButton.setStyle(
+                                    "-fx-background-color: #16a34a;"  // Xanh
+                                            + " -fx-text-fill: white;"
+                                            + " -fx-font-size: 13;"
+                                            + " -fx-font-weight: bold;"
+                                            + " -fx-background-radius: 8;"
+                                            + " -fx-cursor: hand;"
+                                            + " -fx-padding: 9 0;"
+                                            + " -fx-border-color: #15803d;"
+                                            + " -fx-border-width: 1;");
+
+                            // Mở khóa input
+                            autoBidMaxField.setDisable(false);
+                            autoBidStepField.setDisable(false);
+                            autoStep1.setDisable(false);
+                            autoStep2.setDisable(false);
+                            autoStep3.setDisable(false);
+
+                            // Reset giá trị hiển thị
+                            autoBidMaxDisplay.setText("---");
+                            autoBidStepDisplay.setText("---");
+
+                            showAutoBidError("Đã tắt đấu giá tự động");
+                            clearAutoBidError();  // Clear sau 2 giây
+                        } else {
+                            showAutoBidError(res.getMessage());
+                        }
+                    });
+                } catch (Exception e) {
+                    Platform.runLater(() -> showAutoBidError("Lỗi: " + e.getMessage()));
+                }
+            }).start();
+
+        } catch (Exception e) {
+            showAutoBidError("Lỗi tắt auto bid: " + e.getMessage());
+        }
+    }
+
+
+    private void showAutoBidError(String msg) {
+        autoBidErrorLabel.setText("❌ " + msg);
+        autoBidErrorLabel.setStyle(
+                "-fx-text-fill: #ef4444;"
+                        + " -fx-font-size: 11;"
+                        + " -fx-font-weight: bold;");
+    }
+
+    private void clearAutoBidError() {
+        // Clear error sau 3 giây
+        new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+                Platform.runLater(() -> autoBidErrorLabel.setText(""));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }).start();
+    }
+
 
     // ── Internal state ─────────────────────────────────────────────────────────
     private final ObservableList<BidRow> bidHistory = FXCollections.observableArrayList();
@@ -136,10 +332,17 @@ public class LiveBiddingController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+
         setupHistoryTable();
         setupBidChart();           // THÊM MỚI: khởi tạo chart
         clearError();
         applyPendingSessionData();
+        // ✅ Init auto bid status
+        isAutoBidActive = false;
+        autoBidStatusBadge.setText("🔴 TẮT");
+        autoBidMaxDisplay.setText("---");
+        autoBidStepDisplay.setText("---");
+        toggleAutoBidButton.setText("⚡ BẬT ĐẤU GIÁ TỰ ĐỘNG");
         // refreshBalance(); chạy có bug nên thôi khỏi chạy
     }
 
@@ -739,8 +942,7 @@ public class LiveBiddingController implements Initializable {
     private void clearError()          { errorLabel.setText(""); }
     private String formatPrice(double p) { return String.format("%,.0f VND", p); }
 
-    @FXML
-    private void handleToggleAutoBid() {}
+
 
     // =========================================================================
     //  Inner classes
@@ -763,9 +965,7 @@ public class LiveBiddingController implements Initializable {
     }
 
 
-    private/**
-     * THAY ĐỔI: thêm field imageUrl
-     */ static class SessionData {
+    private static class SessionData {
         final int    auctionId;
         final String username;
         final String sessionName;

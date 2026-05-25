@@ -400,4 +400,9 @@ public class AuctionService {
             throw new AuctionClosedException(
                     "Không có quyền " + action + " phiên #" + auction.getAuctionId() + ".");
     }
+    //update auction
+    public void updateAuction(Auction auction) throws SQLException {
+        auctionDAO.update(auction);
+    }
+
 }

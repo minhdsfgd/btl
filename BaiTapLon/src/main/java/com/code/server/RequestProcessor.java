@@ -113,7 +113,9 @@ public class RequestProcessor {
                 case GET_ALL_TRANSACTIONS -> handleGetAllTransactions(handler);
                 case GET_MY_TRANSACTIONS -> handleGetMyTransactions(handler);
 
-
+                //autobid
+                case AUTOBID_SET    -> handleAutoBidSet(request, handler);
+                case AUTOBID_CANCEL -> handleAutoBidCancel(request, handler);
 
             };
 
@@ -682,6 +684,67 @@ public class RequestProcessor {
                     txDAO.findByUserId(handler.currentUser.getUserId()));
         } catch (Exception e) {
             return Response.fail("Lỗi: " + e.getMessage());
+        }
+    }
+    private Response handleAutoBidSet(Request req, ClientHandler handler) {
+        Response check = requireLogin(handler);
+        if (check != null) return check;
+
+        try {
+            AutoBidData data = req.getDataAs(AutoBidData.class);
+
+            // Lấy phiên đấu giá hiện tại
+            Auction auction = auctionService.getAuction(data.auctionId);
+
+            // Kiểm tra điều kiện
+            if (auction.getSellerId() == handler.currentUser.getUserId())
+                return Response.fail("Bạn không thể auto bid sản phẩm của mình");
+
+            if (!auction.getStatus().isActive())
+                return Response.fail("Phiên không còn hoạt động");
+
+            if (data.maxAmount <= auction.getCurrentPrice())
+                return Response.fail("Giá trần phải cao hơn giá hiện tại");
+
+            if (data.step <= 0)
+                return Response.fail("Bước tăng phải > 0");
+
+            // Lưu auto bid vào Auction
+            auction.setAutoBidUserId(handler.currentUser.getUserId());
+            auction.setAutoBidMaxAmount(data.maxAmount);
+            auction.setAutoBidStep(data.step);
+
+            auctionService.updateAuction(auction);
+
+            return Response.ok(
+                    String.format("Bật auto bid: Max=%.0f VND, Step=%.0f VND",
+                            data.maxAmount, data.step),
+                    auction);
+
+        } catch (Exception e) {
+            return Response.fail("Lỗi bật auto bid: " + e.getMessage());
+        }
+    }
+
+    private Response handleAutoBidCancel(Request req, ClientHandler handler) {
+        Response check = requireLogin(handler);
+        if (check != null) return check;
+
+        try {
+            int auctionId = req.getDataAs(Integer.class);
+            Auction auction = auctionService.getAuction(auctionId);
+
+            // Chỉ người dùng tạo auto bid mới được tắt
+            if (auction.getAutoBidUserId() != handler.currentUser.getUserId())
+                return Response.fail("Bạn chưa bật auto bid cho phiên này");
+
+            auction.clearAutoBid();
+            auctionService.updateAuction(auction);
+
+            return Response.ok("Tắt auto bid thành công", auction);
+
+        } catch (Exception e) {
+            return Response.fail("Lỗi tắt auto bid: " + e.getMessage());
         }
     }
 }
