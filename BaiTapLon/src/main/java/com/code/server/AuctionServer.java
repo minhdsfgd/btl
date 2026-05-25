@@ -47,11 +47,12 @@ public class AuctionServer {
         AuctionDAO     auctionDAO = new AuctionDAO();
         BidDAO         bidDAO     = new BidDAO();
         TransactionDAO txDAO      = new TransactionDAO();
+        AuditLogDAO auditLogDAO = new AuditLogDAO();
 
         System.out.println("[Server] ✓ DAO khởi tạo xong");
 
         // ── Bước 2: Khởi tạo tất cả Service (inject DAO vào) ────────────────
-        UserService        userService = new UserService(userDAO);
+        UserService        userService = new UserService(userDAO, auditLogDAO);
         TransactionService txService   = new TransactionService(txDAO,userDAO);
         BidService         bidService  = new BidService(bidDAO, auctionDAO, userDAO, txService);
         ItemService        itemService = new ItemService(itemDAO);
