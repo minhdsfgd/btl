@@ -76,7 +76,7 @@ public class AuctionListController {
         }
 
         usernameLabel.setText(SessionManager.getUsername());
-        refreshBalance();
+        getBalanceFromServer();
 
         logoutButton.setOnAction(e -> {
             sendLogout();
@@ -92,7 +92,10 @@ public class AuctionListController {
         searchField.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) handleSearch();
         });
-        refreshButton.setOnAction(e -> loadAuctionsFromServer());
+        refreshButton.setOnAction(e -> {
+            loadAuctionsFromServer();
+            getBalanceFromServer();
+        });
 
         filterAllButton     .setOnAction(e -> handleFilter("ALL",      filterAllButton));
         filterActiveButton  .setOnAction(e -> handleFilter("ACTIVE",   filterActiveButton));
@@ -449,24 +452,7 @@ public class AuctionListController {
                         err.showAndWait();
                     });
                 }
-                try{
-                    Response res = SocketClient.getInstance()
-                            .sendRequest(Request.of(RequestType.GET_MY_INFO));
-                    Platform.runLater(() -> {
-                        if (res.getData() != null) {
-                            try {
-                                User u = res.getDataAs(User.class);
-                                SessionManager.setUser(u);
-                                refreshBalance();
-                            } catch (Exception ignored) {}
-                        }
-                    });
-                } catch (Exception ex) {
-                    Platform.runLater(() -> {
-                        Alert err = new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage());
-                        err.showAndWait();
-                    });
-                }
+                getBalanceFromServer();
             }, "mark-as-paid-lot").start();
 
 
@@ -488,6 +474,29 @@ public class AuctionListController {
             showAlert(Alert.AlertType.INFORMATION,
                     "Kết quả phiên #" + a.getAuctionId(), info);
         }
+    }
+
+    private void getBalanceFromServer(){
+        new Thread(() -> {
+            try{
+                Response res = SocketClient.getInstance()
+                        .sendRequest(Request.of(RequestType.GET_MY_INFO));
+                Platform.runLater(() -> {
+                    if (res.getData() != null) {
+                        try {
+                            User u = res.getDataAs(User.class);
+                            SessionManager.setUser(u);
+                            refreshBalance();
+                        } catch (Exception ignored) {}
+                    }
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    Alert err = new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage());
+                    err.showAndWait();
+                });
+            }
+        }, "update-balance").start();
     }
 
     // =========================================================================
@@ -574,6 +583,7 @@ public class AuctionListController {
                     "Tài khoản của bạn chưa có quyền người bán.");
             return;
         }
+        getBalanceFromServer();
         navigateTo("/com/code/views/SellerDashboard.fxml");
     }
 

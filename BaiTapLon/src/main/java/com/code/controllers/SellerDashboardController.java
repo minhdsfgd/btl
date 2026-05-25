@@ -5,6 +5,7 @@ import com.code.client.SocketClient;
 import com.code.models.Auction;
 import com.code.models.AuctionStatus;
 import com.code.models.Item;
+import com.code.models.User;
 import com.code.network.Request;
 import com.code.network.RequestType;
 import com.code.network.Response;
@@ -96,10 +97,24 @@ public class SellerDashboardController implements Initializable {
 
         // Hiện số dư
         if (SessionManager.getUser() != null) {
-            long bal = (long) SessionManager.getUser().getBalance();
-            java.text.NumberFormat nf =
-                    java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
-            lblBalanceNav.setText(nf.format(bal) + " ₫");
+            new Thread(() -> {
+                try {
+                    Response infoRes = SocketClient.getInstance().sendRequest(
+                            Request.of(RequestType.GET_MY_INFO, null));
+                    if (infoRes.isSuccess() && infoRes.getData() instanceof User freshUser) {
+                        Platform.runLater(() -> {
+                            SessionManager.setUser(freshUser);
+                            long bal = (long) SessionManager.getUser().getBalance();
+                            java.text.NumberFormat nf =
+                                    java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
+                            lblBalanceNav.setText(nf.format(bal) + " ₫");
+                        });
+                    }
+                } catch (Exception ex) {
+                    System.err.println("[Live] Khong refresh duoc balance: " + ex.getMessage());
+                }
+            }, "balance-refresh-thread").start();
+
         }
 
         // Panel hoạt động ẩn mặc định

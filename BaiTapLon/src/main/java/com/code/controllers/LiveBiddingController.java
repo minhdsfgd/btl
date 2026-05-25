@@ -140,7 +140,7 @@ public class LiveBiddingController implements Initializable {
         setupBidChart();           // THÊM MỚI: khởi tạo chart
         clearError();
         applyPendingSessionData();
-
+        // refreshBalance(); chạy có bug nên thôi khỏi chạy
     }
 
     // =========================================================================
@@ -308,20 +308,7 @@ public class LiveBiddingController implements Initializable {
                         : "Phien ket thuc. Nguoi thang: " + winnerName;
 
                 // Refresh balance từ server (seller vừa nhận tiền, winner vừa trả tiền)
-                new Thread(() -> {
-                    try {
-                        Response infoRes = SocketClient.getInstance().sendRequest(
-                                Request.of(RequestType.GET_MY_INFO, null));
-                        if (infoRes.isSuccess() && infoRes.getData() instanceof User freshUser) {
-                            Platform.runLater(() -> {
-                                SessionManager.setUser(freshUser);
-                                updateBalanceLabel();
-                            });
-                        }
-                    } catch (Exception ex) {
-                        System.err.println("[Live] Khong refresh duoc balance: " + ex.getMessage());
-                    }
-                }, "balance-refresh-thread").start();
+                refreshBalance();
 
                 showAlert(winMsg);
             }
@@ -442,7 +429,7 @@ public class LiveBiddingController implements Initializable {
         SocketClient.getInstance().stopListening();
         sendUnwatch();
         try{
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }catch (InterruptedException ignored){}
         navigateTo("/com/code/views/AuctionList.fxml");
     }
@@ -722,6 +709,23 @@ public class LiveBiddingController implements Initializable {
             bidAmountField.setDisable(true);
             setQuickBidDisabled(true); // THÊM MỚI
         });
+    }
+
+    private void refreshBalance(){
+        new Thread(() -> {
+            try {
+                Response infoRes = SocketClient.getInstance().sendRequest(
+                        Request.of(RequestType.GET_MY_INFO, null));
+                if (infoRes.isSuccess() && infoRes.getData() instanceof User freshUser) {
+                    Platform.runLater(() -> {
+                        SessionManager.setUser(freshUser);
+                        updateBalanceLabel();
+                    });
+                }
+            } catch (Exception ex) {
+                System.err.println("[Live] Khong refresh duoc balance: " + ex.getMessage());
+            }
+        }, "balance-refresh-thread").start();
     }
 
     // THÊM MỚI: disable/enable 3 nút quick-bid cùng lúc
