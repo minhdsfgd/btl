@@ -204,7 +204,6 @@ public class RequestProcessor {
     // ════════════════════════════════════════════════════════════════════════
     //  USER HANDLERS (Admin)
     // ════════════════════════════════════════════════════════════════════════
-
     private Response handleGetAllUsers(ClientHandler handler) {
         // FIX #5: kiểm tra login
         Response check = requireLogin(handler);

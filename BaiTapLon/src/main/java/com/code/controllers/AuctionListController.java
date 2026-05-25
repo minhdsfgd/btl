@@ -5,6 +5,7 @@ import com.code.client.SocketClient;
 import com.code.models.Auction;
 import com.code.models.AuctionStatus;
 import com.code.models.Role;
+import com.code.models.User;
 import com.code.network.Request;
 import com.code.network.RequestType;
 import com.code.network.Response;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -128,6 +130,7 @@ public class AuctionListController {
                         List<Auction> list = res.getDataAs(List.class);
                         allAuctions.clear();
                         if (list != null) allAuctions.addAll(list);
+                        Collections.reverse(allAuctions);
                         handleSearch();
                     } else {
                         showLoading("Lỗi tải dữ liệu: " + res.getMessage());
@@ -438,6 +441,24 @@ public class AuctionListController {
                         } else {
                             Alert err = new Alert(Alert.AlertType.ERROR, "Lỗi: " + res.getMessage());
                             err.showAndWait();
+                        }
+                    });
+                } catch (Exception ex) {
+                    Platform.runLater(() -> {
+                        Alert err = new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage());
+                        err.showAndWait();
+                    });
+                }
+                try{
+                    Response res = SocketClient.getInstance()
+                            .sendRequest(Request.of(RequestType.GET_MY_INFO));
+                    Platform.runLater(() -> {
+                        if (res.getData() != null) {
+                            try {
+                                User u = res.getDataAs(User.class);
+                                SessionManager.setUser(u);
+                                refreshBalance();
+                            } catch (Exception ignored) {}
                         }
                     });
                 } catch (Exception ex) {

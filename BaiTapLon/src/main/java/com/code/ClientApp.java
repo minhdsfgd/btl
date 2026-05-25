@@ -39,7 +39,6 @@ public class ClientApp extends Application {
             Platform.exit();
             return;
         }
-
         // FIX: kiểm tra null trước khi load — tránh NullPointerException dòng 46
         URL fxmlUrl = getClass().getResource("/com/code/views/Login.fxml");
         if (fxmlUrl == null) {
