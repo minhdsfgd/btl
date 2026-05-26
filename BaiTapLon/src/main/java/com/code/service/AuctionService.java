@@ -385,7 +385,7 @@ public class AuctionService {
             } catch (Exception e) {
                 System.err.println("[Scheduler] Lỗi không xác định: " + e.getMessage());
             }
-        }, 0, 30, TimeUnit.SECONDS);
+        }, 0, 10, TimeUnit.SECONDS);
     }
 
     public void shutdown() { scheduler.shutdownNow(); }

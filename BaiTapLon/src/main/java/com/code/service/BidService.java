@@ -8,6 +8,7 @@ import com.code.service.TransactionService;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Xử lý nghiệp vụ đặt giá và nạp tiền.
@@ -91,7 +92,7 @@ public class BidService {
 
             // ── Tất cả hợp lệ ─────────────────────────────────────────────────
 
-            // amount *= 0.1; // cọc (mai sửa)
+            LocalDateTime now = LocalDateTime.now();
 
             Bid bid = new Bid(
                     0,
@@ -100,6 +101,20 @@ public class BidService {
                     amount,
                     LocalDateTime.now()
             );
+
+            long secondsLeft = ChronoUnit.SECONDS.between(now, auction.getEndTime());
+            if (secondsLeft >= 0 && secondsLeft <= 10) {
+                // Nếu còn <= 10 giây, tăng endTime thêm 1 phút
+                auction.setEndTime(auction.getEndTime().plusMinutes(1));
+                auction.notifyObservers(AuctionEvent.timeExtended(auction.getAuctionId()));
+
+                // Cập nhật sự thay đổi này xuống Database
+                try {
+                    auctionDAO.update(auction);
+                } catch (SQLException e) {
+                    System.err.println("[Anti-sniping] Lỗi cập nhật endTime: " + e.getMessage());
+                }
+            }
 
 // ===== Xử lý giữ tiền bidder =====
 

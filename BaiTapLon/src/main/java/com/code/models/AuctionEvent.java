@@ -36,6 +36,7 @@ public class AuctionEvent implements Serializable {
         AUCTION_FINISHED,
         AUCTION_CANCELED,
         STATUS_CHANGED,
+        TIME_EXTENDED
     }
 
     private final EventType      type;
@@ -64,6 +65,10 @@ public class AuctionEvent implements Serializable {
     // ── Constructor cho STATUS_CHANGED (OPEN→RUNNING) ────────────────────────
     public static AuctionEvent statusChanged(int auctionId, AuctionStatus newStatus) {
         return new AuctionEvent(EventType.STATUS_CHANGED, auctionId, null, -1, newStatus);
+    }
+
+    public static AuctionEvent timeExtended(int auctionId) {
+        return new AuctionEvent(EventType.TIME_EXTENDED, auctionId, null, -1, null);
     }
 
     private AuctionEvent(EventType type, int auctionId, Bid bid,

@@ -335,6 +335,22 @@ public class LiveBiddingController implements Initializable {
             case STATUS_CHANGED -> {
                 sessionStatusLabel.setText(event.getNewStatus().name());
             }
+            case TIME_EXTENDED -> {
+                Platform.runLater(() -> {
+                    // Cộng thêm 60 giây vào đồng hồ đếm ngược hiện tại
+                    remainingSeconds += 60;
+
+                    // Cập nhật lại Label hiển thị giờ kết thúc (nếu có)
+                    String newEndTime = LocalDateTime.now().plusSeconds(remainingSeconds).format(TIME_FMT);
+                    if (endTimeLabel != null) {
+                        endTimeLabel.setText(newEndTime);
+                    }
+
+                    // Style lại Label đếm ngược để gây chú ý cho người chơi (Tùy chọn)
+                    countdownLabel.setStyle("-fx-text-fill: #ff9800; -fx-font-weight: bold;");
+
+                });
+            }
         }
     }
 
