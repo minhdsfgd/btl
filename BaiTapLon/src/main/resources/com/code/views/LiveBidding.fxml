@@ -76,20 +76,6 @@
                         <StackPane prefHeight="180" minHeight="180" maxHeight="180"
                                    style="-fx-background-color:#001a1a;" VBox.vgrow="NEVER">
 
-                            <!-- Khung vuông 160×160: viền xanh, bo góc, ảnh căn giữa không tràn -->
-                            <StackPane prefWidth="160" prefHeight="160"
-                                       minWidth="160"  minHeight="160"
-                                       maxWidth="160"  maxHeight="160"
-                                       style="-fx-background-color:#001a1a;
-                      -fx-border-color:#6ee7b7;
-                      -fx-border-width:1.5;
-                      -fx-border-radius:8;
-                      -fx-background-radius:8;">
-                                <ImageView fx:id="productImageView"
-                                           fitWidth="152" fitHeight="152"
-                                           preserveRatio="true"
-                                           style="-fx-effect:dropshadow(gaussian,rgba(110,231,183,0.3),6,0,0,0);" />
-                            </StackPane>
                         </StackPane>
 
                         <Label fx:id="productNameLabel" style="-fx-text-fill:white; -fx-font-size:14; -fx-font-weight:bold;" text="—" wrapText="true" VBox.vgrow="NEVER">

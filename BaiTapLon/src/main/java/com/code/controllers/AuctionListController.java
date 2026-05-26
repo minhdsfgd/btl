@@ -53,7 +53,7 @@ public class AuctionListController {
     @FXML private AnchorPane rootPane;
     @FXML private ImageView  backgroundImage;
     @FXML private Label      navTitleLabel;
-    @FXML private Button filterPendingPaymentButton;
+    @FXML private Button     filterPendingPaymentButton;
 
     private String currentFilter   = "ALL";
     private String currentCategory = "Tất cả";
@@ -97,10 +97,10 @@ public class AuctionListController {
             getBalanceFromServer();
         });
 
-        filterAllButton     .setOnAction(e -> handleFilter("ALL",      filterAllButton));
-        filterActiveButton  .setOnAction(e -> handleFilter("ACTIVE",   filterActiveButton));
-        filterUpcomingButton.setOnAction(e -> handleFilter("UPCOMING", filterUpcomingButton));
-        filterEndedButton   .setOnAction(e -> handleFilter("ENDED",    filterEndedButton));
+        filterAllButton     .setOnAction(e -> handleFilter("ALL",             filterAllButton));
+        filterActiveButton  .setOnAction(e -> handleFilter("ACTIVE",          filterActiveButton));
+        filterUpcomingButton.setOnAction(e -> handleFilter("UPCOMING",        filterUpcomingButton));
+        filterEndedButton   .setOnAction(e -> handleFilter("ENDED",           filterEndedButton));
         filterPendingPaymentButton.setOnAction(e -> handleFilter("PENDING_PAYMENT", filterPendingPaymentButton));
 
         categoryComboBox.getItems().addAll("Tất cả", "ELECTRONICS", "ART", "VEHICLE");
@@ -217,7 +217,7 @@ public class AuctionListController {
         List<Auction> result = new ArrayList<>();
 
         for (Auction a : allAuctions) {
-            boolean matchKeyword = keyword.isEmpty()
+            boolean matchKeyword  = keyword.isEmpty()
                     || a.getItem().getName().toLowerCase().contains(keyword);
             boolean matchFilter   = matchesFilter(a);
             boolean matchCategory = "Tất cả".equals(currentCategory)
@@ -237,11 +237,12 @@ public class AuctionListController {
 
     private boolean matchesFilter(Auction a) {
         return switch (currentFilter) {
-            case "ACTIVE"   -> a.getStatus() == RUNNING;
-            case "UPCOMING" -> a.getStatus() == OPEN;
-            case "ENDED"    -> a.getStatus().isTerminal();
-            case "PENDING_PAYMENT" -> a.getStatus() == FINISHED && a.getLeadingBidderId() == SessionManager.getUserId();
-            default         -> true;
+            case "ACTIVE"          -> a.getStatus() == RUNNING;
+            case "UPCOMING"        -> a.getStatus() == OPEN;
+            case "ENDED"           -> a.getStatus().isTerminal();
+            case "PENDING_PAYMENT" -> a.getStatus() == FINISHED
+                    && a.getLeadingBidderId() == SessionManager.getUserId();
+            default -> true;
         };
     }
 
@@ -279,13 +280,29 @@ public class AuctionListController {
         String catIcon       = getCategoryIcon(a.getItem().getType().name());
         int    bidCount      = a.getBids().size();
 
-        // ── Ảnh sản phẩm ──────────────────────────────────────────────────────
+        // ── Ảnh sản phẩm: có padding xung quanh, bo góc, không sát mép card ────
+        // Kích thước ảnh = card width (250) - padding 2 bên (12+12) = 226
+        // Chiều cao cố định 130px
         ImageView cardImage = new ImageView();
         cardImage.setFitWidth(226);
         cardImage.setFitHeight(130);
-        cardImage.setPreserveRatio(true);
-        cardImage.setStyle(
-                "-fx-effect:dropshadow(gaussian,rgba(0,200,100,0.18),8,0,0,3);"
+        cardImage.setPreserveRatio(false); // fill full ô
+
+        // Bo góc ảnh 8px
+        javafx.scene.shape.Rectangle baseClip =
+                new javafx.scene.shape.Rectangle(226, 130);
+        baseClip.setArcWidth(8);
+        baseClip.setArcHeight(8);
+        cardImage.setClip(baseClip);
+
+        // Nền placeholder khi chưa có ảnh
+        javafx.scene.layout.StackPane imageContainer = new javafx.scene.layout.StackPane(cardImage);
+        imageContainer.setPrefSize(226, 130);
+        imageContainer.setMaxSize(226, 130);
+        imageContainer.setMinSize(226, 130);
+        imageContainer.setStyle(
+                "-fx-background-color:#002222;"
+                        + "-fx-background-radius:8;"
         );
 
         String imageUrl = a.getItem().getImageUrl();
@@ -295,11 +312,19 @@ public class AuctionListController {
                 try {
                     java.io.File imgFile = new java.io.File(imageUrl);
                     if (!imgFile.exists()) return;
+
                     javafx.scene.image.Image img = new javafx.scene.image.Image(
-                            imgFile.toURI().toString(), 226, 130, true, true, true
+                            imgFile.toURI().toString(), 226, 130, false, true, true
                     );
                     Platform.runLater(() -> {
-                        if (!img.isError()) cardImage.setImage(img);
+                        if (!img.isError()) {
+                            cardImage.setImage(img);
+                            javafx.scene.shape.Rectangle clip =
+                                    new javafx.scene.shape.Rectangle(226, 130);
+                            clip.setArcWidth(8);
+                            clip.setArcHeight(8);
+                            cardImage.setClip(clip);
+                        }
                     });
                 } catch (Exception ignored) {}
             }, "card-img-" + a.getAuctionId()).start();
@@ -309,23 +334,18 @@ public class AuctionListController {
         Label catLabel = new Label(catIcon + " " + a.getItem().getType().name());
         catLabel.setStyle(
                 "-fx-background-color:#99D1D3; -fx-text-fill:#000022;"
-                        + "-fx-font-size:10; -fx-background-radius:6; -fx-padding:2 8 2 8;"
-        );
+                        + "-fx-font-size:10; -fx-background-radius:6; -fx-padding:2 8 2 8;");
 
         Label idLabel = new Label("Phiên " + a.getAuctionId());
         idLabel.setStyle("-fx-text-fill:#f0f2f1; -fx-font-size:10;");
 
         Label nameLabel = new Label(a.getItem().getName());
-        nameLabel.setStyle(
-                "-fx-text-fill:white; -fx-font-size:13; -fx-font-weight:bold;"
-        );
+        nameLabel.setStyle("-fx-text-fill:white; -fx-font-size:13; -fx-font-weight:bold;");
         nameLabel.setWrapText(true);
         nameLabel.setMaxWidth(200);
 
         Label priceLabel = new Label("💰 " + priceStr);
-        priceLabel.setStyle(
-                "-fx-text-fill:#6ee7b7; -fx-font-size:13; -fx-font-weight:bold;"
-        );
+        priceLabel.setStyle("-fx-text-fill:#6ee7b7; -fx-font-size:13; -fx-font-weight:bold;");
 
         Label startPriceLabel = new Label("Khởi điểm: " + startPriceStr);
         startPriceLabel.setStyle("-fx-text-fill:#9fe6c8; -fx-font-size:10;");
@@ -336,14 +356,10 @@ public class AuctionListController {
         Label timeLabel = new Label("⏱ " + timeInfo);
         timeLabel.setStyle("-fx-text-fill:#9fe6c8; -fx-font-size:11;");
 
-        Label startTimeLabel = new Label(
-                "Bắt đầu: " + a.getStartTime().format(FMT)
-        );
+        Label startTimeLabel = new Label("Bắt đầu: " + a.getStartTime().format(FMT));
         startTimeLabel.setStyle("-fx-text-fill:#c8f5e1; -fx-font-size:9;");
 
-        Label endTimeLabel = new Label(
-                "Kết thúc: " + a.getEndTime().format(FMT)
-        );
+        Label endTimeLabel = new Label("Kết thúc: " + a.getEndTime().format(FMT));
         endTimeLabel.setStyle("-fx-text-fill:#c8f5e1; -fx-font-size:9;");
 
         Label statusBadge = new Label(statusStr);
@@ -353,14 +369,13 @@ public class AuctionListController {
         actionBtn.setMaxWidth(Double.MAX_VALUE);
         actionBtn.setStyle(
                 "-fx-background-color:#16a34a; -fx-text-fill:white;"
-                        + "-fx-background-radius:8; -fx-padding:6 12; -fx-cursor:hand;"
-        );
+                        + "-fx-background-radius:8; -fx-padding:6 12; -fx-cursor:hand;");
         actionBtn.setDisable(a.getStatus() == CANCELED);
         actionBtn.setOnAction(e -> handleAction(a, actionBtn, statusBadge));
 
-        // ── Ghép card ─────────────────────────────────────────────────────────
-        VBox card = new VBox(6,
-                cardImage,
+        // ── Card: padding đều 12px, ảnh nằm trong padding (không sát mép) ───────
+        VBox card = new VBox(8,
+                imageContainer,
                 catLabel, idLabel, nameLabel,
                 priceLabel, startPriceLabel, bidCountLabel,
                 timeLabel, startTimeLabel, endTimeLabel,
@@ -370,14 +385,12 @@ public class AuctionListController {
         card.setStyle(
                 "-fx-background-color:#003333; -fx-padding:12;"
                         + "-fx-background-radius:12;"
-                        + "-fx-border-color:#6ee7b7; -fx-border-radius:12; -fx-border-width:1;"
-        );
+                        + "-fx-border-color:#6ee7b7; -fx-border-radius:12; -fx-border-width:1;");
         return card;
     }
 
     // =========================================================================
-    //  Action — vào phòng đấu giá
-    //  THAY ĐỔI: sửa lỗi cú pháp + thêm imageUrl vào prepareSession()
+    //  Action
     // =========================================================================
 
     private void handleAction(Auction a, Button actionBtn, Label statusBadge) {
@@ -386,7 +399,6 @@ public class AuctionListController {
             long remaining = ChronoUnit.SECONDS.between(
                     LocalDateTime.now(), a.getEndTime());
 
-            // Xác định tên người dẫn đầu
             String leaderName;
             if (a.getLeadingBidderId() == -1) {
                 leaderName = "";
@@ -404,29 +416,30 @@ public class AuctionListController {
                     "Phiên #" + a.getAuctionId(),
                     a.getItem().getName(),
                     a.getItem().getDescription(),
-                    imageUrl,                          // THÊM MỚI
+                    imageUrl,
                     a.getItem().getStartingPrice(),
                     a.getCurrentPrice(),
                     a.getBidIncrement(),
                     Math.max(remaining, 0),
-                    leaderName,a.getItem().getSellerId()
+                    leaderName, a.getItem().getSellerId()
             );
 
             navigateTo("/com/code/views/LiveBidding.fxml");
 
         } else if (a.getStatus() == OPEN) {
-            String info = "Sản phẩm: "   + a.getItem().getName()
-                    + "\nMô tả: "        + (a.getItem().getDescription() != null
+            String info = "Sản phẩm: "        + a.getItem().getName()
+                    + "\nMô tả: "             + (a.getItem().getDescription() != null
                     ? a.getItem().getDescription() : "Không có")
-                    + "\nGiá khởi điểm: " + formatPrice(a.getItem().getStartingPrice())
-                    + "\nBước giá: "     + formatPrice(a.getBidIncrement())
-                    + "\nBắt đầu lúc: " + a.getStartTime().format(FMT)
-                    + "\nKết thúc lúc: " + a.getEndTime().format(FMT)
-                    + "\nDanh mục: "     + a.getItem().getType().name();
+                    + "\nGiá khởi điểm: "     + formatPrice(a.getItem().getStartingPrice())
+                    + "\nBước giá: "          + formatPrice(a.getBidIncrement())
+                    + "\nBắt đầu lúc: "       + a.getStartTime().format(FMT)
+                    + "\nKết thúc lúc: "      + a.getEndTime().format(FMT)
+                    + "\nDanh mục: "          + a.getItem().getType().name();
             showAlert(Alert.AlertType.INFORMATION,
                     "Chi tiết phiên #" + a.getAuctionId(), info);
 
-        } else if (a.getStatus() == FINISHED && a.getLeadingBidderId() == SessionManager.getUserId()) {
+        } else if (a.getStatus() == FINISHED
+                && a.getLeadingBidderId() == SessionManager.getUserId()) {
 
             new Thread(() -> {
                 try {
@@ -436,8 +449,8 @@ public class AuctionListController {
                         if (res.isSuccess()) {
                             actionBtn.setText("Xem chi tiết");
                             a.updateStatus(PAID);
-                            statusBadge.setText(mapStatus(PAID)); // Sẽ thành "✅ Đã thanh toán"
-                            statusBadge.setStyle(getStatusStyle(PAID)); // Đổi sang style màu đỏ/xanh tương ứng
+                            statusBadge.setText(mapStatus(PAID));
+                            statusBadge.setStyle(getStatusStyle(PAID));
                             showAlert(Alert.AlertType.INFORMATION,
                                     "Thanh toán thành công",
                                     "Bạn đã thực hiện thanh toán cho phiên #" + a.getAuctionId());
@@ -448,13 +461,13 @@ public class AuctionListController {
                     });
                 } catch (Exception ex) {
                     Platform.runLater(() -> {
-                        Alert err = new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage());
+                        Alert err = new Alert(Alert.AlertType.ERROR,
+                                "Lỗi kết nối: " + ex.getMessage());
                         err.showAndWait();
                     });
                 }
                 getBalanceFromServer();
             }, "mark-as-paid-lot").start();
-
 
         } else {
             int bidCount = a.getBids().size();
@@ -465,20 +478,20 @@ public class AuctionListController {
                         ? SessionManager.getUsername()
                         : "Người khác #" + a.getLeadingBidderId());
             }
-            String info = "Sản phẩm: "         + a.getItem().getName()
-                    + "\nTrạng thái: "          + mapStatus(a.getStatus())
-                    + "\nGiá cuối: "            + formatPrice(a.getCurrentPrice())
-                    + "\nSố lượt đặt giá: "     + bidCount
+            String info = "Sản phẩm: "             + a.getItem().getName()
+                    + "\nTrạng thái: "              + mapStatus(a.getStatus())
+                    + "\nGiá cuối: "                + formatPrice(a.getCurrentPrice())
+                    + "\nSố lượt đặt giá: "         + bidCount
                     + winnerInfo
-                    + "\nKết thúc lúc: "        + a.getEndTime().format(FMT);
+                    + "\nKết thúc lúc: "            + a.getEndTime().format(FMT);
             showAlert(Alert.AlertType.INFORMATION,
                     "Kết quả phiên #" + a.getAuctionId(), info);
         }
     }
 
-    private void getBalanceFromServer(){
+    private void getBalanceFromServer() {
         new Thread(() -> {
-            try{
+            try {
                 Response res = SocketClient.getInstance()
                         .sendRequest(Request.of(RequestType.GET_MY_INFO));
                 Platform.runLater(() -> {
@@ -492,7 +505,8 @@ public class AuctionListController {
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
-                    Alert err = new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage());
+                    Alert err = new Alert(Alert.AlertType.ERROR,
+                            "Lỗi kết nối: " + ex.getMessage());
                     err.showAndWait();
                 });
             }
@@ -500,7 +514,7 @@ public class AuctionListController {
     }
 
     // =========================================================================
-    //  Style helpers — GIỮ NGUYÊN
+    //  Style helpers
     // =========================================================================
 
     private String mapStatus(AuctionStatus s) {
@@ -550,21 +564,17 @@ public class AuctionListController {
 
     private String getActionText(Auction a) {
         return switch (a.getStatus()) {
-            case RUNNING -> "Vào phòng đấu giá →";
-            case OPEN    -> "Xem chi tiết";
+            case RUNNING  -> "Vào phòng đấu giá →";
+            case OPEN     -> "Xem chi tiết";
             case FINISHED -> {
-                // Nếu người dùng hiện tại là người thắng cuộc
                 if (a.getLeadingBidderId() == SessionManager.getUserId()) {
-                    LocalDateTime now = LocalDateTime.now();
-                    // Nếu hiện tại vẫn nằm trong thời hạn 24h sau khi kết thúc
-                    if (now.isBefore(a.getEndTime().plusHours(24))) {
+                    if (LocalDateTime.now().isBefore(a.getEndTime().plusHours(24))) {
                         yield "Thanh toán";
                     }
                 }
-                // Quá 24h hoặc không phải người thắng
                 yield "Xem kết quả";
             }
-            default      -> "Xem kết quả";
+            default -> "Xem kết quả";
         };
     }
 
@@ -592,10 +602,10 @@ public class AuctionListController {
                 + "-fx-background-radius:8; -fx-padding:5 12;";
         String active   = "-fx-background-color:#16a34a; -fx-text-fill:white;"
                 + "-fx-background-radius:8; -fx-padding:5 12; -fx-font-weight:bold;";
-        filterAllButton     .setStyle(inactive);
-        filterActiveButton  .setStyle(inactive);
-        filterUpcomingButton.setStyle(inactive);
-        filterEndedButton   .setStyle(inactive);
+        filterAllButton          .setStyle(inactive);
+        filterActiveButton       .setStyle(inactive);
+        filterUpcomingButton     .setStyle(inactive);
+        filterEndedButton        .setStyle(inactive);
         filterPendingPaymentButton.setStyle(inactive);
         activeBtn.setStyle(active);
     }
