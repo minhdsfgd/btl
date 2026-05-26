@@ -156,6 +156,15 @@ public class RequestProcessor {
         try {
             LoginData data = req.getDataAs(LoginData.class);
             User user = userService.login(data.username, data.password);
+
+            for (ClientHandler connectedClient : AuctionServer.connectedClients) {
+                if (connectedClient != handler && connectedClient.getCurrentUser() != null
+                    && connectedClient.getCurrentUser().getUserId() == user.getUserId()) {
+                    // Trả về lỗi luôn, không cho đăng nhập nữa
+                    return Response.fail("Tài khoản này hiện đang đăng nhập ở một thiết bị khác.");
+                }
+            }
+
             handler.currentUser = user;
             System.out.println("[Auth] Đăng nhập: " + user.getUsername()
                     + " roles=" + user.getRoles());
