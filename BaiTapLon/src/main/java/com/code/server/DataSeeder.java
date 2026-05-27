@@ -4,6 +4,7 @@ import com.code.dao.*;
 import com.code.models.*;
 import com.code.util.ItemType;
 import com.code.util.ItemFactory;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.time.LocalDateTime;
 
@@ -46,20 +47,20 @@ public class DataSeeder {
 
             // ── Tạo Admin ────────────────────────────────────────────────────
             Admin admin = new Admin(
-                    0, "admin", "admin123", 0.0);
+                    0, "admin",  BCrypt.hashpw("admin123", BCrypt.gensalt()), 0.0);
             userDAO.save(admin);
             System.out.println("[Seeder] ✓ Admin: admin / admin123");
 
             // ── Tạo Seller test ──────────────────────────────────────────────
             RegularUser seller = new RegularUser(
-                    0, "seller1", "seller123", 0.0,
+                    0, "seller1", BCrypt.hashpw("seller123", BCrypt.gensalt()), 0.0,
                     Role.SELLER);
             userDAO.save(seller);
             System.out.println("[Seeder] ✓ Seller: seller1 / seller123");
 
             // ── Tạo Bidder test ──────────────────────────────────────────────
             RegularUser bidder = new RegularUser(
-                    0, "bidder1", "bidder123", 10_000_000.0,
+                    0, "bidder1",  BCrypt.hashpw("bidder123", BCrypt.gensalt()), 10_000_000.0,
                     Role.BIDDER);
             userDAO.save(bidder);
             System.out.println("[Seeder] ✓ Bidder: bidder1 / bidder123 (10 triệu VNĐ)");

@@ -5,6 +5,7 @@ import com.code.dao.UserDAO;
 import com.code.exception.AuthenticationException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -59,8 +60,9 @@ public class UserService {
                 throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
 
             // Mọi tài khoản mới đều có BIDDER + SELLER
+            String hashed = BCrypt.hashpw(password, BCrypt.gensalt());
             RegularUser user = new RegularUser(
-                    0, username, password, 0.0, Role.BIDDER, Role.SELLER
+                    0, username, hashed, 0.0, Role.BIDDER, Role.SELLER
             );
             userDAO.save(user);
             return user;
@@ -79,7 +81,7 @@ public class UserService {
             if (userDAO.existsByUsername(username))
                 throw new AuthenticationException("Username '" + username + "' đã tồn tại.");
 
-            Admin admin = new Admin(0, username, password, 0.0);
+            Admin admin = new Admin(0, username, BCrypt.hashpw(password, BCrypt.gensalt()), 0.0);
             userDAO.save(admin);
 
             // ✨ LOG: Tạo Admin mới
@@ -109,7 +111,7 @@ public class UserService {
         try{
             User user =userDAO.findByUsername(username);
             // FIX: cùng message để tránh timing attack (không lộ username có tồn tại không)
-            if (user == null || !user.getPassword().equals(password))
+            if (user == null ||  !BCrypt.checkpw(password, user.getPassword()))
                 throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu.");
 
             if (!user.isActive())
@@ -285,7 +287,7 @@ public class UserService {
             }
 
             if (newPassword != null && newPassword.length() >= 6) {
-                target.setPassword(newPassword);
+                target.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
                 auditLogService.logAction(
                         admin.getUserId(),
                         userId,

@@ -6,6 +6,7 @@ module com.code {
 
     // ── Java I/O & SQL ────────────────────────────────────────────────────────
     requires java.sql;
+    requires jbcrypt;
 
     // ── Mở com.code để javafx.graphics có thể gọi Application.start() ─────────
     // FIX: thiếu dòng này → NullPointerException khi launch ClientApp
