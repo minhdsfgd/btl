@@ -1,6 +1,7 @@
 package com.code.service;
 
 import com.code.dao.TransactionDAO;
+import com.code.dao.UserDAO;
 import com.code.models.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,15 +21,17 @@ import static org.mockito.Mockito.*;
 class TransactionServiceTest {
 
     private TransactionDAO mockTxDAO;
+    private UserDAO mockUserDAO;
     private TransactionService txService;
 
     @BeforeEach
     void setUp() {
-        // 1. Tạo mock cho DAO
+        // 1. Tạo mock cho các DAOs
         mockTxDAO = Mockito.mock(TransactionDAO.class);
+        mockUserDAO = Mockito.mock(UserDAO.class);
 
-        // 2. Khởi tạo Service
-        txService = new TransactionService(mockTxDAO);
+        // 2. Khởi tạo Service với đầy đủ DAOs
+        txService = new TransactionService(mockTxDAO, mockUserDAO);
     }
 
     // =========================================================================

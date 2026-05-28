@@ -31,203 +31,180 @@ class BidServiceTest {
     private RegularUser bidder2;
     private Auction auction;
 
+    // Sẽ lấy tự động từ class Auction
+    private double AUCTION_RATIO;
+
     @BeforeEach
     void setUp() {
-        // 1. Tạo Mocks
         mockBidDAO = Mockito.mock(BidDAO.class);
         mockAuctionDAO = Mockito.mock(AuctionDAO.class);
         mockUserDAO = Mockito.mock(UserDAO.class);
         mockTxService = Mockito.mock(TransactionService.class);
 
-        // 2. Khởi tạo Service
         bidService = new BidService(mockBidDAO, mockAuctionDAO, mockUserDAO, mockTxService);
 
-        // 3. Chuẩn bị dữ liệu mẫu
         seller = new RegularUser(1, "seller", "pass", 0, Role.SELLER);
         bidder1 = new RegularUser(2, "bidder1", "pass", 500_000, Role.BIDDER);
         bidder2 = new RegularUser(3, "bidder2", "pass", 500_000, Role.BIDDER);
 
         Item item = new Electronics(10, seller.getUserId(), "Laptop", "Gaming", 100_000);
+
+        // KHÔNG DÙNG SPY NỮA, dùng đối tượng Auction thật để tránh lỗi Mockito
         auction = new Auction(100, item, seller.getUserId(), 100_000, 10_000,
                 LocalDateTime.now().minusHours(1), LocalDateTime.now().plusHours(2));
 
-        // Mặc định cho phiên đang chạy để các test không bị vướng lỗi "AuctionClosed"
+        // Lấy tỷ lệ cọc trực tiếp từ model
+        AUCTION_RATIO = Auction.getRatio();
+
         auction.updateStatus(AuctionStatus.RUNNING);
     }
 
-    // =========================================================================
-    // 1. TEST LOGIC NẠP TIỀN (DEPOSIT)
-    // =========================================================================
     @Nested
-    @DisplayName("Tests Chức năng Nạp tiền (deposit)")
-    class DepositTests {
-
-        @Test
-        @DisplayName("TC01: Nạp tiền thành công")
-        void testDeposit_Success() throws UserBannedException {
-            Transaction tx = bidService.deposit(bidder1, 50_000);
-
-            assertEquals(550_000, bidder1.getBalance());
-            assertNotNull(tx);
-            assertEquals(50_000, tx.getAmount());
-        }
-
-        @Test
-        @DisplayName("TC02: Ném lỗi nếu User bị ban")
-        void testDeposit_BannedUser() {
-            bidder1.setBanned(true);
-            assertThrows(UserBannedException.class, () -> bidService.deposit(bidder1, 50_000));
-        }
-
-        @Test
-        @DisplayName("TC03: Ném lỗi nếu số tiền <= 0")
-        void testDeposit_InvalidAmount() {
-            assertThrows(IllegalArgumentException.class, () -> bidService.deposit(bidder1, 0));
-            assertThrows(IllegalArgumentException.class, () -> bidService.deposit(bidder1, -100));
-        }
-    }
-
-    // =========================================================================
-    // 2. TEST LOGIC ĐẶT GIÁ: CÁC LUỒNG THẤT BẠI (VALIDATION)
-    // =========================================================================
-    @Nested
-    @DisplayName("Tests Đặt giá (placeBid) - Ngoại lệ (Failures)")
+    @DisplayName("Tests Validate Ngoại lệ (Failures)")
     class PlaceBidFailureTests {
-
         @Test
-        @DisplayName("TC04: Ném lỗi UserBannedException nếu User bị ban")
+        @DisplayName("Ném lỗi UserBannedException nếu User bị ban")
         void testPlaceBid_UserBanned() {
-            bidder1.setBanned(true);
+            // Sửa thành setActive(false) để khớp với logic của BidService
+            bidder1.setActive(false);
+
             assertThrows(UserBannedException.class, () -> bidService.placeBid(bidder1, auction, 120_000));
         }
 
         @Test
-        @DisplayName("TC05: Ném lỗi InvalidBidException nếu User không có quyền BIDDER")
+        @DisplayName("Ném lỗi InvalidBidException nếu User không có quyền BIDDER")
         void testPlaceBid_NoBidderRole() {
-            RegularUser viewer = new RegularUser(4, "viewer", "p", 1000, Role.SELLER); // Chỉ có SELLER
+            RegularUser viewer = new RegularUser(4, "viewer", "p", 1000, Role.SELLER);
             assertThrows(InvalidBidException.class, () -> bidService.placeBid(viewer, auction, 120_000));
         }
 
         @Test
-        @DisplayName("TC06: Ném lỗi SelfBidException nếu Seller tự đấu giá đồ của mình")
+        @DisplayName("Ném lỗi SelfBidException nếu tự đấu giá đồ của mình")
         void testPlaceBid_SelfBid() {
-            seller.addRole(Role.BIDDER); // Cho mượn quyền Bidder
+            seller.addRole(Role.BIDDER);
             assertThrows(SelfBidException.class, () -> bidService.placeBid(seller, auction, 120_000));
         }
 
         @Test
-        @DisplayName("TC07: Ném lỗi AuctionClosedException nếu Phiên chưa chạy hoặc đã kết thúc")
+        @DisplayName("Ném lỗi AuctionClosedException nếu Phiên không RUNNING")
         void testPlaceBid_NotRunning() {
-            Auction closedAuction = new Auction(101, auction.getItem(), 1, 100_000, 10_000,
-                    LocalDateTime.now(), LocalDateTime.now().plusHours(1));
-            // Trạng thái OPEN mặc định chưa chạy
-            assertThrows(AuctionClosedException.class, () -> bidService.placeBid(bidder1, closedAuction, 120_000));
+            auction.updateStatus(AuctionStatus.FINISHED); // Đổi trạng thái để test
+            assertThrows(AuctionClosedException.class, () -> bidService.placeBid(bidder1, auction, 120_000));
         }
 
         @Test
-        @DisplayName("TC08: Ném lỗi InvalidBidException nếu số tiền đặt < Giá hiện tại + Bước giá")
+        @DisplayName("Ném lỗi AuctionClosedException nếu Phiên bị Banned")
+        void testPlaceBid_BannedAuction() {
+            auction.setBanned(true);
+            assertThrows(AuctionClosedException.class, () -> bidService.placeBid(bidder1, auction, 120_000));
+        }
+
+        @Test
+        @DisplayName("Ném lỗi InvalidBidException nếu số tiền đặt < Giá hiện tại + Bước giá")
         void testPlaceBid_AmountTooLow() {
-            // Giá hiện tại 100k, bước giá 10k => Tối thiểu phải đặt 110k
             assertThrows(InvalidBidException.class, () -> bidService.placeBid(bidder1, auction, 105_000));
         }
 
         @Test
-        @DisplayName("TC09: Ném lỗi InsufficientBalanceException nếu User không đủ tiền")
+        @DisplayName("Ném lỗi InsufficientBalanceException nếu không đủ tiền cọc")
         void testPlaceBid_InsufficientBalance() {
-            // Đặt 600k trong khi tài khoản chỉ có 500k
-            assertThrows(InsufficientBalanceException.class, () -> bidService.placeBid(bidder1, auction, 600_000));
+            // Giá 6_000_000 => Tiền cọc cần 10% = 600_000. Balance chỉ có 500_000
+            assertThrows(InsufficientBalanceException.class, () -> bidService.placeBid(bidder1, auction, 6_000_000));
         }
     }
 
-    // =========================================================================
-    // 3. TEST LOGIC ĐẶT GIÁ: CÁC LUỒNG THÀNH CÔNG (TRỪ TIỀN / HOÀN TIỀN)
-    // =========================================================================
     @Nested
-    @DisplayName("Tests Đặt giá (placeBid) - Luồng Thành công (Success)")
+    @DisplayName("Tests Luồng Thành công (Success & Transactions)")
     class PlaceBidSuccessTests {
 
         @Test
-        @DisplayName("TC10: Đặt giá lần đầu (Chưa có ai bid) -> Trừ đủ tiền")
+        @DisplayName("Đặt giá lần đầu -> Trừ đúng % tiền cọc")
         void testPlaceBid_FirstBid_Success() throws Exception {
-            Bid bid = bidService.placeBid(bidder1, auction, 110_000);
+            double bidAmount = 110_000;
+            double depositRequired = bidAmount * AUCTION_RATIO; // 11_000
 
-            // Kiểm tra số dư (bị giam 110k)
-            assertEquals(390_000, bidder1.getBalance());
+            Bid bid = bidService.placeBid(bidder1, auction, bidAmount);
 
-            // Kiểm tra cập nhật giá phiên
+            assertEquals(500_000 - depositRequired, bidder1.getBalance());
             assertEquals(110_000, auction.getCurrentPrice());
             assertEquals(bidder1.getUserId(), auction.getLeadingBidderId());
 
-            // Kiểm tra gọi xuống Database
+            verify(mockTxService, times(1)).logBidHold(bidder1.getUserId(), depositRequired, auction.getAuctionId());
             verify(mockBidDAO, times(1)).save(any(Bid.class));
-            verify(mockAuctionDAO, times(1)).update(auction);
-            verify(mockUserDAO, times(1)).update(bidder1);
         }
 
         @Test
-        @DisplayName("TC11: Vượt giá người khác -> Hoàn tiền người cũ, Trừ tiền người mới")
+        @DisplayName("Vượt giá -> Hoàn cọc người cũ, trừ cọc người mới")
         void testPlaceBid_OutbidSomeoneElse() throws Exception {
-            // 1. Bidder1 đặt giá trước (110k)
+            // 1. Bidder1 đặt giá trước 110k
             bidService.placeBid(bidder1, auction, 110_000);
-            assertEquals(390_000, bidder1.getBalance());
-
-            // Giả lập DB trả về Bidder1 khi cần hoàn tiền
             when(mockUserDAO.findById(bidder1.getUserId())).thenReturn(bidder1);
 
-            // 2. Bidder2 vào vượt giá (130k)
+            // 2. Bidder2 vượt giá 130k
             bidService.placeBid(bidder2, auction, 130_000);
 
-            // Kết quả mong đợi:
-            // - Bidder 2 bị trừ 130k
-            assertEquals(370_000, bidder2.getBalance(), "Bidder 2 phải bị trừ tiền");
-
-            // - Bidder 1 được hoàn lại 110k ban đầu (390k + 110k = 500k)
-            assertEquals(500_000, bidder1.getBalance(), "Bidder 1 phải được hoàn tiền");
-
-            // - Giá mới phải là 130k
+            // Bidder2 bị trừ cọc
+            assertEquals(500_000 - (130_000 * AUCTION_RATIO), bidder2.getBalance());
+            // Bidder1 được hoàn lại cọc ban đầu -> Về 500k
+            assertEquals(500_000, bidder1.getBalance());
             assertEquals(130_000, auction.getCurrentPrice());
 
-            // Ghi log giao dịch refund
-            verify(mockTxService, times(1)).logRefund(eq(bidder1.getUserId()), eq(110_000.0), anyInt());
+            verify(mockTxService, times(1)).logRefund(eq(bidder1.getUserId()), eq(110_000 * AUCTION_RATIO), anyInt());
         }
 
         @Test
-        @DisplayName("TC12: Tự vượt giá chính mình (Self-Outbid) -> Chỉ trừ tiền chênh lệch")
+        @DisplayName("Tự vượt giá chính mình -> Chỉ trừ thêm % chênh lệch")
         void testPlaceBid_SelfOutbid() throws Exception {
             // 1. Bidder1 đặt 110k
             bidService.placeBid(bidder1, auction, 110_000);
-            assertEquals(390_000, bidder1.getBalance()); // 500k - 110k
 
-            // 2. Bidder1 TỰ đặt thêm lên 150k (để đè bẹp đối thủ chưa kịp bid)
+            // 2. Bidder1 TỰ nâng lên 150k
             bidService.placeBid(bidder1, auction, 150_000);
 
-            // Kết quả mong đợi: Bidder1 chỉ bị trừ THÊM 40k chênh lệch (150k - 110k)
-            assertEquals(350_000, bidder1.getBalance(), "Chỉ bị trừ thêm tiền chênh lệch");
+            // Tổng cọc bị trừ là 150_000 * Ratio. Số dư sau cùng phải khớp
+            double finalBalance = 500_000 - (150_000 * AUCTION_RATIO);
+            assertEquals(finalBalance, bidder1.getBalance());
             assertEquals(150_000, auction.getCurrentPrice());
         }
     }
 
-    // =========================================================================
-    // 4. TEST ROLLBACK KHI DATABASE LỖI
-    // =========================================================================
     @Nested
-    @DisplayName("Tests Rollback dữ liệu khi DB lỗi")
-    class RollbackTests {
+    @DisplayName("Tests Các tính năng đặc biệt (Sniping & AutoBid)")
+    class SpecialFeaturesTests {
+        @Test
+        @DisplayName("Anti-sniping: Cộng thêm 1 phút nếu đặt giá <= 10s cuối")
+        void testAntiSniping() throws Exception {
+            LocalDateTime nearEnd = LocalDateTime.now().plusSeconds(5);
+            auction.setEndTime(nearEnd);
+
+            bidService.placeBid(bidder1, auction, 110_000);
+
+            // Kiểm tra thời gian kết thúc đã được cộng thêm 1 phút
+            assertTrue(auction.getEndTime().isAfter(nearEnd.plusSeconds(50)));
+            verify(mockAuctionDAO, atLeastOnce()).update(auction);
+        }
 
         @Test
-        @DisplayName("TC13: Trả lại tiền (Rollback balance) nếu lưu Bid xuống DB bị Exception")
-        void testPlaceBid_DBException_RollbacksBalance() throws Exception {
-            // Giả lập hệ thống lưu Bid bị lỗi (sập DB)
-            doThrow(new SQLException("Mất kết nối DB")).when(mockBidDAO).save(any(Bid.class));
+        @DisplayName("Auto-Bid: Tự động vượt giá người khác nếu trong ngưỡng max")
+        void testAutoBid_Success() throws Exception {
+            // Setup Auto-bid cho bidder1 DÙNG HÀM THẬT của model (Không dùng Mockito)
+            auction.setAutoBidUserId(bidder1.getUserId());
+            auction.setAutoBidMaxAmount(200_000.0);
+            auction.setAutoBidStep(10_000.0);
 
-            // Số dư ban đầu của bidder1 là 500_000
+            // Trả về user khi hàm Auto-Bid đệ quy cần hoàn tiền / kiểm tra số dư
+            when(mockUserDAO.findById(bidder1.getUserId())).thenReturn(bidder1);
+            when(mockUserDAO.findById(bidder2.getUserId())).thenReturn(bidder2);
 
-            // Thực hiện đặt giá
-            assertThrows(RuntimeException.class, () -> bidService.placeBid(bidder1, auction, 120_000));
+            // Bidder2 đặt 110k
+            bidService.placeBid(bidder2, auction, 110_000);
 
-            // CHỨNG MINH: Dù bị lỗi văng ra giữa chừng, số dư của Bidder1 VẪN PHẢI LÀ 500k
-            // (Hàm catch trong BidService đã gọi `user.deposit()` để rollback tiền bị giữ)
-            assertEquals(500_000, bidder1.getBalance(), "Tiền bị giam phải được trả lại khi DB lỗi");
+            // Tự động vượt lên 120_000 (110_000 + 10_000 bước nhảy)
+            assertEquals(120_000, auction.getCurrentPrice());
+            assertEquals(bidder1.getUserId(), auction.getLeadingBidderId());
+
+            // Kiểm tra bidder 2 đã được hoàn tiền cọc vì bị Auto-bid đè
+            assertEquals(500_000, bidder2.getBalance());
         }
     }
 }

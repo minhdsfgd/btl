@@ -1,5 +1,6 @@
 package com.code.service;
 
+import com.code.dao.AuditLogDAO;
 import com.code.dao.UserDAO;
 import com.code.exception.AuthenticationException;
 import com.code.exception.UserBannedException;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     private UserDAO mockUserDAO;
+    private AuditLogDAO mockAuditLogDAO;
     private UserService userService;
 
     private Admin adminUser;
@@ -31,9 +33,14 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        // 1. Khởi tạo các Mock DAO
         mockUserDAO = Mockito.mock(UserDAO.class);
-        userService = new UserService(mockUserDAO);
+        mockAuditLogDAO = Mockito.mock(AuditLogDAO.class);
 
+        // 2. Khởi tạo Service với đầy đủ DAOs
+        userService = new UserService(mockUserDAO, mockAuditLogDAO);
+
+        // 3. Chuẩn bị dữ liệu mẫu
         adminUser = new Admin(1, "admin", "secret123", 0);
         regularUser = new RegularUser(2, "player1", "password", 50000, Role.BIDDER, Role.SELLER);
     }
@@ -169,12 +176,12 @@ class UserServiceTest {
         void testBanAndUnbanUser_Success() throws Exception {
             // Ban
             userService.banUser(adminUser, 2);
-            assertTrue(regularUser.isBanned());
+            assertFalse(regularUser.isActive()); // isActive sẽ thành false sau khi bị ban
             verify(mockUserDAO, times(1)).update(regularUser);
 
             // Unban
             userService.unbanUser(adminUser, 2);
-            assertFalse(regularUser.isBanned());
+            assertTrue(regularUser.isActive()); // Khôi phục lại trạng thái active
             verify(mockUserDAO, times(2)).update(regularUser);
         }
 
