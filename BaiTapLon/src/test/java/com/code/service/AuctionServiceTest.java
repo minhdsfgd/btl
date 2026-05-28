@@ -9,6 +9,7 @@ import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -79,8 +80,8 @@ class AuctionServiceTest {
         @Test
         @DisplayName("Ném lỗi khi Item đã bị khóa ở phiên khác")
         void testCreateAuction_ItemLocked() throws Exception {
+            // Đã sửa lại từ findAll() thành isItemLocked() trả về true
             when(mockAuctionDAO.isItemLocked(item.getItemId())).thenReturn(true);
-
             Exception ex = assertThrows(Exception.class, () -> {
                 auctionService.createAuction(item, seller, 500, startTime, endTime);
             });
@@ -98,6 +99,7 @@ class AuctionServiceTest {
         void setUpMockAuction() throws Exception {
             // KHÔNG DÙNG SPY NỮA, dùng đối tượng thật để tránh lỗi Mockito với hàm static/final
             mockAuction = new Auction(1, item, seller.getUserId(), 15000, 500, startTime, endTime);
+            // Đã sửa lại từ findAll() thành findById(1) để test case lấy đúng mockAuction
             when(mockAuctionDAO.findById(1)).thenReturn(mockAuction);
         }
 
