@@ -18,10 +18,7 @@ class AuthGuardTest {
 
     @BeforeEach
     void setUp() {
-        // Tạo một User giả bằng Mockito để không cần bận tâm đến class Admin hay RegularUser
         mockUser = Mockito.mock(User.class);
-
-        // Mặc định cho User giả có tên là "testUser" để khi ném lỗi có message cho đẹp
         when(mockUser.getUsername()).thenReturn("testUser");
     }
 
@@ -39,24 +36,23 @@ class AuthGuardTest {
     }
 
     @Test
-    @DisplayName("TC02: Ném UserBannedException khi user đã bị ban")
+    @DisplayName("TC02: Ném UserBannedException khi user đã bị ban (!isActive)")
     void testRequireNotBanned_BannedUser() {
-        // Giả lập user này đã bị khóa
-        when(mockUser.isBanned()).thenReturn(true);
+        // Giả lập user KHÔNG active (tức là bị ban)
+        when(mockUser.isActive()).thenReturn(false);
 
         UserBannedException exception = assertThrows(UserBannedException.class, () -> {
             AuthGuard.requireNotBanned(mockUser);
         });
-        // Lỗi ném ra phải chứa username của người bị ban
         assertTrue(exception.getMessage().contains("testUser"));
     }
 
     @Test
-    @DisplayName("TC03: Không ném lỗi (vượt qua) khi user hợp lệ và không bị ban")
+    @DisplayName("TC03: Không ném lỗi (vượt qua) khi user hợp lệ (isActive)")
     void testRequireNotBanned_ValidUser() {
-        when(mockUser.isBanned()).thenReturn(false);
+        // Giả lập user ACTIVE (hợp lệ)
+        when(mockUser.isActive()).thenReturn(true);
 
-        // assertDoesNotThrow đảm bảo khối lệnh chạy trơn tru mà không văng ra Exception nào
         assertDoesNotThrow(() -> {
             AuthGuard.requireNotBanned(mockUser);
         });
@@ -69,7 +65,7 @@ class AuthGuardTest {
     @Test
     @DisplayName("TC04: Hợp lệ (vượt qua) khi user có Role được yêu cầu")
     void testRequireRole_HasRole() {
-        when(mockUser.isBanned()).thenReturn(false);
+        when(mockUser.isActive()).thenReturn(true);
         when(mockUser.hasRole(Role.ADMIN)).thenReturn(true);
 
         assertDoesNotThrow(() -> {
@@ -80,8 +76,8 @@ class AuthGuardTest {
     @Test
     @DisplayName("TC05: Ném AuthenticationException khi user thiếu Role yêu cầu")
     void testRequireRole_MissingRole() {
-        when(mockUser.isBanned()).thenReturn(false);
-        when(mockUser.hasRole(Role.ADMIN)).thenReturn(false); // Cố tình không cho quyền ADMIN
+        when(mockUser.isActive()).thenReturn(true);
+        when(mockUser.hasRole(Role.ADMIN)).thenReturn(false);
 
         AuthenticationException exception = assertThrows(AuthenticationException.class, () -> {
             AuthGuard.requireRole(mockUser, Role.ADMIN);
@@ -98,7 +94,7 @@ class AuthGuardTest {
     @Test
     @DisplayName("TC06: requireAdmin hoạt động đúng")
     void testRequireAdmin() {
-        when(mockUser.isBanned()).thenReturn(false);
+        when(mockUser.isActive()).thenReturn(true);
 
         when(mockUser.hasRole(Role.ADMIN)).thenReturn(true);
         assertDoesNotThrow(() -> AuthGuard.requireAdmin(mockUser));
@@ -110,7 +106,7 @@ class AuthGuardTest {
     @Test
     @DisplayName("TC07: requireBidder hoạt động đúng")
     void testRequireBidder() {
-        when(mockUser.isBanned()).thenReturn(false);
+        when(mockUser.isActive()).thenReturn(true);
 
         when(mockUser.hasRole(Role.BIDDER)).thenReturn(true);
         assertDoesNotThrow(() -> AuthGuard.requireBidder(mockUser));
@@ -122,7 +118,7 @@ class AuthGuardTest {
     @Test
     @DisplayName("TC08: requireSeller hoạt động đúng")
     void testRequireSeller() {
-        when(mockUser.isBanned()).thenReturn(false);
+        when(mockUser.isActive()).thenReturn(true);
 
         when(mockUser.hasRole(Role.SELLER)).thenReturn(true);
         assertDoesNotThrow(() -> AuthGuard.requireSeller(mockUser));
