@@ -1,65 +1,44 @@
 name: Java CI with Maven
 
+# Định nghĩa khi nào CI sẽ được chạy
 on:
   push:
-    branches: [ "main","dev" ]
+    branches: [ "main", "master" ] # Chạy khi có code push lên nhánh main/master
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "master" ] # Chạy khi có ai đó tạo Pull Request vào nhánh main/master
 
 jobs:
-  build:
-
+  build-and-test:
+    # Chọn hệ điều hành cho server chạy CI. 
+    # Lưu ý: Do bạn dùng JavaFX, nếu có test UI, bạn có thể đổi thành 'windows-latest' hoặc 'macos-latest' để tránh lỗi thiếu giao diện đồ họa trên Linux.
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: BaiTapLon
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: auction_db
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -u root -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
+    # Bước 1: Kéo code của bạn từ GitHub về server CI
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Bước 2: Cài đặt môi trường Java 21 theo như pom.xml của bạn
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin' # Có thể dùng 'corretto' hoặc 'zulu'
+        cache: maven # Tự động cache các thư viện maven tải về để lần sau chạy nhanh hơn
 
+    # Bước 3: Cấp quyền thực thi cho file Maven Wrapper (nếu bạn dùng mvnw)
+    - name: Grant execute permission for mvnw
+      run: chmod +x btl/BaiTapLon/mvnw
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Install xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb
-
-      - name: Create db.properties
-        run: |
-          echo "db.url=jdbc:mysql://127.0.0.1:3306/auction_db?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true" > src/main/resources/db.properties
-          echo "db.username=root" >> src/main/resources/db.properties
-          echo "db.password=root" >> src/main/resources/db.properties
-          echo "db.pool.size=10" >> src/main/resources/db.properties
-
-      - name: Init DB schema
-        run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -proot auction_db \
-            < src/main/resources/schema.sql
-
-      - name: Build with Maven
-        run: xvfb-run mvn -B package -DskipTests
-
-
-      - name: Run Tests with Maven
-        run: xvfb-run mvn test
+    # Bước 4: Chạy build, test, checkstyle và jacoco
+    # Chú ý đường dẫn (-f btl/BaiTapLon/pom.xml) trỏ đúng tới nơi chứa pom.xml
+    - name: Build and Test with Maven
+      run: ./btl/BaiTapLon/mvnw clean verify -f btl/BaiTapLon/pom.xml
+      
+    # (Tùy chọn) Bước 5: Lưu lại file báo cáo Test và Coverage (JaCoCo) sau khi chạy xong
+    - name: Upload JaCoCo Coverage Report
+      uses: actions/upload-artifact@v4
+      if: always() # Luôn chạy dù test pass hay fail
+      with:
+        name: jacoco-report
+        path: btl/BaiTapLon/target/site/jacoco/
