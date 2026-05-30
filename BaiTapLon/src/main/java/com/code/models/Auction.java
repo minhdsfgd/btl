@@ -9,6 +9,9 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 import static com.code.models.AuctionStatus.*;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import com.code.network.AutoBidData;
 
 
 
@@ -26,11 +29,28 @@ public class Auction implements Serializable {
     private boolean banned;
     private static double ratio = 0.1;
 
-    private int    autoBidUserId    = -1;      // Người dùng auto bid (-1 = không)
-    private double autoBidMaxAmount = 0;       // Giá trần auto bid
-    private double autoBidStep      = 0;       // Bước tăng auto bid
+    // thêm
+    private transient Map<Integer, AutoBidData> autoBidders = new ConcurrentHashMap<>();
 
-    /** userId người dẫn đầu; -1 nếu chưa có bid */
+    public void addAutoBid(int userId, AutoBidData data) {
+        this.autoBidders.put(userId, data);
+    }
+
+    public void removeAutoBid(int userId) {
+        this.autoBidders.remove(userId);
+    }
+
+    public Map<Integer, AutoBidData> getAutoBidders() {
+        return this.autoBidders;
+    }
+
+    public boolean hasAutoBid() {
+        return !this.autoBidders.isEmpty();
+    }
+
+    /**
+     * userId người dẫn đầu; -1 nếu chưa có bid
+     */
     private int leadingBidderId = -1;
     //danh sách trống để lưu lịch sử các lượt đặt giá
     private final List<Bid> bids = new ArrayList<>();
@@ -51,9 +71,9 @@ public class Auction implements Serializable {
             throw new IllegalArgumentException("startingPrice không được âm");
 
         // ném lỗi ngay lập tức nếu truyền null
-        Objects.requireNonNull(item,      "item");
+        Objects.requireNonNull(item, "item");
         Objects.requireNonNull(startTime, "startTime");
-        Objects.requireNonNull(endTime,   "endTime");
+        Objects.requireNonNull(endTime, "endTime");
 
         // kiểm tra logic tgian
         if (!endTime.isAfter(startTime))
@@ -63,17 +83,18 @@ public class Auction implements Serializable {
             throw new IllegalArgumentException(
                     "Phiên không được vượt quá " + MAX_AUCTION_DAYS + " ngày");
 
-        this.auctionId    = auctionId;
-        this.item         = item;
-        this.sellerId     = sellerId;
+        this.auctionId = auctionId;
+        this.item = item;
+        this.sellerId = sellerId;
         this.currentPrice = startingPrice;
         this.bidIncrement = bidIncrement;
-        this.startTime    = startTime;
-        this.endTime      = endTime;
-        this.status       = OPEN;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.status = OPEN;
         // gọi hàm phụ để khởi tạo khoá lock vào ds observer
         initTransient();
     }
+
     public static Auction loadFromDB(int auctionId, Item item, int sellerId,
                                      double currentPrice, double bidIncrement,
                                      LocalDateTime startTime, LocalDateTime endTime,
@@ -95,7 +116,7 @@ public class Auction implements Serializable {
 
     // Khởi tạo lại sau khi deserialize (vì transient bị null)
     private void initTransient() {
-        this.lock      = new ReentrantLock();
+        this.lock = new ReentrantLock();
         this.observers = new CopyOnWriteArrayList<>();
     }
 
@@ -116,7 +137,9 @@ public class Auction implements Serializable {
         observers().remove(obs);
     }
 
-    /** Gửi sự kiện tới tất cả observer. */
+    /**
+     * Gửi sự kiện tới tất cả observer.
+     */
     public void notifyObservers(AuctionEvent event) {
         // lặp qua ds những aoi đang theo dõi
         for (AuctionObserver obs : observers()) {
@@ -151,46 +174,91 @@ public class Auction implements Serializable {
 
     public void updateStatus(AuctionStatus newStatus) {
         switch (this.status) {
-            case OPEN     -> { if (newStatus == RUNNING || newStatus == CANCELED)
-                this.status = newStatus;
-            else throw new IllegalStateException("OPEN → " + newStatus + " không hợp lệ"); }
-            case RUNNING  -> { if (newStatus == FINISHED || newStatus == CANCELED)
-                this.status = newStatus;
-            else throw new IllegalStateException("RUNNING → " + newStatus + " không hợp lệ"); }
-            case FINISHED -> { if (newStatus == PAID)
-                this.status = newStatus;
-            else throw new IllegalStateException("FINISHED → " + newStatus + " không hợp lệ"); }
-            default       -> throw new IllegalStateException("Không thể đổi từ " + this.status);
+            case OPEN -> {
+                if (newStatus == RUNNING || newStatus == CANCELED)
+                    this.status = newStatus;
+                else throw new IllegalStateException("OPEN → " + newStatus + " không hợp lệ");
+            }
+            case RUNNING -> {
+                if (newStatus == FINISHED || newStatus == CANCELED)
+                    this.status = newStatus;
+                else throw new IllegalStateException("RUNNING → " + newStatus + " không hợp lệ");
+            }
+            case FINISHED -> {
+                if (newStatus == PAID)
+                    this.status = newStatus;
+                else throw new IllegalStateException("FINISHED → " + newStatus + " không hợp lệ");
+            }
+            default -> throw new IllegalStateException("Không thể đổi từ " + this.status);
         }
     }
 
     // ── Getters ───────────────────────────────────────────────────────────────
 
-    public int            getAuctionId()      { return auctionId; }
-    public int            getSellerId()        { return sellerId; }
-    public Item           getItem()            { return item; }
-    public double         getCurrentPrice()    { return currentPrice; }
-    public double         getBidIncrement()    { return bidIncrement; }
-    public LocalDateTime  getStartTime()       { return startTime; }
-    public LocalDateTime  getEndTime()         { return endTime; }
-    public AuctionStatus  getStatus()          { return status; }
-    public boolean        isBanned()           { return banned; }
-    public int            getLeadingBidderId() { return leadingBidderId; }
-    public List<Bid>      getBids()            { return Collections.unmodifiableList(bids); }
-    public static double         getRatio()           { return ratio;}
+    public int getAuctionId() {
+        return auctionId;
+    }
 
-    /** Thêm bid vào danh sách (internal use, dùng khi load từ DB) */
+    public int getSellerId() {
+        return sellerId;
+    }
+
+    public Item getItem() {
+        return item;
+    }
+
+    public double getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public double getBidIncrement() {
+        return bidIncrement;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public AuctionStatus getStatus() {
+        return status;
+    }
+
+    public boolean isBanned() {
+        return banned;
+    }
+
+    public int getLeadingBidderId() {
+        return leadingBidderId;
+    }
+
+    public List<Bid> getBids() {
+        return Collections.unmodifiableList(bids);
+    }
+
+    public static double getRatio() {
+        return ratio;
+    }
+
+    /**
+     * Thêm bid vào danh sách (internal use, dùng khi load từ DB)
+     */
     public void addBidToList(Bid bid) {
         this.bids.add(bid);
     }
 
-    public ReentrantLock  getLock() {
+    public ReentrantLock getLock() {
         if (lock == null) lock = new ReentrantLock();
         return lock;
     }
 
     // ── Setters ───────────────────────────────────────────────────────────────
-    public void setAuctionId(int id) { this.auctionId = id; }
+    public void setAuctionId(int id) {
+        this.auctionId = id;
+    }
 
     public void setCurrentPrice(double p) {
         if (p < currentPrice)
@@ -218,7 +286,9 @@ public class Auction implements Serializable {
         this.endTime = t;
     }
 
-    public void setBanned(boolean banned) { this.banned = banned; }
+    public void setBanned(boolean banned) {
+        this.banned = banned;
+    }
 
     // ── equals / hashCode ─────────────────────────────────────────────────────
 
@@ -230,7 +300,9 @@ public class Auction implements Serializable {
     }
 
     @Override
-    public int hashCode() { return Integer.hashCode(auctionId); }
+    public int hashCode() {
+        return Integer.hashCode(auctionId);
+    }
 
     // ── Observer interface (tách ra khỏi Auction) ─────────────────────────────
 
@@ -238,22 +310,4 @@ public class Auction implements Serializable {
         void onAuctionEvent(AuctionEvent event);
     }
 
-    //autobid
-    public int getAutoBidUserId()        { return autoBidUserId; }
-    public double getAutoBidMaxAmount()  { return autoBidMaxAmount; }
-    public double getAutoBidStep()       { return autoBidStep; }
-
-    public void setAutoBidUserId(int userId)        { this.autoBidUserId = userId; }
-    public void setAutoBidMaxAmount(double max)     { this.autoBidMaxAmount = max; }
-    public void setAutoBidStep(double step)         { this.autoBidStep = step; }
-
-    public void clearAutoBid() {
-        this.autoBidUserId = -1;
-        this.autoBidMaxAmount = 0;
-        this.autoBidStep = 0;
-    }
-
-    public boolean hasAutoBid() {
-        return autoBidUserId != -1 && autoBidMaxAmount > 0 && autoBidStep > 0;
-    }
 }

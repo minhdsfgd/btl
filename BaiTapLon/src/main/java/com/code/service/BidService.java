@@ -5,23 +5,24 @@ import com.code.exception.*;
 import com.code.models.*;
 import com.code.service.TransactionService;
 
-
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import com.code.network.AutoBidData;
 
 /**
  * Xử lý nghiệp vụ đặt giá và nạp tiền.
  *
  * <p>Thứ tự validate trong {@link #placeBid}:
  * <ol>
- *   <li>User bị ban?                  → UserBannedException</li>
- *   <li>Thiếu role BIDDER?            → InvalidBidException</li>
- *   <li>Bid sản phẩm của chính mình?  → SelfBidException</li>
- *   <li>Phiên không RUNNING?          → AuctionClosedException</li>
- *   <li>Phiên bị Admin ban?           → AuctionClosedException</li>
- *   <li>Số tiền < giá tối thiểu?   → InvalidBidException</li>
- *   <li>Số dư không đủ?               → InsufficientBalanceException</li>
+ * <li>User bị ban?                  → UserBannedException</li>
+ * <li>Thiếu role BIDDER?            → InvalidBidException</li>
+ * <li>Bid sản phẩm của chính mình?  → SelfBidException</li>
+ * <li>Phiên không RUNNING?          → AuctionClosedException</li>
+ * <li>Phiên bị Admin ban?           → AuctionClosedException</li>
+ * <li>Số tiền < giá tối thiểu?   → InvalidBidException</li>
+ * <li>Số dư không đủ?               → InsufficientBalanceException</li>
  * </ol>
  * Bước 4–7 nằm trong ReentrantLock để tránh race condition.</p>
  */
@@ -215,40 +216,52 @@ public class BidService {
                 throw new RuntimeException("Lỗi lưu bid: " + e.getMessage(), e);
             }
 
-// ── AUTO BID LOGIC ─────────────────────────────────────────────
-            // Nếu có auto bid và bidder hiện tại KHÔNG phải auto-bidder
-            if (auction.hasAutoBid() && user.getUserId() != auction.getAutoBidUserId()) {
-                int autoBidderId = auction.getAutoBidUserId();
-                double autoBidMax = auction.getAutoBidMaxAmount();
-                double autoBidStep = auction.getAutoBidStep();
-                double nextAutoBidAmount = amount + autoBidStep;
-
-                // Nếu auto bid vẫn còn dưới giá trần → tự động đặt giá
-                if (nextAutoBidAmount <= autoBidMax) {
-                    try {
-                        User autoBidder = userDAO.findById(autoBidderId);
-                        if (autoBidder != null && autoBidder.isActive() &&
-                                autoBidder.getBalance() >= nextAutoBidAmount * auction.getRatio()) {
-
-                            // TỰA ĐỘNG CALL RECURSION: đặt giá tự động
-                            // ⚠️ CẢNH CÁO: Để tránh infinite recursion, ta kiểm tra điều kiện trên
-                            placeBid(autoBidder, auction, nextAutoBidAmount);
-                        } else {
-                            // Auto bidder không đủ tiền → tắt auto bid
-                            auction.clearAutoBid();
-                        }
-                    } catch (Exception e) {
-                        System.err.println("[Auto Bid] Lỗi: " + e.getMessage());
-                        auction.clearAutoBid();
-                    }
-                } else {
-                    // Giá đã vượt trần → tắt auto bid
-                    auction.clearAutoBid();
-                }
-            }
-
+            // ⚠️ ĐÃ CHUYỂN NOTIFY LÊN ĐÂY (TRƯỚC AUTO BID LOGIC) ⚠️
             // ── Notify qua AuctionEvent (không dùng Bid giả) ──────────────────
             auction.notifyObservers(AuctionEvent.bidPlaced(auction.getAuctionId(), bid));
+
+
+            // ── AUTO BID LOGIC ─────────────────────────────────────────────
+            if (auction.hasAutoBid()) {
+                boolean battleContinues = true;
+
+                // Vòng lặp cho các auto-bidder "solo" liên hoàn
+                while (battleContinues) {
+                    battleContinues = false; // Mặc định dừng, chỉ lặp tiếp nếu có người vượt giá
+
+                    for (Map.Entry<Integer, AutoBidData> entry : auction.getAutoBidders().entrySet()) {
+                        int autoBidderId = entry.getKey();
+                        AutoBidData autoBid = entry.getValue();
+
+                        // Bỏ qua nếu user này đang là người dẫn đầu (Top 1)
+                        if (autoBidderId == auction.getLeadingBidderId()) continue;
+
+                        double nextAutoBidAmount = auction.getCurrentPrice() + autoBid.step;
+
+                        // Nếu giá tiếp theo vẫn <= giá trần của user này
+                        if (nextAutoBidAmount <= autoBid.maxAmount) {
+                            try {
+                                User autoBidder = userDAO.findById(autoBidderId);
+                                if (autoBidder != null && autoBidder.isActive() &&
+                                        autoBidder.getBalance() >= nextAutoBidAmount * auction.getRatio()) {
+
+                                    // Kích hoạt đặt giá! (Đệ quy an toàn)
+                                    placeBid(autoBidder, auction, nextAutoBidAmount);
+
+                                    battleContinues = true; // Có giá mới, cho phép vòng while chạy tiếp!
+                                    break; // Thoát vòng for để bắt đầu lại vòng while với giá Top 1 mới
+                                } else {
+                                    auction.removeAutoBid(autoBidderId); // Hết tiền -> đá khỏi danh sách
+                                }
+                            } catch (Exception e) {
+                                auction.removeAutoBid(autoBidderId); // Lỗi -> đá khỏi danh sách
+                            }
+                        } else {
+                            auction.removeAutoBid(autoBidderId); // Vượt trần -> đá khỏi danh sách
+                        }
+                    }
+                }
+            }
 
             return bid;
 
@@ -256,8 +269,4 @@ public class BidService {
             auction.getLock().unlock();
         }
     }
-
-
-
-
 }
