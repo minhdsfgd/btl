@@ -1,32 +1,23 @@
 package com.code.service;
-import com.code.client.SocketClient;
-import com.code.dao.UserDAO;
+
 import com.code.dao.AuctionDAO;
+import com.code.dao.UserDAO;
 import com.code.exception.AuctionClosedException;
 import com.code.exception.AuthenticationException;
 import com.code.exception.InsufficientBalanceException;
 import com.code.exception.UserBannedException;
 import com.code.models.*;
-import com.code.dao.*;
-import com.code.network.Request;
-import com.code.network.RequestType;
-import com.code.network.Response;
-import com.code.network.UpdateUserData;
-import javafx.application.Platform;
-import javafx.scene.control.Alert;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static com.code.client.SessionManager.getUser;
-import static com.code.models.AuctionStatus.*;
+import static com.code.models.AuctionStatus.FINISHED;
 
 /**
  * Quản lý vòng đời phiên đấu giá — Singleton (double-checked locking).

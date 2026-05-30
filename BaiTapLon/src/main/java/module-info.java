@@ -27,4 +27,6 @@ module com.code {
     exports com.code.exception;
     exports com.code.repository;
     exports com.code.util;
+    exports com.code.dao;
+    exports com.code.database;
 }
