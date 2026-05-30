@@ -234,7 +234,7 @@ public class AuctionService {
         try {
             // 1. Lấy thông tin người dẫn đầu và số tiền cần hoàn
             int leadingBidderId = auction.getLeadingBidderId();
-            double refundAmount = auction.getCurrentPrice()*auction.getRatio();
+            double refundAmount = auction.getCurrentPrice()*Auction.getRatio();
 
             // 2. Cập nhật trạng thái hủy
             auction.updateStatus(AuctionStatus.CANCELED);
@@ -300,9 +300,9 @@ public class AuctionService {
             if (!seller.isActive()) throw new UserBannedException(seller.getUsername());
 
             double amount = auction.getCurrentPrice();
-            double actualPayAmount = amount * (1 - auction.getRatio());
+            double actualPayAmount = amount * (1 - Auction.getRatio());
 
-            if (bidder.getBalance() < amount*(1-auction.getRatio())) {
+            if (bidder.getBalance() < amount*(1-Auction.getRatio())) {
                 throw new InsufficientBalanceException("Tài khoản ko đủ số dư");
             }
             // --- BẮT ĐẦU PHẦN SỬA LỖI ---
