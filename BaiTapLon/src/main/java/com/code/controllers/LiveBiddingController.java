@@ -469,7 +469,7 @@ public class LiveBiddingController implements Initializable {
         } catch (Exception ignored) {}
     }
 
-    // =========================================================================
+    // ==================================setPRro=======================================
     //  Public setters
     // =========================================================================
 
@@ -494,11 +494,11 @@ public class LiveBiddingController implements Initializable {
                 try {
                     java.io.File imgFile = new java.io.File(imageUrl);
                     if (!imgFile.exists()) return;
-                    // 152×152 khớp fitWidth/fitHeight trong FXML, preserveRatio=true
+
                     Image img = new Image(
                             imgFile.toURI().toString(),
-                            152, 152,
-                            true,   // preserveRatio — không méo
+                            400, 180,
+                            false,   // preserveRatio — không méo
                             true, true
                     );
                     Platform.runLater(() -> {

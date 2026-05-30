@@ -31,28 +31,28 @@ CREATE TABLE IF NOT EXISTS items (
                                      id              INT           AUTO_INCREMENT PRIMARY KEY,
                                      seller_id       INT           NOT NULL,
                                      name            VARCHAR(200)  NOT NULL,
-    description     TEXT,
-    starting_price  DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    item_type       ENUM('ELECTRONICS','ART','VEHICLE') NOT NULL,
+                                     description     TEXT,
+                                     starting_price  DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+                                     item_type       ENUM('ELECTRONICS','ART','VEHICLE') NOT NULL,
 
     -- Electronics
-    brand           VARCHAR(100)  DEFAULT '',
-    warranty_months INT           DEFAULT 0,
+                                     brand           VARCHAR(100)  DEFAULT '',
+                                     warranty_months INT           DEFAULT 0,
 
     -- Art
-    artist_name     VARCHAR(100)  DEFAULT 'Khuyết danh',
-    medium          VARCHAR(100)  DEFAULT '',
+                                     artist_name     VARCHAR(100)  DEFAULT 'Khuyết danh',
+                                     medium          VARCHAR(100)  DEFAULT '',
 
     -- Vehicle
-    license_plate   VARCHAR(20)   DEFAULT '',
-    year_made       INT           DEFAULT 0,
+                                     license_plate   VARCHAR(20)   DEFAULT '',
+                                     year_made       INT           DEFAULT 0,
 
-    created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE RESTRICT,
-    INDEX idx_seller (seller_id),
-    INDEX idx_type   (item_type)
-    ) ENGINE=InnoDB;
+                                     FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE RESTRICT,
+                                     INDEX idx_seller (seller_id),
+                                     INDEX idx_type   (item_type)
+) ENGINE=InnoDB;
 
 -- ── 3. auctions ──────────────────────────────────────────────
 -- Ánh xạ: Auction
@@ -61,23 +61,23 @@ CREATE TABLE IF NOT EXISTS auctions (
                                         item_id            INT           NOT NULL,
                                         seller_id          INT           NOT NULL,
                                         current_price      DECIMAL(15,2) NOT NULL,
-    bid_increment      DECIMAL(15,2) NOT NULL,
-    start_time         DATETIME      NOT NULL,
-    end_time           DATETIME      NOT NULL,
-    status             ENUM('OPEN','RUNNING','FINISHED','PAID','CANCELED')
-    NOT NULL DEFAULT 'OPEN',
-    banned             TINYINT(1)    NOT NULL DEFAULT 0,
-    leading_bidder_id  INT           DEFAULT NULL,  -- NULL nếu chưa có bid
-    created_at         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                        bid_increment      DECIMAL(15,2) NOT NULL,
+                                        start_time         DATETIME      NOT NULL,
+                                        end_time           DATETIME      NOT NULL,
+                                        status             ENUM('OPEN','RUNNING','FINISHED','PAID','CANCELED')
+                                                                         NOT NULL DEFAULT 'OPEN',
+                                        banned             TINYINT(1)    NOT NULL DEFAULT 0,
+                                        leading_bidder_id  INT           DEFAULT NULL,  -- NULL nếu chưa có bid
+                                        created_at         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (item_id)           REFERENCES items(id)  ON DELETE RESTRICT,
-    FOREIGN KEY (seller_id)         REFERENCES users(id)  ON DELETE RESTRICT,
-    FOREIGN KEY (leading_bidder_id) REFERENCES users(id)  ON DELETE SET NULL,
+                                        FOREIGN KEY (item_id)           REFERENCES items(id)  ON DELETE RESTRICT,
+                                        FOREIGN KEY (seller_id)         REFERENCES users(id)  ON DELETE RESTRICT,
+                                        FOREIGN KEY (leading_bidder_id) REFERENCES users(id)  ON DELETE SET NULL,
 
-    INDEX idx_status    (status),
-    INDEX idx_seller_id (seller_id),
-    INDEX idx_end_time  (end_time)
-    ) ENGINE=InnoDB;
+                                        INDEX idx_status    (status),
+                                        INDEX idx_seller_id (seller_id),
+                                        INDEX idx_end_time  (end_time)
+) ENGINE=InnoDB;
 
 -- ── 4. bids ──────────────────────────────────────────────────
 -- Ánh xạ: Bid (immutable)
@@ -86,14 +86,14 @@ CREATE TABLE IF NOT EXISTS bids (
                                     auction_id INT           NOT NULL,
                                     user_id    INT           NOT NULL,
                                     amount     DECIMAL(15,2) NOT NULL,
-    bid_time   DATETIME      NOT NULL,
+                                    bid_time   DATETIME      NOT NULL,
 
-    FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE RESTRICT,
+                                    FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
+                                    FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE RESTRICT,
 
-    INDEX idx_auction (auction_id),
-    INDEX idx_user    (user_id)
-    ) ENGINE=InnoDB;
+                                    INDEX idx_auction (auction_id),
+                                    INDEX idx_user    (user_id)
+) ENGINE=InnoDB;
 
 -- ── 5. transactions ──────────────────────────────────────────
 -- Ánh xạ: Transaction (immutable)
@@ -104,43 +104,38 @@ CREATE TABLE IF NOT EXISTS transactions (
                                             from_user_id   INT           DEFAULT NULL,
                                             to_user_id     INT           DEFAULT NULL,   -- NULL = hệ thống giữ (BID_HOLD)
                                             amount         DECIMAL(15,2) NOT NULL,
-    auction_id     INT           DEFAULT NULL,
-    type           ENUM('AUCTION_PAYMENT','REFUND','DEPOSIT','ADJUSTMENT') NOT NULL,
-    created_at     DATETIME      NOT NULL,
+                                            auction_id     INT           DEFAULT NULL,
+                                            type           ENUM('AUCTION_PAYMENT','REFUND','DEPOSIT','ADJUSTMENT') NOT NULL,
+                                            created_at     DATETIME      NOT NULL,
 
-    FOREIGN KEY (from_user_id) REFERENCES users(id)    ON DELETE SET NULL,
-    FOREIGN KEY (to_user_id)   REFERENCES users(id)    ON DELETE SET NULL,
-    FOREIGN KEY (auction_id)   REFERENCES auctions(id) ON DELETE SET NULL,
+                                            FOREIGN KEY (from_user_id) REFERENCES users(id)    ON DELETE SET NULL,
+                                            FOREIGN KEY (to_user_id)   REFERENCES users(id)    ON DELETE SET NULL,
+                                            FOREIGN KEY (auction_id)   REFERENCES auctions(id) ON DELETE SET NULL,
 
-    INDEX idx_from   (from_user_id),
-    INDEX idx_to     (to_user_id),
-    INDEX idx_auction(auction_id)
-    ) ENGINE=InnoDB;
-
--- ── Seed data: tài khoản Admin mặc định ─────────────────────
--- Password "admin123" — đổi trước khi deploy thật
-INSERT IGNORE INTO users (username, password, balance, active, banned, roles)
-VALUES ('admin', 'admin123', 0.00, 1, 0, 'ADMIN');
+                                            INDEX idx_from   (from_user_id),
+                                            INDEX idx_to     (to_user_id),
+                                            INDEX idx_auction(auction_id)
+) ENGINE=InnoDB;
 
 -- ── 6. user_audit_log ────────────────────────────────────────
 -- Ghi nhận mọi thay đổi thuộc tính của user.
 -- changed_by = NULL  → hệ thống tự đổi (scheduler, BidService...)
 -- changed_by = id    → admin hoặc chính user thực hiện
 CREATE TABLE IF NOT EXISTS user_audit_log (
-    id          INT           AUTO_INCREMENT PRIMARY KEY,
-    user_id     INT           NOT NULL,
-    field_name  VARCHAR(50)   NOT NULL,     -- 'balance' | 'banned' | 'roles' | 'active'
-    old_value   VARCHAR(255)  DEFAULT NULL,
-    new_value   VARCHAR(255)  DEFAULT NULL,
-    changed_by  INT           DEFAULT NULL, -- NULL = hệ thống
-    changed_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                              id          INT           AUTO_INCREMENT PRIMARY KEY,
+                                              user_id     INT           NOT NULL,
+                                              field_name  VARCHAR(50)   NOT NULL,     -- 'balance' | 'banned' | 'roles' | 'active'
+                                              old_value   VARCHAR(255)  DEFAULT NULL,
+                                              new_value   VARCHAR(255)  DEFAULT NULL,
+                                              changed_by  INT           DEFAULT NULL, -- NULL = hệ thống
+                                              changed_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (user_id)    REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL,
+                                              FOREIGN KEY (user_id)    REFERENCES users(id) ON DELETE CASCADE,
+                                              FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL,
 
-    INDEX idx_audit_user    (user_id),
-    INDEX idx_audit_field   (field_name),
-    INDEX idx_audit_time    (changed_at)
+                                              INDEX idx_audit_user    (user_id),
+                                              INDEX idx_audit_field   (field_name),
+                                              INDEX idx_audit_time    (changed_at)
 ) ENGINE=InnoDB;
 CREATE TABLE audit_logs (
                             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -173,8 +168,8 @@ CREATE TABLE audit_logs (
 DELIMITER $$
 
 CREATE TRIGGER IF NOT EXISTS trg_users_after_update
-AFTER UPDATE ON users
-FOR EACH ROW
+    AFTER UPDATE ON users
+    FOR EACH ROW
 BEGIN
     -- balance thay đổi
     IF OLD.balance <> NEW.balance THEN

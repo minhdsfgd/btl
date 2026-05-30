@@ -7,6 +7,7 @@ import com.code.util.ItemFactory;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Tạo dữ liệu mặc định khi server khởi động lần đầu.
@@ -37,7 +38,10 @@ public class DataSeeder {
 
     public void seed() {
         try {
-            // Kiểm tra đã có dữ liệu chưa
+            // Luôn chạy fixPlaintextPasswords trước để fix mọi password plaintext còn sót
+            fixPlaintextPasswords();
+
+            // Kiểm tra đã có dữ liệu chưa — nếu rồi thì dừng
             if (!userDAO.findAll().isEmpty()) {
                 System.out.println("[Seeder] DB đã có dữ liệu, bỏ qua seed.");
                 return;
@@ -106,6 +110,36 @@ public class DataSeeder {
         } catch (Exception e) {
             System.err.println("[Seeder] Lỗi: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Duyệt toàn bộ users, phát hiện password KHÔNG phải BCrypt hash
+     * (BCrypt hash luôn bắt đầu bằng "$2a$" hoặc "$2b$"),
+     * rồi tự động hash lại và cập nhật DB.
+     *
+     * Giải quyết trường hợp schema.sql insert plaintext password vào DB trước.
+     */
+    private void fixPlaintextPasswords() {
+        try {
+            List<User> users = userDAO.findAll();
+            int fixed = 0;
+            for (User user : users) {
+                String pwd = user.getPassword();
+                // BCrypt hash hợp lệ luôn bắt đầu bằng "$2a$" hoặc "$2b$"
+                if (pwd == null || (!pwd.startsWith("$2a$") && !pwd.startsWith("$2b$"))) {
+                    String hashed = BCrypt.hashpw(pwd != null ? pwd : "", BCrypt.gensalt());
+                    user.setPassword(hashed);
+                    userDAO.update(user);
+                    System.out.println("[Seeder] ✓ Đã hash password cho user: " + user.getUsername());
+                    fixed++;
+                }
+            }
+            if (fixed > 0) {
+                System.out.println("[Seeder] Đã fix " + fixed + " password plaintext.");
+            }
+        } catch (Exception e) {
+            System.err.println("[Seeder] Lỗi khi fix password: " + e.getMessage());
         }
     }
 }
