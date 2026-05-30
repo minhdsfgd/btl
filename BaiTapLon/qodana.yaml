@@ -7,7 +7,6 @@
 #              WARNING: Do not store sensitive information in this file,        #
 #               as its contents will be included in the Qodana report.          #
 #################################################################################
-version: "1.0"
 
 #Specify inspection profile for code analysis
 profile:
@@ -46,4 +45,5 @@ projectJDK: "25" #(Applied in CI/CD pipeline)
   
 #Qodana supports other languages, for example, Python, JavaScript, TypeScript, Go, C#, PHP
 #For all supported languages see https://www.jetbrains.com/help/qodana/linters.html
+version: "1.0"
 linter: jetbrains/qodana-jvm-community:2025.3
