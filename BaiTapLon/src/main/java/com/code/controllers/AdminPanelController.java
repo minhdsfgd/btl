@@ -11,6 +11,7 @@ import com.code.network.Request;
 import com.code.network.RequestType;
 import com.code.network.Response;
 import static com.code.util.ControllerUtils.navigateTo;
+import static com.code.util.ControllerUtils.handleBanResponse;
 import com.code.network.UpdateUserData;
 
 import javafx.application.Platform;
@@ -369,6 +370,7 @@ public class AdminPanelController implements Initializable {
                         .sendRequest(com.code.network.Request.of(
                                 com.code.network.RequestType.GET_ALL_USERS));
                 Platform.runLater(() -> {
+                    if (handleBanResponse(res)) return;
                     if (res.isSuccess()) {
                         @SuppressWarnings("unchecked")
                         List<com.code.models.User> users =

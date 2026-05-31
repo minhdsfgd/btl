@@ -31,6 +31,7 @@ import java.util.Locale;
 import static com.code.models.AuctionStatus.*;
 import static com.code.util.ControllerUtils.navigateTo;
 import static com.code.util.ControllerUtils.showAlert;
+import static com.code.util.ControllerUtils.handleBanResponse;
 
 public class AuctionListController {
 
@@ -128,6 +129,7 @@ public class AuctionListController {
                         .sendRequest(Request.of(RequestType.GET_ACTIVE_AUCTIONS));
 
                 Platform.runLater(() -> {
+                    if (handleBanResponse(res)) return;
                     if (res.isSuccess()) {
                         @SuppressWarnings("unchecked")
                         List<Auction> list = res.getDataAs(List.class);
@@ -495,6 +497,7 @@ public class AuctionListController {
                 Response res = SocketClient.getInstance()
                         .sendRequest(Request.of(RequestType.GET_MY_INFO));
                 Platform.runLater(() -> {
+                    if (handleBanResponse(res)) return;
                     if (res.getData() != null) {
                         try {
                             User u = res.getDataAs(User.class);

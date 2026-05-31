@@ -236,10 +236,89 @@ public class RequestProcessor {
 
         try {
             int targetId = req.getDataAs(Integer.class);
+
+            // Bước 1: Ban user trong DB
             userService.banUser(handler.currentUser, targetId);
-            return Response.ok("Đã ban user #" + targetId);
-        } catch (AuthenticationException | UserBannedException e) {
+
+            // Bước 2: Hủy phiên + push thông báo (logic dùng chung với handleUpdateUser)
+            applyBanSideEffects(targetId, handler.currentUser);
+
+            return Response.ok("Đã ban user #" + targetId
+                    + " và xử lý tất cả phiên liên quan.");
+        } catch (com.code.exception.AuthenticationException | com.code.exception.UserBannedException e) {
             return Response.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * Xử lý hệ quả khi một user bị cấm (active=false):
+     * <ol>
+     *   <li>Hủy tất cả phiên OPEN/RUNNING do user làm seller</li>
+     *   <li>Hủy các phiên RUNNING mà user đang dẫn đầu (hoàn deposit tự động)</li>
+     *   <li>Cập nhật trạng thái in-memory của ClientHandler bị ban</li>
+     *   <li>Push USER_BANNED event nếu user đang ở màn hình LiveBidding</li>
+     * </ol>
+     * Mọi lỗi trong từng bước đều được log riêng và không làm hỏng toàn bộ luồng.
+     */
+    private void applyBanSideEffects(int targetId, User adminUser) {
+        // ── Bước A: Hủy phiên của SELLER bị ban ──────────────────────────────
+        try {
+            List<Auction> sellerAuctions = auctionService.getAuctionsBySeller(targetId);
+            for (Auction auction : sellerAuctions) {
+                if (auction.getStatus() == AuctionStatus.OPEN
+                        || auction.getStatus() == AuctionStatus.RUNNING) {
+                    try {
+                        auctionService.cancelAuction(auction.getAuctionId(), adminUser);
+                        System.out.println("[Ban] Hủy phiên seller #"
+                                + auction.getAuctionId() + " (seller bị ban #" + targetId + ")");
+                    } catch (Exception e) {
+                        System.err.println("[Ban] Lỗi hủy phiên seller #"
+                                + auction.getAuctionId() + ": " + e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[Ban] Lỗi lấy phiên seller #" + targetId + ": " + e.getMessage());
+        }
+
+        // ── Bước B: Hủy phiên mà BIDDER bị ban đang dẫn đầu ─────────────────
+        try {
+            List<Auction> leadingAuctions =
+                    auctionService.getRunningAuctionsWhereLeading(targetId);
+            for (Auction auction : leadingAuctions) {
+                try {
+                    auctionService.cancelAuction(auction.getAuctionId(), adminUser);
+                    System.out.println("[Ban] Hủy phiên #" + auction.getAuctionId()
+                            + " (bidder dẫn đầu #" + targetId + " bị ban — hoàn deposit)");
+                } catch (Exception e) {
+                    System.err.println("[Ban] Lỗi hủy phiên leading #"
+                            + auction.getAuctionId() + ": " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[Ban] Lỗi lấy phiên leading #" + targetId + ": " + e.getMessage());
+        }
+
+        // ── Bước C: Cập nhật in-memory + push realtime ────────────────────────
+        synchronized (AuctionServer.connectedClients) {
+            for (ClientHandler client : AuctionServer.connectedClients) {
+                if (client.getCurrentUser() != null
+                        && client.getCurrentUser().getUserId() == targetId) {
+
+                    // Cập nhật trạng thái in-memory để request tiếp theo của client
+                    // bị chặn ngay bởi AuthGuard.requireNotBanned() trong ClientHandler.run()
+                    client.getCurrentUser().setActive(false);
+
+                    // Nếu đang ở LiveBidding (listener đang chạy) → push ngay lập tức
+                    if (client.watchingAuction != null) {
+                        client.onAuctionEvent(
+                                AuctionEvent.userBanned(
+                                        client.watchingAuction.getAuctionId(), targetId));
+                        System.out.println("[Ban] Pushed USER_BANNED → client #" + targetId);
+                    }
+                    break; // Mỗi user chỉ có 1 session đang hoạt động
+                }
+            }
         }
     }
 
@@ -290,11 +369,26 @@ public class RequestProcessor {
 
         try {
             com.code.network.UpdateUserData data = req.getDataAs(com.code.network.UpdateUserData.class);
-            userService.updateUser(handler.currentUser, data.userId, 
+
+            // Lưu trạng thái active trước khi update để phát hiện thay đổi
+            User target = userDAO.findById(data.userId);
+            boolean wasActive = (target != null) && target.isActive();
+
+            userService.updateUser(handler.currentUser, data.userId,
                     data.username, data.password, data.balance, data.active, data.roles);
+
+            // Nếu admin vừa deactivate user (active: true → false),
+            // áp dụng đúng logic ban: hủy phiên + push thông báo
+            boolean isNowBanned = Boolean.FALSE.equals(data.active);
+            if (wasActive && isNowBanned) {
+                applyBanSideEffects(data.userId, handler.currentUser);
+            }
+
             return Response.ok("Đã cập nhật user #" + data.userId);
         } catch (AuthenticationException | UserBannedException e) {
             return Response.fail(e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("Lỗi cập nhật user: " + e.getMessage());
         }
     }
 

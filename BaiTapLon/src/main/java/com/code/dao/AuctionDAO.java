@@ -153,8 +153,8 @@ public class AuctionDAO {
     private Auction mapRow(ResultSet rs) throws SQLException {
         Item item = itemDAO.mapRow(rs);
 
-        int           auctionId    = rs.getInt      ("a.id");
-        int           sellerId     = rs.getInt      ("a.seller_id");
+        int           auctionId    = rs.getInt      ("id");
+        int           sellerId     = rs.getInt      ("seller_id");
         double        currentPrice = rs.getDouble   ("current_price");
         double        bidIncrement = rs.getDouble   ("bid_increment");
         LocalDateTime startTime    = rs.getTimestamp("start_time").toLocalDateTime();

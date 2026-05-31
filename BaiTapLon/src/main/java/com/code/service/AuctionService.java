@@ -152,6 +152,17 @@ public class AuctionService {
         }
     }
 
+    /**
+     * Tìm các phiên RUNNING trong liveAuctions có leadingBidderId == userId.
+     * Dùng khi ban bidder — để hủy phiên mà họ đang dẫn đầu.
+     */
+    public List<Auction> getRunningAuctionsWhereLeading(int userId) {
+        return liveAuctions.values().stream()
+                .filter(a -> a.getStatus() == AuctionStatus.RUNNING
+                        && a.getLeadingBidderId() == userId)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     // ── Thay đổi trạng thái ──────────────────────────────────────────────────
 
     public void startAuction(int auctionId, User requester)

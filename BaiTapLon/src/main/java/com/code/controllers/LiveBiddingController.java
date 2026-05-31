@@ -42,6 +42,7 @@ import javafx.scene.chart.XYChart;
 
 import javafx.util.Duration;
 
+import static com.code.models.AuctionEvent.EventType.USER_BANNED;
 import static com.code.util.ControllerUtils.navigateTo;
 
 public class LiveBiddingController implements Initializable {
@@ -412,6 +413,14 @@ public class LiveBiddingController implements Initializable {
                 countdownLabel.setStyle("-fx-text-fill: #ff9800; -fx-font-weight: bold;");
 
             });
+            case USER_BANNED -> {
+                // Client đang xem LiveBidding và TÀI KHOẢN CỦA HỌ bị ban
+                stopCountdown();
+                SocketClient.getInstance().stopListening();
+                SessionManager.clear();
+                showAlert("🚫 Tài khoản của bạn đã bị quản trị viên khóa.\nBạn sẽ được chuyển về trang đăng nhập.");
+                com.code.util.ControllerUtils.navigateTo("/com/code/views/Login.fxml", true);
+            }
         }
     }
 
@@ -455,6 +464,7 @@ public class LiveBiddingController implements Initializable {
                     showAlert("Đã TẮT đấu giá tự động.");
                 }
             }
+
         }
     }
 

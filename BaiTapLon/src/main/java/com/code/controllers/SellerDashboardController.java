@@ -3,7 +3,6 @@ package com.code.controllers;
 import com.code.client.SessionManager;
 import com.code.client.SocketClient;
 import com.code.models.Auction;
-import com.code.models.AuctionStatus;
 import com.code.models.Item;
 import com.code.models.User;
 import com.code.network.Request;
@@ -34,6 +33,7 @@ import java.util.*;
 
 import static com.code.util.ControllerUtils.navigateTo;
 import static com.code.util.ControllerUtils.showAlert;
+import static com.code.util.ControllerUtils.handleBanResponse;
 import static com.code.models.AuctionStatus.*;
 
 public class SellerDashboardController implements Initializable {
@@ -109,6 +109,8 @@ public class SellerDashboardController implements Initializable {
                                     java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
                             lblBalanceNav.setText(nf.format(bal) + " ₫");
                         });
+                    } else {
+                        Platform.runLater(() -> handleBanResponse(infoRes));
                     }
                 } catch (Exception ex) {
                     System.err.println("[Live] Khong refresh duoc balance: " + ex.getMessage());
@@ -151,6 +153,7 @@ public class SellerDashboardController implements Initializable {
                         .sendRequest(Request.of(RequestType.GET_MY_AUCTIONS));
 
                 Platform.runLater(() -> {
+                    if (handleBanResponse(res)) return;
                     allLots.clear();
                     activities.clear();
 
