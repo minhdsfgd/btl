@@ -22,7 +22,6 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
@@ -90,7 +89,6 @@ public class LiveBiddingController implements Initializable {
 
     // THÊM MỚI: LineChart real-time và các trục
     @FXML private LineChart<Number, Number> bidChart;
-    @FXML private NumberAxis                xAxis;
     @FXML private NumberAxis                yAxis;
 
 
@@ -104,7 +102,6 @@ public class LiveBiddingController implements Initializable {
     @FXML private Label     autoBidStatusBadge;
     @FXML private Label     autoBidMaxDisplay;
     @FXML private Label     autoBidStepDisplay;
-    @FXML private Label     autoBidLastBidDisplay;
     @FXML private Label     autoBidErrorLabel;
 
     // ── Auto-bid handlers ────────────────────────────────────────────────
@@ -213,16 +210,20 @@ public class LiveBiddingController implements Initializable {
         bidChart.setCreateSymbols(true);   // hiện chấm tròn tại mỗi điểm
 
         // Định dạng trục Y: rút gọn số lớn (12.500.000 → 12.5M)
-        yAxis.setTickLabelFormatter(new javafx.util.StringConverter<Number>() {
+        yAxis.setTickLabelFormatter(new javafx.util.StringConverter<>() {
             @Override
             public String toString(Number n) {
                 double v = n.doubleValue();
                 if (v >= 1_000_000_000) return String.format("%.1fB", v / 1_000_000_000);
-                if (v >= 1_000_000)     return String.format("%.1fM", v / 1_000_000);
-                if (v >= 1_000)         return String.format("%.0fk", v / 1_000);
+                if (v >= 1_000_000) return String.format("%.1fM", v / 1_000_000);
+                if (v >= 1_000) return String.format("%.0fk", v / 1_000);
                 return String.format("%.0f", v);
             }
-            @Override public Number fromString(String s) { return 0; }
+
+            @Override
+            public Number fromString(String s) {
+                return 0;
+            }
         });
 
         // Style chart sau khi layout xong (dùng Platform.runLater để chắc chắn node đã tồn tại)
@@ -289,13 +290,15 @@ public class LiveBiddingController implements Initializable {
                     System.out.println("[Live] Listener nhận obj: "
                             + (obj == null ? "null" : obj.getClass().getSimpleName()));
                     Platform.runLater(() -> {
-                        if (obj instanceof AuctionEvent event) {
-                            handleServerEvent(event);
-                        } else if (obj instanceof Response response) {
-                            handleBidResponse(response);
-                        } else if (obj == null) {
-                            showError("Mất kết nối với server.");
-                            stopCountdown();
+                        switch (obj) {
+                            case AuctionEvent event -> handleServerEvent(event);
+                            case Response response -> handleBidResponse(response);
+                            case null -> {
+                                showError("Mất kết nối với server.");
+                                stopCountdown();
+                            }
+                            default -> {
+                            }
                         }
                     });
                 });
@@ -314,15 +317,20 @@ public class LiveBiddingController implements Initializable {
         bidSeries.getData().clear();
         bidPointCount = 0;
 
-        for (int i = bids.size() - 1; i >= 0; i--) {
-            Bid bid = bids.get(i);
+        // Sắp xếp theo timestamp tăng dần (cũ nhất → mới nhất)
+        // để chart luôn đồng biến bất kể server trả về thứ tự nào
+        List<Bid> sorted = new java.util.ArrayList<>(bids);
+        sorted.sort(java.util.Comparator.comparing(Bid::getTimestamp));
+
+        // Vòng 1: Chart — duyệt CŨ → MỚI → đường đi lên (đồng biến)
+        for (Bid bid : sorted) {
             bidPointCount++;
             bidSeries.getData().add(new XYChart.Data<>(bidPointCount, bid.getAmount()));
         }
 
-        // Vòng 2: Bảng — duyệt MỚI→CŨ (index giảm dần) → mới nhất lên đầu
-        for (int i = bids.size() - 1; i >= 0; i--) {
-            Bid bid = bids.get(i);
+        // Vòng 2: Bảng — duyệt MỚI → CŨ → bid mới nhất hiển thị đầu bảng
+        for (int i = sorted.size() - 1; i >= 0; i--) {
+            Bid bid = sorted.get(i);
             String username = bid.getUserId() == SessionManager.getUserId()
                     ? currentUsername : "Người khác #" + bid.getUserId();
             String time = bid.getTimestamp().format(TIME_FMT);
@@ -389,25 +397,21 @@ public class LiveBiddingController implements Initializable {
                 setQuickBidDisabled(true); // THÊM MỚI
                 showAlert("⚠ Phiên đấu giá đã bị hủy.");
             }
-            case STATUS_CHANGED -> {
-                sessionStatusLabel.setText(event.getNewStatus().name());
-            }
-            case TIME_EXTENDED -> {
-                Platform.runLater(() -> {
-                    // Cộng thêm 60 giây vào đồng hồ đếm ngược hiện tại
-                    remainingSeconds += 60;
+            case STATUS_CHANGED -> sessionStatusLabel.setText(event.getNewStatus().name());
+            case TIME_EXTENDED -> Platform.runLater(() -> {
+                // Cộng thêm 60 giây vào đồng hồ đếm ngược hiện tại
+                remainingSeconds += 60;
 
-                    // Cập nhật lại Label hiển thị giờ kết thúc (nếu có)
-                    String newEndTime = LocalDateTime.now().plusSeconds(remainingSeconds).format(TIME_FMT);
-                    if (endTimeLabel != null) {
-                        endTimeLabel.setText(newEndTime);
-                    }
+                // Cập nhật lại Label hiển thị giờ kết thúc (nếu có)
+                String newEndTime = LocalDateTime.now().plusSeconds(remainingSeconds).format(TIME_FMT);
+                if (endTimeLabel != null) {
+                    endTimeLabel.setText(newEndTime);
+                }
 
-                    // Style lại Label đếm ngược để gây chú ý cho người chơi (Tùy chọn)
-                    countdownLabel.setStyle("-fx-text-fill: #ff9800; -fx-font-weight: bold;");
+                // Style lại Label đếm ngược để gây chú ý cho người chơi (Tùy chọn)
+                countdownLabel.setStyle("-fx-text-fill: #ff9800; -fx-font-weight: bold;");
 
-                });
-            }
+            });
         }
     }
 
@@ -642,7 +646,7 @@ public class LiveBiddingController implements Initializable {
      */
     public void addBidToHistory(String username, double amount) {
         String time = LocalDateTime.now().format(TIME_FMT);
-        bidHistory.add(0, new BidRow(username, time, formatPrice(amount)));
+        bidHistory.addFirst(new BidRow(username, time, formatPrice(amount)));
         bidHistoryTable.setItems(bidHistory);
 
         // vẽ điểm mới lên chart
@@ -652,7 +656,7 @@ public class LiveBiddingController implements Initializable {
 
         // Giữ tối đa 30 điểm trên chart để không quá rối
         if (bidSeries.getData().size() > 30) {
-            bidSeries.getData().remove(0);
+            bidSeries.getData().removeFirst();
         }
 
         // Style điểm mới nhất màu đỏ nổi bật, các điểm cũ màu xanh
@@ -703,55 +707,6 @@ public class LiveBiddingController implements Initializable {
         startWatchingAndListening(); // bid history sẽ load từ bên trong hàm này
     }
 
-    private void loadBidHistory() {
-        if (currentAuctionId < 0) return;
-
-        new Thread(() -> {
-            try {
-                Response res = SocketClient.getInstance().sendRequest(
-                        Request.of(RequestType.GET_BIDS_BY_AUCTION, currentAuctionId));
-                if (!res.isSuccess()) {
-                    Platform.runLater(() -> showError("Không tải được lịch sử: " + res.getMessage()));
-                    return;
-                }
-
-                Object data = res.getData();
-                if (!(data instanceof List<?> bids)) return;
-
-                Platform.runLater(() -> {
-                    bidHistory.clear();
-                    bidSeries.getData().clear(); //  xóa chart cũ
-                    bidPointCount = 0;           // reset bộ đếm
-
-                    // Duyệt từ cũ→mới để thêm vào chart theo thứ tự thời gian
-                    for (int i = bids.size() - 1; i >= 0; i--) {
-                        Object obj = bids.get(i);
-                        if (!(obj instanceof Bid bid)) continue;
-
-                        String username = bid.getUserId() == SessionManager.getUserId()
-                                ? currentUsername : "Người khác #" + bid.getUserId();
-                        String time = bid.getTimestamp().format(TIME_FMT);
-
-                        // Thêm vào bảng (mới nhất lên đầu)
-                        bidHistory.add(new BidRow(username, time, formatPrice(bid.getAmount())));
-
-                        // THÊM MỚI: thêm vào chart theo thứ tự lịch sử
-                        bidPointCount++;
-                        bidSeries.getData().add(
-                                new XYChart.Data<>(bidPointCount, bid.getAmount()));
-                    }
-
-                    bidHistory.sort(null); // nếu BidRow implements Comparable, hoặc xóa dòng này
-                    // Style đường chart sau khi có dữ liệu
-                    if (bidSeries.getNode() != null)
-                        bidSeries.getNode().setStyle("-fx-stroke:#6ee7b7; -fx-stroke-width:2px;");
-                });
-            } catch (Exception ex) {
-                Platform.runLater(() -> showError("Lỗi tải lịch sử: " + ex.getMessage()));
-            }
-        }, "load-bid-history").start();
-    }
-
     private void setupHistoryTable() {
         colUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
         colTime.setCellValueFactory(new PropertyValueFactory<>("time"));
@@ -769,11 +724,17 @@ public class LiveBiddingController implements Initializable {
             }
         });
 
-        colTime.setCellFactory(col -> new javafx.scene.control.TableCell<BidRow, String>() {
-            @Override protected void updateItem(String item, boolean empty) {
+        colTime.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) { setText(null); setStyle(""); }
-                else { setText(item); setStyle("-fx-text-fill:  #065f3b; -fx-alignment: CENTER;"); }
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    setStyle("-fx-text-fill:  #065f3b; -fx-alignment: CENTER;");
+                }
             }
         });
 

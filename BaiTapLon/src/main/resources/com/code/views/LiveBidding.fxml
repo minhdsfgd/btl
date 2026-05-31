@@ -17,6 +17,7 @@
 <?import javafx.scene.text.Font?>
 
 <?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.shape.Rectangle?>
 <AnchorPane prefHeight="620" prefWidth="1080" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.code.controllers.LiveBiddingController">
     <children>
 
@@ -72,12 +73,18 @@
 
                         <Label style="-fx-text-fill:#c8f5e1; -fx-font-size:10; -fx-font-weight:bold;" text="SẢN PHẨM" />
 
-                        <!-- Vùng chứa ảnh: nền tối, cố định chiều cao 180px -->
                         <StackPane prefHeight="180" minHeight="180" maxHeight="180"
-                                   style="-fx-background-color:#001a1a;" VBox.vgrow="NEVER">
-
+                                   style="-fx-background-color:#001a1a; -fx-background-radius:8;"
+                                   VBox.vgrow="NEVER">
+                            <ImageView fx:id="productImageView"
+                                       fitWidth="400" fitHeight="180"
+                                       preserveRatio="false"
+                                       pickOnBounds="true">
+                                <clip>
+                                    <Rectangle width="400" height="180" arcWidth="8" arcHeight="8"/>
+                                </clip>
+                            </ImageView>
                         </StackPane>
-
                         <Label fx:id="productNameLabel" style="-fx-text-fill:white; -fx-font-size:14; -fx-font-weight:bold;" text="—" wrapText="true" VBox.vgrow="NEVER">
                             <font><Font name="Segoe UI Bold" size="14.0" /></font>
                         </Label>
