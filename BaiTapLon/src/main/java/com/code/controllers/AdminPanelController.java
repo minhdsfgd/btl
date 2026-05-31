@@ -194,8 +194,8 @@ public class AdminPanelController implements Initializable {
         pfPassword.setPromptText("Mật khẩu (≥ 6 ký tự)");
 
         ComboBox<String> cmbRole = new ComboBox<>();
-        cmbRole.getItems().addAll("BIDDER", "SELLER", "ADMIN");
-        cmbRole.setValue("BIDDER");
+        cmbRole.getItems().addAll("REGULAR USER", "ADMIN");
+        cmbRole.setValue("REGULAR USER");
 
         Label lblError = new Label();
         lblError.setStyle("-fx-text-fill: #c62828; -fx-font-size: 11;");
@@ -353,7 +353,7 @@ public class AdminPanelController implements Initializable {
     }
     private void setupFilters() {
         cmbRoleFilter.setItems(FXCollections.observableArrayList(
-                "Tất cả", "ADMIN", "SELLER", "BIDDER"));
+                "Tất cả", "ADMIN", "REGULAR USER"));
         cmbRoleFilter.getSelectionModel().selectFirst();
 
         cmbStatusFilter.setItems(FXCollections.observableArrayList(
