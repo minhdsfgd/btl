@@ -155,7 +155,8 @@ public class AdminPanelController implements Initializable {
     @FXML
     private void handleUserSearch() {
         String keyword = tfUserSearch.getText().trim().toLowerCase();
-        String role    = cmbRoleFilter.getValue();
+        String input    = cmbRoleFilter.getValue();
+        String role = input.equals("REGULAR USER")? "SELLER, BIDDER":input;
 
         List<UserRow> filtered = allUsers.stream()
                 .filter(u -> keyword.isEmpty()
