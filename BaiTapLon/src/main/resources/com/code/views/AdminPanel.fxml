@@ -34,9 +34,9 @@
                 </Label>
                 <Region HBox.hgrow="ALWAYS" />
                 <Label fx:id="lblAdminName" style="-fx-text-fill:#c8f5e1; -fx-padding: 0 10 0 0;">
-               <font>
-                  <Font size="12.0" />
-               </font></Label>
+                    <font>
+                        <Font size="12.0" />
+                    </font></Label>
                 <Button onAction="#handleLogout" style="-fx-background-color: #880000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 4 13;" text="Đăng xuất">
                     <font><Font name="Segoe UI" size="12.0" /></font>
                 </Button>
@@ -94,7 +94,7 @@
                     <TableView fx:id="tableUsers" style="-fx-background-color: #006633; -fx-control-inner-background: rgba(255,255,255,0.08); -fx-table-cell-border-color: rgba(110,231,183,0.25); -fx-text-fill: white;" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="colUserId" prefWidth="105.21599560976028" text="ID" />
-                     <TableColumn fx:id="colUserName" minWidth="0.0" prefWidth="222.71997833251953" text="username" />
+                            <TableColumn fx:id="colUserName" minWidth="0.0" prefWidth="222.71997833251953" text="username" />
                             <TableColumn fx:id="colUserRole" prefWidth="129.02398681640625" text="Vai trò" />
                             <TableColumn fx:id="colUserStatus" minWidth="0.0" prefWidth="155.13601684570312" text="Trạng thái" />
                             <TableColumn fx:id="colUserAction" prefWidth="778.751953125" text="Hành động" />

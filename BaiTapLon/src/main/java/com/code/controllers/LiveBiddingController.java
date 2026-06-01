@@ -414,9 +414,11 @@ public class LiveBiddingController implements Initializable {
 
             });
             case USER_BANNED -> {
-                // Client đang xem LiveBidding và TÀI KHOẢN CỦA HỌ bị ban
+                // Client đang xem LiveBidding và TÀI KHOẢN CỦA HỌ bị ban.
+                // Phải dùng resetForLogin() (không phải stopListening()) để đóng socket
+                // ngay lập tức, tránh race condition khi user đăng nhập lại với tài khoản khác.
                 stopCountdown();
-                SocketClient.getInstance().stopListening();
+                SocketClient.getInstance().resetForLogin();
                 SessionManager.clear();
                 showAlert("🚫 Tài khoản của bạn đã bị quản trị viên khóa.\nBạn sẽ được chuyển về trang đăng nhập.");
                 com.code.util.ControllerUtils.navigateTo("/com/code/views/Login.fxml", true);

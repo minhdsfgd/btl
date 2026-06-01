@@ -336,6 +336,47 @@ public class SocketClient {
     }
 
     /**
+     * Dùng khi user bị ban: dừng listener NGAY LẬP TỨC bằng cách đóng socket,
+     * sau đó reset stream về null để sendRequest() tự reconnect khi login lại.
+     *
+     * <p>Tại sao cần method này thay vì chỉ gọi stopListening():</p>
+     * <ul>
+     *   <li>stopListening() chỉ set flag — listener vẫn blocked trên in.readObject()
+     *       tối đa 30 giây (SOCKET_TIMEOUT_MS)</li>
+     *   <li>Trong thời gian đó, sendRequest(LOGIN) cũng gọi in.readObject()</li>
+     *   <li>Hai thread cùng đọc ObjectInputStream → race condition → ClassCastException</li>
+     *   <li>resetForLogin() đóng socket → SocketException → listener thoát ngay</li>
+     *   <li>sendRequest() phát hiện socket=null → tự reconnect sạch sẽ</li>
+     * </ul>
+     */
+    public void resetForLogin() {
+        // 1. Báo listener dừng — khi SocketException bắn, listener sẽ không
+        //    gọi onEvent.accept(null) (tránh hiện "Mất kết nối" sai lệch)
+        synchronized (listenerLock) {
+            listening = false;
+        }
+
+        // 2. Đóng socket → listener đang blocked trên in.readObject() nhận
+        //    SocketException và thoát vòng lặp ngay lập tức
+        synchronized (connectLock) {
+            try {
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
+            } catch (IOException e) {
+                System.err.println("[Client] resetForLogin close error: " + e.getMessage());
+            }
+            // Xóa references — sendRequest() sẽ phát hiện socket=null
+            // và tự gọi reconnect() trước khi gửi request
+            socket = null;
+            in     = null;
+            out    = null;
+        }
+
+        System.out.println("[Client] Connection reset. Sẵn sàng cho re-login.");
+    }
+
+    /**
      * Check if currently listening.
      */
     public boolean isListening() {

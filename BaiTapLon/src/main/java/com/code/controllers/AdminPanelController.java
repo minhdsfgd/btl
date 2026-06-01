@@ -12,7 +12,6 @@ import com.code.network.RequestType;
 import com.code.network.Response;
 import static com.code.util.ControllerUtils.navigateTo;
 import static com.code.util.ControllerUtils.handleBanResponse;
-import com.code.network.UpdateUserData;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -44,7 +43,7 @@ public class AdminPanelController implements Initializable {
     @FXML private Label lblTotalUsers;
     @FXML private Label lblActiveSessions;
     @FXML private Label lblTotalSessions;
-    @FXML private Label lblRevenue;
+
 
     // ── Tab buttons ──────────────────────────────────────────────────────────
     @FXML private Button tabBtnUsers;
@@ -463,13 +462,6 @@ public class AdminPanelController implements Initializable {
                 .filter(s -> "RUNNING".equals(s.getStatus()) || "OPEN".equals(s.getStatus())).count();
         lblActiveSessions.setText(String.valueOf(active));
         lblTotalSessions.setText(String.valueOf(allSessions.size()));
-
-        // Doanh thu: tổng giá cuối các phiên FINISHED hoặc PAID
-        double revenue = allSessions.stream()
-                .filter(s -> "FINISHED".equals(s.getStatus()) || "PAID".equals(s.getStatus()))
-                .mapToDouble(s -> parsePrice(s.getCurPrice()))
-                .sum();
-        lblRevenue.setText(String.format("%,.0f đ", revenue));
     }
 
     private double parsePrice(String priceStr) {
@@ -655,7 +647,7 @@ public class AdminPanelController implements Initializable {
     private void handleDeleteSession(SessionRow row) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                 "Hủy phiên \"" + row.getProduct() + "\" (ID #" + row.getId() + ")?\n"
-                + "Hành động này không thể hoàn tác.",
+                        + "Hành động này không thể hoàn tác.",
                 ButtonType.YES, ButtonType.NO);
         confirm.setTitle("Xác nhận hủy phiên");
         confirm.showAndWait().ifPresent(btn -> {
