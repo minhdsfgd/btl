@@ -8,6 +8,8 @@ import com.code.service.*;
 
 import java.util.List;
 
+import static com.code.models.Role.ADMIN;
+
 /**
  * Bộ định tuyến request — nhận Request, gọi Service phù hợp, trả Response.
  *
@@ -159,10 +161,14 @@ public class RequestProcessor {
 
             synchronized (AuctionServer.connectedClients) {
                 for (ClientHandler connectedClient : AuctionServer.connectedClients) {
-                    if (connectedClient != handler && connectedClient.getCurrentUser() != null
+                    User otherUser = connectedClient.getCurrentUser();
+                    if (connectedClient != handler && otherUser != null
                             && connectedClient.getCurrentUser().getUserId() == user.getUserId()) {
                         // Trả về lỗi luôn, không cho đăng nhập nữa
                         return Response.fail("Tài khoản này hiện đang đăng nhập ở một thiết bị khác.");
+                    }
+                    if (user.hasRole(ADMIN) && otherUser != null && otherUser.hasRole(ADMIN)){
+                        return Response.fail("Hiện đã có 1 admin đang hoạt động");
                     }
                 }
             }
