@@ -77,8 +77,11 @@ public class AdminPanelController implements Initializable {
     @FXML private Label lblSessionMsg;
 
     // ── Internal data ────────────────────────────────────────────────────────
-    private ObservableList<UserRow>    allUsers    = FXCollections.observableArrayList();
-    private ObservableList<SessionRow> allSessions = FXCollections.observableArrayList();
+    private ObservableList<UserRow>    allUsers        = FXCollections.observableArrayList();
+    private ObservableList<SessionRow> allSessions     = FXCollections.observableArrayList();
+    // Display lists: bảng luôn bind vào đây – chỉ gọi setAll() để tránh lỗi JavaFX cell recycling
+    private ObservableList<UserRow>    displayUsers    = FXCollections.observableArrayList();
+    private ObservableList<SessionRow> displaySessions = FXCollections.observableArrayList();
 
     // ========================================================================
     //  Initializable
@@ -105,14 +108,16 @@ public class AdminPanelController implements Initializable {
     /** Populate the user table and refresh stats. */
     public void setUsers(List<UserRow> users) {
         allUsers.setAll(users);
-        tableUsers.setItems(allUsers);
+        displayUsers.setAll(users);
+        tableUsers.setItems(displayUsers);
         refreshStats();
     }
 
     /** Populate the session table and refresh stats. */
     public void setSessions(List<SessionRow> sessions) {
         allSessions.setAll(sessions);
-        tableSessions.setItems(allSessions);
+        displaySessions.setAll(sessions);
+        tableSessions.setItems(displaySessions);
         refreshStats();
     }
 
@@ -164,7 +169,7 @@ public class AdminPanelController implements Initializable {
                 .filter(u -> role == null || role.equals("Tất cả") || u.getRole().equals(role))
                 .collect(Collectors.toList());
 
-        tableUsers.setItems(FXCollections.observableArrayList(filtered));
+        displayUsers.setAll(filtered);   // cập nhật IN-PLACE, không thay list mới
         lblUserMsg.setText(filtered.isEmpty() ? "Không tìm thấy kết quả." : "");
     }
 
@@ -179,7 +184,7 @@ public class AdminPanelController implements Initializable {
                 .filter(s -> status == null || status.equals("Tất cả") || s.getStatus().equals(status))
                 .collect(Collectors.toList());
 
-        tableSessions.setItems(FXCollections.observableArrayList(filtered));
+        displaySessions.setAll(filtered);   // cập nhật IN-PLACE, không thay list mới
         lblSessionMsg.setText(filtered.isEmpty() ? "Không tìm thấy kết quả." : "");
     }
 
@@ -305,7 +310,7 @@ public class AdminPanelController implements Initializable {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                if (empty) {
                     setGraphic(null);
                 } else {
                     setGraphic(box);
@@ -344,7 +349,7 @@ public class AdminPanelController implements Initializable {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                if (empty) {
                     setGraphic(null);
                 } else {
                     setGraphic(box);
@@ -545,7 +550,7 @@ public class AdminPanelController implements Initializable {
                         Platform.runLater(() -> {
                             if (res.isSuccess()) {
                                 allUsers.remove(row);
-                                tableUsers.setItems(allUsers);
+                                displayUsers.remove(row);
                                 refreshStats();
                                 lblUserMsg.setText("Đã xoá user thành công.");
                             } else {
@@ -661,7 +666,7 @@ public class AdminPanelController implements Initializable {
                         Platform.runLater(() -> {
                             if (res.isSuccess()) {
                                 allSessions.remove(row);
-                                tableSessions.setItems(allSessions);
+                                displaySessions.remove(row);
                                 refreshStats();
                                 lblSessionMsg.setText("Đã hủy phiên #" + row.getId() + " thành công.");
                             } else {
