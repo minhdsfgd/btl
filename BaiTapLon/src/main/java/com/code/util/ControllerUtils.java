@@ -3,6 +3,7 @@ package com.code.util;
 import com.code.client.SessionManager;
 import com.code.client.SocketClient;
 import com.code.ClientApp;
+import com.code.models.Bid;
 import com.code.network.Response;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -12,6 +13,7 @@ import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.List;
 
 public class ControllerUtils {
     public static void navigateTo(String fxmlPath) {
@@ -73,5 +75,9 @@ public class ControllerUtils {
             return true;
         }
         return false;
+    }
+
+    public static List<Bid> getResponseList(Response histRes) {
+        return List.of();
     }
 }

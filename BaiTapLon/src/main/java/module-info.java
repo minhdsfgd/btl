@@ -17,6 +17,7 @@ module com.code {
 
     // ── Mở models cho javafx.base để TableView binding hoạt động ──────────────
     opens com.code.models to javafx.base;
+    opens com.code.viewmodel to javafx.base;
 
     // ── Exports ───────────────────────────────────────────────────────────────
     exports com.code;
