@@ -82,6 +82,7 @@ public class AuctionListController {
         logoutButton.setOnAction(e -> {
             sendLogout();
             SessionManager.clear();
+            com.code.util.ImageCache.clear();
             navigateTo("/com/code/views/Login.fxml");
         });
 
@@ -308,28 +309,8 @@ public class AuctionListController {
         );
 
         String imageUrl = a.getItem().getImageUrl();
-        System.out.println("[DEBUG] Card imageUrl: " + imageUrl);
         if (imageUrl != null && !imageUrl.isBlank()) {
-            new Thread(() -> {
-                try {
-                    java.io.File imgFile = new java.io.File(imageUrl);
-                    if (!imgFile.exists()) return;
-
-                    javafx.scene.image.Image img = new javafx.scene.image.Image(
-                            imgFile.toURI().toString(), 226, 130, false, true, true
-                    );
-                    Platform.runLater(() -> {
-                        if (!img.isError()) {
-                            cardImage.setImage(img);
-                            javafx.scene.shape.Rectangle clip =
-                                    new javafx.scene.shape.Rectangle(226, 130);
-                            clip.setArcWidth(8);
-                            clip.setArcHeight(8);
-                            cardImage.setClip(clip);
-                        }
-                    });
-                } catch (Exception ignored) {}
-            }, "card-img-" + a.getAuctionId()).start();
+            com.code.util.ImageCache.loadInto(imageUrl, cardImage, 226, 130);
         }
 
         // ── Labels ────────────────────────────────────────────────────────────

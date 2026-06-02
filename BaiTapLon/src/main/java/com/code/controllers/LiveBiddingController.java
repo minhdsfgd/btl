@@ -587,28 +587,12 @@ public class LiveBiddingController implements Initializable {
 
 
     public void setProduct(String name, String description, String imageUrl) {
-        System.out.println("[DEBUG] imageUrl nhận được: " + imageUrl);
         productNameLabel.setText(name);
         productDescLabel.setText(description);
         productCategoryLabel.setText("Đang đấu giá");
 
         if (imageUrl != null && !imageUrl.isBlank()) {
-            new Thread(() -> {
-                try {
-                    java.io.File imgFile = new java.io.File(imageUrl);
-                    if (!imgFile.exists()) return;
-
-                    Image img = new Image(
-                            imgFile.toURI().toString(),
-                            400, 180,
-                            false,   // preserveRatio — không méo
-                            true, true
-                    );
-                    Platform.runLater(() -> {
-                        if (!img.isError()) productImageView.setImage(img);
-                    });
-                } catch (Exception ignored) {}
-            }, "load-product-image").start();
+            com.code.util.ImageCache.loadInto(imageUrl, productImageView, 400, 180);
         }
     }
 

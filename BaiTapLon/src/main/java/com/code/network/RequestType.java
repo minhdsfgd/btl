@@ -130,7 +130,14 @@ public enum RequestType {
     AUTOBID_SET,
 
     /** Bidder tắt auto bid — data: {@code Integer auctionId} */
-    AUTOBID_CANCEL
+    AUTOBID_CANCEL,
+
+
+    // ── Image ─────────────────────────────────────────────────────────────────
+    /** Lấy bytes ảnh từ server — data: {@code String fileName} (chỉ tên file, không có đường dẫn) */
+    GET_IMAGE
+
+
 
 
 

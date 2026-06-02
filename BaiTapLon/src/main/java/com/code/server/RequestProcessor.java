@@ -119,6 +119,9 @@ public class RequestProcessor {
                 case AUTOBID_SET    -> handleAutoBidSet(request, handler);
                 case AUTOBID_CANCEL -> handleAutoBidCancel(request, handler);
 
+                // ── Image ──────────────────────────────────────────────────
+                case GET_IMAGE -> handleGetImage(request);
+
             };
 
         } catch (Exception e) {
@@ -854,6 +857,30 @@ public class RequestProcessor {
             return Response.ok("Tắt auto bid thành công", auction);
         } catch (Exception e) {
             return Response.fail("Lỗi tắt auto bid: " + e.getMessage());
+        }
+    }
+
+    private Response handleGetImage(Request req) {
+        try {
+            String fileName = req.getDataAs(String.class);
+            if (fileName == null || fileName.isBlank()) {
+                return Response.fail("Thiếu tên file ảnh.");
+            }
+
+            // Chống path traversal - chỉ lấy tên file thuần
+            fileName = java.nio.file.Paths.get(fileName).getFileName().toString();
+
+            java.nio.file.Path imagePath = java.nio.file.Paths.get("images", fileName);
+            if (!java.nio.file.Files.exists(imagePath)) {
+                return Response.fail("Không tìm thấy ảnh: " + fileName);
+            }
+
+            byte[] bytes = java.nio.file.Files.readAllBytes(imagePath);
+            String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
+            return Response.ok("OK", base64);
+
+        } catch (Exception e) {
+            return Response.fail("Lỗi đọc ảnh: " + e.getMessage());
         }
     }
 }
