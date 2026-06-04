@@ -5,6 +5,7 @@ import com.code.dao.BidDAO;
 import com.code.dao.UserDAO;
 import com.code.exception.*;
 import com.code.models.*;
+import com.code.network.AutoBidData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -168,43 +169,48 @@ class BidServiceTest {
         }
     }
 
+    // =========================================================================
+    // 3. NHÓM TEST TÍNH NĂNG ĐẶC BIỆT (ANTI-SNIPING, AUTO-BID)
+    // =========================================================================
     @Nested
     @DisplayName("Tests Các tính năng đặc biệt (Sniping & AutoBid)")
     class SpecialFeaturesTests {
+
         @Test
-        @DisplayName("Anti-sniping: Cộng thêm 1 phút nếu đặt giá <= 10s cuối")
-        void testAntiSniping() throws Exception {
+        @DisplayName("Anti-sniping: Nếu đặt giá trong 10s cuối, thời gian tự động cộng thêm 1 phút")
+        void testAntiSniping_ExtendsTime() throws Exception {
             LocalDateTime nearEnd = LocalDateTime.now().plusSeconds(5);
             auction.setEndTime(nearEnd);
 
             bidService.placeBid(bidder1, auction, 110_000);
 
-            // Kiểm tra thời gian kết thúc đã được cộng thêm 1 phút
+            // Thời gian mới phải lớn hơn (nearEnd + 50s) do được cộng 60s
             assertTrue(auction.getEndTime().isAfter(nearEnd.plusSeconds(50)));
             verify(mockAuctionDAO, atLeastOnce()).update(auction);
         }
 
         @Test
-        @DisplayName("Auto-Bid: Tự động vượt giá người khác nếu trong ngưỡng max")
+        @DisplayName("Auto-Bid: Tự động vượt giá người khác nếu trong ngưỡng giá trần")
         void testAutoBid_Success() throws Exception {
-            // Setup Auto-bid cho bidder1 DÙNG HÀM THẬT của model (Không dùng Mockito)
-            auction.setAutoBidUserId(bidder1.getUserId());
-            auction.setAutoBidMaxAmount(200_000.0);
-            auction.setAutoBidStep(10_000.0);
+            // Setup Auto-bid cho bidder1 sử dụng cấu trúc Map của Auction.java
+            AutoBidData autoBidData = new AutoBidData(auction.getAuctionId(), 200_000.0, 10_000.0);            auction.addAutoBid(bidder1.getUserId(), autoBidData);
 
-            // Trả về user khi hàm Auto-Bid đệ quy cần hoàn tiền / kiểm tra số dư
+            // Mock trả về object User thật khi gọi DAO
             when(mockUserDAO.findById(bidder1.getUserId())).thenReturn(bidder1);
             when(mockUserDAO.findById(bidder2.getUserId())).thenReturn(bidder2);
 
             // Bidder2 đặt 110k
             bidService.placeBid(bidder2, auction, 110_000);
 
-            // Tự động vượt lên 120_000 (110_000 + 10_000 bước nhảy)
+            // Bidder1 tự động vượt lên 120_000 (110_000 + 10_000)
             assertEquals(120_000, auction.getCurrentPrice());
             assertEquals(bidder1.getUserId(), auction.getLeadingBidderId());
 
-            // Kiểm tra bidder 2 đã được hoàn tiền cọc vì bị Auto-bid đè
+            // Bidder2 bị Auto-Bid đè -> Được hoàn tiền lại
             assertEquals(500_000, bidder2.getBalance());
+
+            // Bidder1 bị trừ cọc của 120k
+            assertEquals(500_000 - (120_000 * AUCTION_RATIO), bidder1.getBalance());
         }
     }
 }

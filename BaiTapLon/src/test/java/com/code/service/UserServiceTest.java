@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mindrot.jbcrypt.BCrypt; // IMPORT BCRYPT
 import org.mockito.Mockito;
 
 import java.sql.SQLException;
@@ -40,9 +41,12 @@ class UserServiceTest {
         // 2. Khởi tạo Service với đầy đủ DAOs
         userService = new UserService(mockUserDAO, mockAuditLogDAO);
 
-        // 3. Chuẩn bị dữ liệu mẫu
-        adminUser = new Admin(1, "admin", "secret123", 0);
-        regularUser = new RegularUser(2, "player1", "password", 50000, Role.BIDDER, Role.SELLER);
+        // 3. Chuẩn bị dữ liệu mẫu (PHẢI MÃ HÓA PASSWORD MẪU BẰNG BCRYPT)
+        String hashedAdminPass = BCrypt.hashpw("secret123", BCrypt.gensalt());
+        adminUser = new Admin(1, "admin", hashedAdminPass, 0);
+
+        String hashedUserPass = BCrypt.hashpw("password", BCrypt.gensalt());
+        regularUser = new RegularUser(2, "player1", hashedUserPass, 50000, Role.BIDDER, Role.SELLER);
     }
 
     // =========================================================================
@@ -209,8 +213,10 @@ class UserServiceTest {
             userService.updateUser(adminUser, 2, "pro_player", "newpass", 9999.0, null, null);
 
             assertEquals("pro_player", regularUser.getUsername());
-            assertEquals("newpass", regularUser.getPassword());
             assertEquals(9999.0, regularUser.getBalance());
+
+            // KIỂM TRA MẬT KHẨU ĐÃ ĐƯỢC MÃ HÓA CHUẨN XÁC CHƯA
+            assertTrue(BCrypt.checkpw("newpass", regularUser.getPassword()));
 
             verify(mockUserDAO, times(1)).update(regularUser);
         }
