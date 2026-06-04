@@ -33,20 +33,20 @@ jobs:
           cache: 'maven'
 
       # Step 3: Cấp quyền chạy cho Maven Wrapper
-      - name: Make Maven Wrapper executable
-        run: chmod +x mvnw
+      # name: Make Maven Wrapper executable
+      # run: chmod +x mvnw
 
       # Step 4: Biên dịch dự án (Build project)
       - name: Build project
-        run: ./mvnw clean compile
+        run: mvn clean compile
 
       # Step 5: Tự động chạy tất cả các bài Unit Test
       - name: Run tests
-        run: ./mvnw test
+        run: mvn test
 
       # Step 6: Đóng gói ứng dụng thành file .jar/.war (Bỏ qua chạy lại test để tiết kiệm thời gian)
       - name: Package application
-        run: ./mvnw -DskipTests package
+        run: mvn -DskipTests package
 
       # Step 7 (Bổ sung): Quét và phân tích chất lượng/bảo mật mã nguồn bằng Qodana
       - name: Qodana Scan
