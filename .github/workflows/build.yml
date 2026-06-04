@@ -39,14 +39,17 @@ jobs:
       # Step 4: Biên dịch dự án (Build project)
       - name: Build project
         run: mvn clean compile
+        working-directory: ./BaiTapLon
 
       # Step 5: Tự động chạy tất cả các bài Unit Test
       - name: Run tests
         run: mvn test
+        working-directory: ./BaiTapLon
 
       # Step 6: Đóng gói ứng dụng thành file .jar/.war (Bỏ qua chạy lại test để tiết kiệm thời gian)
       - name: Package application
         run: mvn -DskipTests package
+        working-directory: ./BaiTapLon
 
       # Step 7 (Bổ sung): Quét và phân tích chất lượng/bảo mật mã nguồn bằng Qodana
       - name: Qodana Scan
