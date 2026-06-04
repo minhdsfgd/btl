@@ -392,7 +392,7 @@ public class AuctionService {
 
     public void shutdown() { scheduler.shutdownNow(); }
 
-    // ── Helper ───────────────────────────────────────────────────────────────
+    // ─ Helper ───────────────────────────────────────────────────────────────
     //TODO: Move to AuthGuard
     private void requireOwnerOrAdmin(Auction auction, User user, String action)
             throws AuctionClosedException {
