@@ -344,7 +344,6 @@ Server sẽ tự động khởi tạo dữ liệu Seeder.
 
 ### Chức năng Item Management (Quản lý mặt hàng)
 - ✅ Tạo mặt hàng đấu giá
-- ✅ Chỉnh sửa thông tin mặt hàng
 - ✅ Xóa mặt hàng
 - ✅ Xem chi tiết mặt hàng
 - ✅ Tìm kiếm mặt hàng
@@ -368,7 +367,6 @@ Server sẽ tự động khởi tạo dữ liệu Seeder.
 - ✅ Tạo giao dịch khi đấu giá kết thúc
 - ✅ Thanh toán (deduct balance)
 - ✅ Hoàn lại tiền (refund)
-- ✅ Xem lịch sử giao dịch cá nhân
 - ✅ Xem tất cả giao dịch (Admin)
 
 ### Chức năng Wallet (Ví)
