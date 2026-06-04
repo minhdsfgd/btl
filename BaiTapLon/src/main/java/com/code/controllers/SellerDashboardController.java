@@ -1,62 +1,59 @@
 package com.code.controllers;
 
 import com.code.client.SessionManager;
-import com.code.client.SocketClient;
+import com.code.controllers.seller.AuctionFormValidator;
+import com.code.controllers.seller.ItemFormValidator;
+import com.code.controllers.seller.SellerApiService;
+import com.code.controllers.seller.SellerTableManager;
+import com.code.controllers.seller.SellerTableManager.LotRow;
 import com.code.models.Auction;
+import com.code.models.AuctionStatus;
 import com.code.models.Item;
 import com.code.models.User;
-import com.code.network.Request;
-import com.code.network.RequestType;
 import com.code.network.Response;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.net.URL;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static com.code.util.ControllerUtils.navigateTo;
-import static com.code.util.ControllerUtils.showAlert;
-import static com.code.util.ControllerUtils.handleBanResponse;
-import static com.code.models.AuctionStatus.*;
+import static com.code.util.ControllerUtils.*;
 
 public class SellerDashboardController implements Initializable {
 
     // ── FXML fields ───────────────────────────────────────────────────────────
 
-    @FXML private Label lblUsernameNav;
-    @FXML private Label lblBalanceNav;
-    @FXML private Label lblTotalLots;
-    @FXML private Label lblActiveLots;
-    @FXML private Label lblSoldLots;
+    @FXML private Label    lblUsernameNav;
+    @FXML private Label    lblBalanceNav;
+    @FXML private Label    lblTotalLots;
+    @FXML private Label    lblActiveLots;
+    @FXML private Label    lblSoldLots;
 
-    @FXML private TextField               txtSearch;
-    @FXML private TableView<LotRow>       tableLots;
-    @FXML private TableColumn<LotRow, String> colId;
-    @FXML private TableColumn<LotRow, String> colProject;
-    @FXML private TableColumn<LotRow, String> colPrice;
-    @FXML private TableColumn<LotRow, String> colStatus;
-    @FXML private TableColumn<LotRow, String> colTimeInfo;
-    @FXML private TableColumn<LotRow, Void>   colAction;
+    @FXML private TextField                     txtSearch;
+    @FXML private TableView<LotRow>             tableLots;
+    @FXML private TableColumn<LotRow, String>   colId;
+    @FXML private TableColumn<LotRow, String>   colProject;
+    @FXML private TableColumn<LotRow, String>   colPrice;
+    @FXML private TableColumn<LotRow, String>   colStatus;
+    @FXML private TableColumn<LotRow, String>   colTimeInfo;
+    @FXML private TableColumn<LotRow, Void>     colAction;
 
     @FXML private VBox        vboxActivities;
-    @FXML private VBox        panelActivities;   // panel cột phải, ẩn mặc định
+    @FXML private VBox        panelActivities;
     @FXML private AnchorPane  rootPane;
     @FXML private ImageView   backgroundImage;
 
@@ -66,12 +63,19 @@ public class SellerDashboardController implements Initializable {
     @FXML private Button modeBuyerButton;
     @FXML private Button modeSellerButton;
 
+    // ── Helpers (inject qua constructor hoặc default) ─────────────────────────
+
+    private final SellerApiService      api;
+    private final AuctionFormValidator  auctionValidator;
+    private final ItemFormValidator     itemValidator;
+
+    private SellerTableManager tableManager;
+
     // ── State ─────────────────────────────────────────────────────────────────
 
-    private final ObservableList<LotRow> allLots             = FXCollections.observableArrayList();
-    private final ObservableList<String> activities          = FXCollections.observableArrayList();
-    private final ObservableList<String> notificationHistory = FXCollections.observableArrayList();
-    private final Set<Integer>           usedItemIds         = new HashSet<>();
+    private final List<String>  activities          = new ArrayList<>();
+    private final List<String>  notificationHistory = new ArrayList<>();
+    private final Set<Integer>  usedItemIds         = new HashSet<>();
 
     // ── Style constants ───────────────────────────────────────────────────────
 
@@ -82,99 +86,126 @@ public class SellerDashboardController implements Initializable {
             "-fx-background-color:#065f3b; -fx-text-fill:white;" +
                     "-fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;";
 
+    // ── Constructors ──────────────────────────────────────────────────────────
+
+    /** Production constructor — JavaFX instantiates this via FXMLLoader. */
+    public SellerDashboardController() {
+        this(new SellerApiService(), new AuctionFormValidator(), new ItemFormValidator());
+    }
+
+    /** Test constructor — inject mock dependencies. */
+    public SellerDashboardController(SellerApiService api,
+                                     AuctionFormValidator auctionValidator,
+                                     ItemFormValidator itemValidator) {
+        this.api              = api;
+        this.auctionValidator = auctionValidator;
+        this.itemValidator    = itemValidator;
+    }
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Bind background image size
-        if (backgroundImage != null && rootPane != null) {
-            backgroundImage.fitWidthProperty().bind(rootPane.widthProperty());
-            backgroundImage.fitHeightProperty().bind(rootPane.heightProperty());
-        }
+        bindBackgroundImage();
 
-        // Hiện tên người dùng
         lblUsernameNav.setText(SessionManager.getUsername());
 
-        // Hiện số dư
-        if (SessionManager.getUser() != null) {
-            new Thread(() -> {
-                try {
-                    Response infoRes = SocketClient.getInstance().sendRequest(
-                            Request.of(RequestType.GET_MY_INFO, null));
-                    if (infoRes.isSuccess() && infoRes.getData() instanceof User freshUser) {
-                        Platform.runLater(() -> {
-                            SessionManager.setUser(freshUser);
-                            long bal = (long) SessionManager.getUser().getBalance();
-                            java.text.NumberFormat nf =
-                                    java.text.NumberFormat.getInstance(new java.util.Locale("vi", "VN"));
-                            lblBalanceNav.setText(nf.format(bal) + " ₫");
-                        });
-                    } else {
-                        Platform.runLater(() -> handleBanResponse(infoRes));
-                    }
-                } catch (Exception ex) {
-                    System.err.println("[Live] Khong refresh duoc balance: " + ex.getMessage());
-                }
-            }, "balance-refresh-thread").start();
+        // Khởi tạo SellerTableManager sau khi FXML đã inject các cột
+        tableManager = new SellerTableManager(
+                tableLots, colId, colProject, colPrice, colStatus, colTimeInfo, colAction,
+                this::handleCancelLot   // truyền callback hủy phiên
+        );
 
-        }
-
-        // Panel hoạt động ẩn mặc định
-        if (panelActivities != null) {
-            panelActivities.setVisible(false);
-            panelActivities.setManaged(false);
-        }
-
-        configureTable();
+        hideActivitiesPanel();
         setSellerToggleActive();
+        refreshBalance();
         loadMyAuctions();
     }
 
-    // ── Toggle Người mua / Người bán ─────────────────────────────────────────
+    // ── FXML Handlers ─────────────────────────────────────────────────────────
 
-    private void setSellerToggleActive() {
-        if (modeBuyerButton == null || modeSellerButton == null) return;
-        modeBuyerButton.setStyle(
-                "-fx-background-color:transparent;" +
-                        "-fx-text-fill:rgba(255,255,255,0.8); -fx-font-size:12;" +
-                        "-fx-background-radius:16; -fx-padding:4 12; -fx-cursor:hand;");
-        modeSellerButton.setStyle(
-                "-fx-background-color:white; -fx-text-fill:#065f3b;" +
-                        "-fx-font-weight:bold; -fx-font-size:12;" +
-                        "-fx-background-radius:16; -fx-padding:4 12; -fx-cursor:hand;");
+    @FXML private void handleSearch() {
+        tableManager.filter(txtSearch.getText().trim());
     }
 
-    // ── Load dữ liệu từ server ────────────────────────────────────────────────
+    @FXML private void handleMenuLots()       { setActiveMenu(btnMenuLots); }
+
+    @FXML private void handleMenuNotif() {
+        setActiveMenu(btnMenuNotif);
+        showNotificationHistoryDialog();
+    }
+
+    @FXML private void handleShowActivities() {
+        setActiveMenu(btnMenuActivity);
+        if (panelActivities == null) return;
+        boolean show = !panelActivities.isVisible();
+        panelActivities.setVisible(show);
+        panelActivities.setManaged(show);
+    }
+
+    @FXML private void handleAddLot()        { showCreateAuctionDialog(); }
+    @FXML private void handleCreateItem()    { showCreateItemDialog(); }
+    @FXML private void handleSwitchToBuyer() { navigateTo("/com/code/views/AuctionList.fxml"); }
+
+    @FXML private void handleLogout() {
+        new Thread(() -> {
+            api.logout();
+            Platform.runLater(() -> {
+                SessionManager.clear();
+                navigateTo("/com/code/views/Login.fxml");
+            });
+        }, "logout-thread").start();
+    }
+
+    // ── Public API (dùng bởi LiveBiddingController hoặc test) ─────────────────
+
+    public void addNotification(String message) {
+        if (message == null || message.isBlank()) return;
+        String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
+        notificationHistory.add(0, ts + " — " + message);
+        if (notificationHistory.size() > 100)
+            notificationHistory.remove(notificationHistory.size() - 1);
+    }
+
+    // ── Network + data loading ─────────────────────────────────────────────────
+
+    private void refreshBalance() {
+        new Thread(() -> {
+            try {
+                Response res = api.fetchMyInfo();
+                if (res.isSuccess() && res.getData() instanceof User freshUser) {
+                    Platform.runLater(() -> {
+                        SessionManager.setUser(freshUser);
+                        long bal = (long) freshUser.getBalance();
+                        NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
+                        lblBalanceNav.setText(nf.format(bal) + " ₫");
+                    });
+                } else {
+                    Platform.runLater(() -> handleBanResponse(res));
+                }
+            } catch (Exception ex) {
+                System.err.println("[Seller] Không refresh được balance: " + ex.getMessage());
+            }
+        }, "balance-refresh").start();
+    }
 
     private void loadMyAuctions() {
         new Thread(() -> {
             try {
-                Response res = SocketClient.getInstance()
-                        .sendRequest(Request.of(RequestType.GET_MY_AUCTIONS));
-
+                Response res = api.fetchMyAuctions();
                 Platform.runLater(() -> {
                     if (handleBanResponse(res)) return;
-                    allLots.clear();
+
                     activities.clear();
 
-                    if (res.isSuccess()) {
-                        @SuppressWarnings("unchecked")
-                        List<Auction> list = res.getDataAs(List.class);
-                        if (list != null) {
-                            for (Auction a : list) {
-                                allLots.add(auctionToLotRow(a));
-                                activities.add(0,
-                                        "Phiên #" + a.getAuctionId()
-                                                + " — " + a.getItem().getName()
-                                                + " — " + mapStatus(a));
-                            }
-                        }
-                    } else {
-                        activities.add("Không tải được dữ liệu: " + res.getMessage());
+                    List<Auction> auctions = api.extractAuctions(res);
+                    tableManager.load(auctions);
+
+                    for (Auction a : auctions) {
+                        activities.add(0, buildActivityLabel(a));
                     }
 
-                    tableLots.setItems(allLots);
-                    refreshStats();
+                    updateStats();
                     renderActivities();
                 });
             } catch (Exception ex) {
@@ -186,266 +217,14 @@ public class SellerDashboardController implements Initializable {
         }, "load-seller-auctions").start();
     }
 
-    // ── Chuyển Auction → LotRow ───────────────────────────────────────────────
-
-    private LotRow auctionToLotRow(Auction a) {
-        return new LotRow(
-                "#" + a.getAuctionId(),
-                a.getItem().getName(),
-                String.format("%,.0f đ", a.getCurrentPrice()),
-                mapStatus(a),
-                formatAuctionTime(a)
-        );
-    }
-
-    private String formatAuctionTime(Auction a) {
-        LocalDateTime now = LocalDateTime.now();
-        if (a.getStatus() == RUNNING) {
-            long mins = java.time.temporal.ChronoUnit.MINUTES.between(now, a.getEndTime());
-            return mins > 0 ? mins + " phút còn lại" : "Sắp kết thúc";
-        }
-        if (a.getStatus() == OPEN) {
-            long mins = java.time.temporal.ChronoUnit.MINUTES.between(now, a.getStartTime());
-            return mins <= 0 ? "Bắt đầu ngay" : "Bắt đầu trong " + mins + " phút";
-        }
-        return "Kết thúc";
-    }
-
-    private String mapStatus(Auction a) {
-        return switch (a.getStatus()) {
-            case RUNNING  -> "Đang đấu giá";
-            case OPEN     -> "Sắp mở";
-            case FINISHED -> "Đã kết thúc";
-            case PAID     -> "Đã bán";
-            case CANCELED -> "Đã hủy";
-        };
-    }
-
-    // ── FXML Handlers ─────────────────────────────────────────────────────────
-
-    @FXML
-    private void handleSearch() {
-        String keyword = txtSearch.getText().trim().toLowerCase();
-        if (keyword.isBlank()) {
-            tableLots.setItems(allLots);
-            return;
-        }
-        tableLots.setItems(allLots.filtered(l ->
-                l.getId().toLowerCase().contains(keyword)
-                        || l.getProject().toLowerCase().contains(keyword)
-                        || l.getStatus().toLowerCase().contains(keyword)));
-    }
-
-    @FXML
-    private void handleMenuLots() {
-        setActiveMenu(btnMenuLots);
-    }
-
-    @FXML
-    private void handleMenuNotif() {
-        setActiveMenu(btnMenuNotif);
-        showNotificationHistoryDialog();
-    }
-
-    /** Toggle hiện / ẩn panel hoạt động gần đây */
-    @FXML
-    private void handleShowActivities() {
-        setActiveMenu(btnMenuActivity);
-        if (panelActivities == null) return;
-        boolean show = !panelActivities.isVisible();
-        panelActivities.setVisible(show);
-        panelActivities.setManaged(show);
-    }
-
-    @FXML
-    private void handleAddLot() {
-        showCreateAuctionDialog();
-    }
-
-    @FXML
-    private void handleCreateItem() {
-        showCreateItemDialog();
-    }
-
-    @FXML
-    private void handleSwitchToBuyer() {
-        navigateTo("/com/code/views/AuctionList.fxml");
-    }
-
-    @FXML
-    private void handleLogout() {
-        new Thread(() -> {
-            try {
-                SocketClient.getInstance()
-                        .sendRequest(Request.of(RequestType.LOGOUT));
-            } catch (Exception e) {
-                System.err.println("Lỗi logout: " + e.getMessage());
-            }
-            Platform.runLater(() -> {
-                SessionManager.clear();
-                navigateTo("/com/code/views/Login.fxml");
-            });
-        }, "logout-thread").start();
-    }
-
-    // ── Public API ────────────────────────────────────────────────────────────
-
-    public void setLots(List<LotRow> lots) {
-        allLots.clear();
-        if (lots != null) allLots.addAll(lots);
-        tableLots.setItems(allLots);
-        refreshStats();
-    }
-
-    public void addNotification(String message) {
-        if (message == null || message.isBlank()) return;
-        String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
-        notificationHistory.add(0, ts + " - " + message);
-        if (notificationHistory.size() > 100)
-            notificationHistory.remove(notificationHistory.size() - 1);
-    }
-
-    // ── Private Helpers ───────────────────────────────────────────────────────
-
-    private void setActiveMenu(Button activeBtn) {
-        for (Button btn : new Button[]{ btnMenuLots, btnMenuNotif, btnMenuActivity }) {
-            if (btn != null)
-                btn.setStyle(btn == activeBtn ? MENU_ACTIVE : MENU_INACTIVE);
-        }
-    }
-
-    private void refreshStats() {
-        long total  = allLots.size();
-        long active = allLots.stream().filter(l -> "Đang đấu giá".equals(l.getStatus())).count();
-        long sold   = allLots.stream().filter(l -> "Đã bán".equals(l.getStatus())).count();
-        lblTotalLots.setText(String.valueOf(total));
-        lblActiveLots.setText(String.valueOf(active));
-        lblSoldLots.setText(String.valueOf(sold));
-    }
-
-    /** Render danh sách hoạt động vào panel — chữ trắng */
-    private void renderActivities() {
-        vboxActivities.getChildren().clear();
-        if (activities.isEmpty()) {
-            Label empty = new Label("Chưa có hoạt động.");
-            empty.setWrapText(true);
-            empty.setStyle("-fx-text-fill: white;");
-            vboxActivities.getChildren().add(empty);
-            return;
-        }
-        for (String act : activities) {
-            Label label = new Label("• " + act);
-            label.setWrapText(true);
-            label.setStyle("-fx-text-fill: white;");
-            vboxActivities.getChildren().add(label);
-        }
-    }
-
-    private void showNotificationHistoryDialog() {
-        ListView<String> listView = new ListView<>();
-        listView.setItems(notificationHistory.isEmpty()
-                ? FXCollections.observableArrayList("Chưa có thông báo nào.")
-                : notificationHistory);
-        listView.setPrefHeight(300);
-
-        BorderPane root = new BorderPane(listView);
-        root.setPadding(new Insets(10));
-        Label title = new Label("🔔 Lịch sử thông báo");
-        title.setStyle("-fx-font-size:14; -fx-font-weight:bold; -fx-padding:0 0 8 0;");
-        root.setTop(title);
-
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Thông báo hệ thống");
-        dialog.setScene(new Scene(root, 500, 360));
-        dialog.showAndWait();
-    }
-
-    // ── Cấu hình bảng ─────────────────────────────────────────────────────────
-
-    private void configureTable() {
-        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colProject.setCellValueFactory(new PropertyValueFactory<>("project"));
-        colPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
-        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-        colTimeInfo.setCellValueFactory(new PropertyValueFactory<>("timeInfo"));
-
-        colId.setStyle("-fx-alignment: CENTER;");
-        colPrice.setStyle("-fx-alignment: CENTER;");
-        colStatus.setStyle("-fx-alignment: CENTER;");
-        colTimeInfo.setStyle("-fx-alignment: CENTER;");
-        colAction.setStyle("-fx-alignment: CENTER;");
-
-        styleTable(tableLots);
-
-        colAction.setCellFactory(col -> new TableCell<>() {
-            private final Button btnCancel = new Button("Hủy phiên");
-            {
-                btnCancel.setStyle(
-                        "-fx-background-color:#c62828; -fx-text-fill:white;" +
-                                "-fx-font-size:10; -fx-background-radius:4;" +
-                                "-fx-padding:3 6; -fx-cursor:hand;");
-                btnCancel.setOnAction(e -> {
-                    LotRow row = getTableView().getItems().get(getIndex());
-                    handleCancelLot(row);
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null);
-                } else {
-                    LotRow row = getTableView().getItems().get(getIndex());
-                    boolean canCancel = "Đang đấu giá".equals(row.getStatus())
-                            || "Sắp mở".equals(row.getStatus());
-                    setGraphic(canCancel ? btnCancel : null);
-                }
-            }
-        });
-    }
-
-    private <T> void styleTable(TableView<T> table) {
-        table.setStyle(
-                "-fx-background-color:#006633;" +
-                        "-fx-control-inner-background:#006633;" +
-                        "-fx-table-cell-border-color:transparent;" +
-                        "-fx-text-background-color:#000000;");
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        table.setRowFactory(tv -> {
-            TableRow<T> row = new TableRow<>();
-            row.itemProperty().addListener((obs, oldItem, newItem) -> {
-                if (newItem == null) {
-                    row.setStyle("-fx-background-color:transparent; -fx-border-color:transparent;");
-                } else {
-                    row.setStyle("-fx-background-color:white; -fx-border-color:#e0e0e0;" +
-                            "-fx-border-width:0 0 1 0; -fx-text-fill:#000000;");
-                }
-            });
-            row.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
-                if (row.getItem() != null) {
-                    row.setStyle(isNowSelected
-                            ? "-fx-background-color:#c8f5e1; -fx-border-color:#e0e0e0;" +
-                            "-fx-border-width:0 0 1 0; -fx-text-fill:#000000;"
-                            : "-fx-background-color:white; -fx-border-color:#e0e0e0;" +
-                            "-fx-border-width:0 0 1 0; -fx-text-fill:#000000;");
-                }
-            });
-            return row;
-        });
-    }
-
     // ── Hủy phiên ─────────────────────────────────────────────────────────────
 
     private void handleCancelLot(LotRow row) {
-        String idStr = row.getId().replace("#", "").trim();
         int auctionId;
         try {
-            auctionId = Integer.parseInt(idStr);
+            auctionId = Integer.parseInt(row.getId().replace("#", "").trim());
         } catch (NumberFormatException ex) {
-            new Alert(Alert.AlertType.ERROR, "Không xác định được ID phiên.").showAndWait();
+            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không xác định được ID phiên.");
             return;
         }
 
@@ -455,230 +234,177 @@ public class SellerDashboardController implements Initializable {
         confirm.setTitle("Hủy phiên đấu giá");
         confirm.showAndWait().ifPresent(btn -> {
             if (btn != ButtonType.YES) return;
-            final int id = auctionId;
+            int id = auctionId;
             new Thread(() -> {
                 try {
-                    Response res = SocketClient.getInstance()
-                            .sendRequest(Request.of(RequestType.CANCEL_AUCTION, id));
+                    Response res = api.cancelAuction(id);
                     Platform.runLater(() -> {
                         if (res.isSuccess()) {
-                            new Alert(Alert.AlertType.INFORMATION, "Đã hủy phiên thành công!")
-                                    .showAndWait();
+                            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã hủy phiên thành công!");
                             loadMyAuctions();
                         } else {
-                            new Alert(Alert.AlertType.ERROR, "Lỗi: " + res.getMessage())
-                                    .showAndWait();
+                            showAlert(Alert.AlertType.ERROR, "Lỗi", res.getMessage());
                         }
                     });
                 } catch (Exception ex) {
                     Platform.runLater(() ->
-                            new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage())
-                                    .showAndWait());
+                            showAlert(Alert.AlertType.ERROR, "Lỗi kết nối", ex.getMessage()));
                 }
             }, "cancel-lot").start();
         });
     }
 
-    // ── Tạo phiên đấu giá ─────────────────────────────────────────────────────
+    // ── Dialog: Tạo phiên đấu giá ─────────────────────────────────────────────
 
     private void showCreateAuctionDialog() {
         new Thread(() -> {
             try {
-                Response resAuctions = SocketClient.getInstance()
-                        .sendRequest(Request.of(RequestType.GET_MY_AUCTIONS));
-                Response resItems = SocketClient.getInstance()
-                        .sendRequest(Request.of(RequestType.GET_MY_ITEMS));
+                Response resAuctions = api.fetchMyAuctions();
+                Response resItems    = api.fetchMyItems();
 
                 Platform.runLater(() -> {
                     if (!resItems.isSuccess()) {
-                        showAlert(Alert.AlertType.ERROR, "Lỗi",
-                                "Lỗi tải sản phẩm: " + resItems.getMessage());
+                        showAlert(Alert.AlertType.ERROR, "Lỗi", "Lỗi tải sản phẩm: " + resItems.getMessage());
                         return;
                     }
 
-                    @SuppressWarnings("unchecked")
-                    List<Item> items = resItems.getDataAs(List.class);
-                    if (items == null || items.isEmpty()) {
-                        new Alert(Alert.AlertType.INFORMATION,
-                                "Bạn chưa có sản phẩm nào. Vui lòng tạo sản phẩm trước.")
-                                .showAndWait();
+                    List<Item> items = api.extractItems(resItems);
+                    if (items.isEmpty()) {
+                        showAlert(Alert.AlertType.INFORMATION, "Thông báo",
+                                "Bạn chưa có sản phẩm. Vui lòng tạo sản phẩm trước.");
                         return;
                     }
 
+                    // Lọc item đang được dùng trong phiên active
                     usedItemIds.clear();
-                    if (resAuctions.isSuccess()) {
-                        @SuppressWarnings("unchecked")
-                        List<Auction> auctions = resAuctions.getDataAs(List.class);
-                        if (auctions != null) {
-                            for (Auction a : auctions) {
-                                if (a.getStatus() == OPEN
-                                        || a.getStatus() == RUNNING
-                                        || a.getStatus() == PAID) {
-                                    usedItemIds.add(a.getItem().getItemId());
-                                }
-                            }
-                        }
-                    }
+                    api.extractAuctions(resAuctions).stream()
+                            .filter(a -> a.getStatus() == AuctionStatus.OPEN
+                                    || a.getStatus() == AuctionStatus.RUNNING
+                                    || a.getStatus() == AuctionStatus.PAID)
+                            .forEach(a -> usedItemIds.add(a.getItem().getItemId()));
 
-                    List<Item> available = new ArrayList<>();
-                    for (Item item : items) {
-                        if (!usedItemIds.contains(item.getItemId())) available.add(item);
-                    }
+                    List<Item> available = items.stream()
+                            .filter(it -> !usedItemIds.contains(it.getItemId()))
+                            .toList();
+
                     if (available.isEmpty()) {
                         showAlert(Alert.AlertType.INFORMATION, "Thông báo",
                                 "Tất cả sản phẩm đang trong phiên đấu giá hoặc đã được bán.");
                         return;
                     }
-
-                    showCreateAuctionForm(available);
+                    buildCreateAuctionForm(available);
                 });
             } catch (Exception ex) {
                 Platform.runLater(() ->
-                        new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage())
-                                .showAndWait());
+                        showAlert(Alert.AlertType.ERROR, "Lỗi kết nối", ex.getMessage()));
             }
-        }, "load-seller-items").start();
+        }, "load-items-for-auction").start();
     }
 
-    private void showCreateAuctionForm(List<Item> items) {
-        VBox vbox = new VBox(10);
-        vbox.setPadding(new Insets(15));
-
-        ComboBox<String> cmbItem = new ComboBox<>();
-        Map<String, Integer> itemMap = new HashMap<>();
-        for (Item item : items) {
-            String display = "#" + item.getItemId() + " - " + item.getName()
-                    + " (" + String.format("%,.0f đ", item.getStartingPrice()) + ")";
-            cmbItem.getItems().add(display);
-            itemMap.put(display, item.getItemId());
+    private void buildCreateAuctionForm(List<Item> items) {
+        // ── Build form fields ──────────────────────────────────────────────────
+        ComboBox<String>   cmbItem         = new ComboBox<>();
+        Map<String, Integer> itemMap       = new LinkedHashMap<>();
+        for (Item it : items) {
+            String key = "#" + it.getItemId() + " — " + it.getName()
+                    + " (" + String.format("%,.0f đ", it.getStartingPrice()) + ")";
+            cmbItem.getItems().add(key);
+            itemMap.put(key, it.getItemId());
         }
         cmbItem.getSelectionModel().selectFirst();
 
-        TextField tfBidIncrement = new TextField();
+        TextField        tfBidIncrement = new TextField();
         tfBidIncrement.setPromptText("Bậc tăng giá (VNĐ)");
 
-        DatePicker dpStartDate = new DatePicker(LocalDate.now());
-        Spinner<Integer> spStartHour = new Spinner<>(0, 23, 12); spStartHour.setEditable(true); spStartHour.setPrefWidth(70);
-        Spinner<Integer> spStartMin  = new Spinner<>(0, 59, 0);  spStartMin.setEditable(true);  spStartMin.setPrefWidth(70);
+        DatePicker       dpStart        = new DatePicker(LocalDate.now());
+        Spinner<Integer> spStartH       = intSpinner(0, 23, 12);
+        Spinner<Integer> spStartM       = intSpinner(0, 59, 0);
 
-        DatePicker dpEndDate = new DatePicker(LocalDate.now().plusDays(1));
-        Spinner<Integer> spEndHour = new Spinner<>(0, 23, 12); spEndHour.setEditable(true); spEndHour.setPrefWidth(70);
-        Spinner<Integer> spEndMin  = new Spinner<>(0, 59, 0);  spEndMin.setEditable(true);  spEndMin.setPrefWidth(70);
+        DatePicker       dpEnd          = new DatePicker(LocalDate.now().plusDays(1));
+        Spinner<Integer> spEndH         = intSpinner(0, 23, 12);
+        Spinner<Integer> spEndM         = intSpinner(0, 59, 0);
 
-        vbox.getChildren().addAll(
-                new Label("Chọn sản phẩm:"), cmbItem,
-                new Label("Bậc tăng giá (VNĐ):"), tfBidIncrement,
-                new Label("Thời gian bắt đầu:"),
-                new HBox(5, dpStartDate, new Label("Giờ:"), spStartHour, new Label("Phút:"), spStartMin),
-                new Label("Thời gian kết thúc:"),
-                new HBox(5, dpEndDate, new Label("Giờ:"), spEndHour, new Label("Phút:"), spEndMin)
+        Label            lblErr         = errorLabel();
+
+        VBox vbox = new VBox(10,
+                label("Chọn sản phẩm:"), cmbItem,
+                label("Bậc tăng giá (VNĐ):"), tfBidIncrement,
+                label("Thời gian bắt đầu:"),
+                new HBox(5, dpStart, label("Giờ:"), spStartH, label("Phút:"), spStartM),
+                label("Thời gian kết thúc:"),
+                new HBox(5, dpEnd, label("Giờ:"), spEndH, label("Phút:"), spEndM),
+                lblErr
         );
+        vbox.setPadding(new Insets(15));
 
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Tạo phiên đấu giá");
+        Stage dialog = buildDialog("Tạo phiên đấu giá", new Scene(vbox, 600, 420));
 
-        HBox btnBox = new HBox(10);
-        btnBox.setAlignment(javafx.geometry.Pos.CENTER);
         Button btnCreate = new Button("Tạo phiên");
         Button btnCancel = new Button("Huỷ");
         btnCancel.setOnAction(e -> dialog.close());
         btnCreate.setOnAction(e -> {
-            spStartHour.commitValue(); spStartMin.commitValue();
-            spEndHour.commitValue();   spEndMin.commitValue();
-            createAuctionSession(itemMap, cmbItem.getValue(), tfBidIncrement.getText(),
-                    dpStartDate.getValue(), spStartHour.getValue(), spStartMin.getValue(),
-                    dpEndDate.getValue(), spEndHour.getValue(), spEndMin.getValue(), dialog);
-        });
-        btnBox.getChildren().addAll(btnCreate, btnCancel);
-        vbox.getChildren().add(btnBox);
+            commitSpinners(spStartH, spStartM, spEndH, spEndM);
 
-        dialog.setScene(new Scene(vbox, 600, 450));
+            // Delegate validation sang AuctionFormValidator
+            AuctionFormValidator.ValidationResult result = auctionValidator.validate(
+                    cmbItem.getValue(),
+                    tfBidIncrement.getText(),
+                    dpStart.getValue(), spStartH.getValue(), spStartM.getValue(),
+                    dpEnd.getValue(),   spEndH.getValue(),   spEndM.getValue()
+            );
+
+            if (!result.isValid()) {
+                lblErr.setText(result.getError().orElse("Dữ liệu không hợp lệ."));
+                return;
+            }
+
+            lblErr.setText("");
+            int    itemId       = itemMap.get(cmbItem.getValue());
+            double bidIncrement = auctionValidator.parseBidIncrement(tfBidIncrement.getText());
+            LocalDateTime start = auctionValidator.toDateTime(dpStart.getValue(), spStartH.getValue(), spStartM.getValue());
+            LocalDateTime end   = auctionValidator.toDateTime(dpEnd.getValue(),   spEndH.getValue(),   spEndM.getValue());
+
+            new Thread(() -> {
+                try {
+                    Response res = api.createAuction(itemId, bidIncrement, start, end);
+                    Platform.runLater(() -> {
+                        if (res.isSuccess()) {
+                            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Tạo phiên đấu giá thành công.");
+                            dialog.close();
+                            loadMyAuctions();
+                        } else {
+                            lblErr.setText("Lỗi: " + res.getMessage());
+                        }
+                    });
+                } catch (Exception ex) {
+                    Platform.runLater(() -> lblErr.setText("Lỗi kết nối: " + ex.getMessage()));
+                }
+            }, "create-auction").start();
+        });
+
+        HBox btnBox = new HBox(10, btnCreate, btnCancel);
+        btnBox.setAlignment(Pos.CENTER);
+        vbox.getChildren().add(btnBox);
         dialog.showAndWait();
     }
 
-    private void createAuctionSession(Map<String, Integer> itemMap, String selectedItem,
-                                      String bidIncrementStr, LocalDate startDate,
-                                      int startHour, int startMin, LocalDate endDate,
-                                      int endHour, int endMin, Stage dialog) {
-        if (selectedItem == null || selectedItem.isEmpty()) {
-            new Alert(Alert.AlertType.WARNING, "Vui lòng chọn sản phẩm.").showAndWait();
-            return;
-        }
-
-        double bidIncrement;
-        try {
-            bidIncrement = Double.parseDouble(bidIncrementStr);
-            if (bidIncrement <= 0) throw new NumberFormatException();
-        } catch (NumberFormatException ex) {
-            new Alert(Alert.AlertType.WARNING, "Bậc tăng giá phải > 0.").showAndWait();
-            return;
-        }
-
-        LocalDateTime startTime = LocalDateTime.of(startDate, java.time.LocalTime.of(startHour, startMin));
-        LocalDateTime endTime   = LocalDateTime.of(endDate,   java.time.LocalTime.of(endHour,   endMin));
-
-        if (!endTime.isAfter(startTime)) {
-            new Alert(Alert.AlertType.WARNING, "Thời gian kết thúc phải sau thời gian bắt đầu.").showAndWait();
-            return;
-        }
-        if (startTime.isBefore(LocalDateTime.now())) {
-            new Alert(Alert.AlertType.WARNING, "Thời gian bắt đầu phải là thời điểm trong tương lai.").showAndWait();
-            return;
-        }
-
-        int itemId = itemMap.get(selectedItem);
-        com.code.network.CreateAuctionData data =
-                new com.code.network.CreateAuctionData(itemId, bidIncrement, startTime, endTime);
-
-        new Thread(() -> {
-            try {
-                Response res = SocketClient.getInstance()
-                        .sendRequest(Request.of(RequestType.CREATE_AUCTION, data));
-                Platform.runLater(() -> {
-                    if (res.isSuccess()) {
-                        showAlert(Alert.AlertType.INFORMATION, "Thành công", "Tạo phiên đấu giá thành công.");
-                        dialog.close();
-                        loadMyAuctions();
-                    } else {
-                        new Alert(Alert.AlertType.ERROR, "Lỗi: " + res.getMessage()).showAndWait();
-                    }
-                });
-            } catch (Exception ex) {
-                Platform.runLater(() ->
-                        new Alert(Alert.AlertType.ERROR, "Lỗi kết nối: " + ex.getMessage()).showAndWait());
-            }
-        }, "create-auction").start();
-    }
-
-    // ── Tạo sản phẩm mới ──────────────────────────────────────────────────────
+    // ── Dialog: Tạo sản phẩm ──────────────────────────────────────────────────
 
     private void showCreateItemDialog() {
-        VBox vbox = new VBox(10);
-        vbox.setPadding(new Insets(15));
-
         ComboBox<String> cmbType = new ComboBox<>();
         cmbType.getItems().addAll("ELECTRONICS", "ART", "VEHICLE");
         cmbType.setValue("ELECTRONICS");
 
-        TextField tfName = new TextField();
-        tfName.setPromptText("Tên sản phẩm");
+        TextField tfName       = new TextField();     tfName.setPromptText("Tên sản phẩm");
+        TextArea  taDesc       = new TextArea();       taDesc.setPromptText("Mô tả sản phẩm"); taDesc.setPrefRowCount(3);
+        TextField tfStartPrice = new TextField();     tfStartPrice.setPromptText("Giá khởi điểm (VNĐ)");
 
-        TextArea taDesc = new TextArea();
-        taDesc.setPromptText("Mô tả sản phẩm");
-        taDesc.setPrefRowCount(3);
+        Label     lblExtra1    = label("Thương hiệu:");
+        TextField tfExtra1     = new TextField();     tfExtra1.setPromptText("VD: Samsung, Picasso, Toyota...");
+        Label     lblExtra2    = label("Bảo hành (tháng):");
+        TextField tfExtra2     = new TextField();     tfExtra2.setPromptText("VD: 12");
 
-        TextField tfStartPrice = new TextField();
-        tfStartPrice.setPromptText("Giá khởi điểm (VNĐ)");
-
-        Label lblExtra1 = new Label("Thương hiệu:");
-        TextField tfExtra1 = new TextField();
-        tfExtra1.setPromptText("VD: Samsung, Picasso, Toyota...");
-
-        Label lblExtra2 = new Label("Bảo hành (tháng) / Chất liệu / Năm SX:");
-        TextField tfExtra2 = new TextField();
-        tfExtra2.setPromptText("VD: 12 (tháng), Sơn dầu, 2020");
-
+        // Cập nhật label khi đổi loại
         cmbType.setOnAction(e -> {
             switch (cmbType.getValue()) {
                 case "ELECTRONICS" -> { lblExtra1.setText("Thương hiệu:");  lblExtra2.setText("Bảo hành (tháng):"); tfExtra2.setPromptText("VD: 12"); }
@@ -687,126 +413,73 @@ public class SellerDashboardController implements Initializable {
             }
         });
 
-        // Chọn ảnh
-        final String[] chosenBase64 = {null};
-        javafx.scene.image.ImageView previewImageView = new javafx.scene.image.ImageView();
-        previewImageView.setFitWidth(180);
-        previewImageView.setFitHeight(110);
-        previewImageView.setPreserveRatio(true);
+        // Image picker
+        final String[]   chosenBase64 = {null};
+        ImageView        preview      = new ImageView();
+        preview.setFitWidth(180); preview.setFitHeight(110); preview.setPreserveRatio(true);
+        Label            lblImgPath   = new Label("Chưa chọn ảnh");
+        lblImgPath.setStyle("-fx-text-fill:#555; -fx-font-size:11;");
+        Button btnChooseImg = new Button("📁 Chọn ảnh sản phẩm");
+        btnChooseImg.setOnAction(e -> pickImage(btnChooseImg, chosenBase64, preview, lblImgPath));
 
-        Label imagePathLabel = new Label("Chưa chọn ảnh");
-        imagePathLabel.setStyle("-fx-text-fill:#555; -fx-font-size:11;");
+        Label lblErr = errorLabel();
 
-        Button btnChooseImage = new Button("📁 Chọn ảnh sản phẩm");
-        btnChooseImage.setStyle(
-                "-fx-background-color:#065f3b; -fx-text-fill:white;" +
-                        "-fx-background-radius:6; -fx-padding:5 12; -fx-cursor:hand;");
-        btnChooseImage.setOnAction(e -> {
-            javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
-            fc.setTitle("Chọn ảnh sản phẩm");
-            fc.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter(
-                    "Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp"));
-            java.io.File file = fc.showOpenDialog(btnChooseImage.getScene().getWindow());
-            if (file != null) {
-                try {
-                    byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
-                    chosenBase64[0] = java.util.Base64.getEncoder().encodeToString(bytes);
-                    imagePathLabel.setText(file.getName());
-                    previewImageView.setImage(
-                            new javafx.scene.image.Image(file.toURI().toString(), 180, 110, true, true));
-                } catch (Exception ex) {
-                    imagePathLabel.setText("Lỗi đọc file: " + ex.getMessage());
-                    chosenBase64[0] = null;
-                }
-            }
-        });
-
-        HBox imageBox = new HBox(10, btnChooseImage, imagePathLabel);
-        imageBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-
-        Label lblErr = new Label();
-        lblErr.setStyle("-fx-text-fill:#c62828; -fx-font-size:11;");
-
-        vbox.getChildren().addAll(
-                new Label("Loại sản phẩm:"), cmbType,
-                new Label("Tên sản phẩm:"), tfName,
-                new Label("Mô tả:"), taDesc,
-                new Label("Giá khởi điểm (VNĐ):"), tfStartPrice,
+        VBox vbox = new VBox(10,
+                label("Loại sản phẩm:"), cmbType,
+                label("Tên sản phẩm:"), tfName,
+                label("Mô tả:"), taDesc,
+                label("Giá khởi điểm (VNĐ):"), tfStartPrice,
                 lblExtra1, tfExtra1,
                 lblExtra2, tfExtra2,
-                new Label("Ảnh sản phẩm:"), imageBox, previewImageView,
-                lblErr
+                label("Ảnh sản phẩm:"),
+                new HBox(10, btnChooseImg, lblImgPath),
+                preview, lblErr
         );
+        vbox.setPadding(new Insets(15));
 
-        HBox btnBox = new HBox(10);
-        btnBox.setAlignment(javafx.geometry.Pos.CENTER);
+        Stage dialog = buildDialog("Tạo sản phẩm mới",
+                new Scene(new ScrollPane(vbox) {{ setFitToWidth(true); setStyle("-fx-background-color:white;"); }}, 500, 640));
+
         Button btnCreate = new Button("Tạo sản phẩm");
         Button btnCancel = new Button("Huỷ");
-        btnBox.getChildren().addAll(btnCreate, btnCancel);
-        vbox.getChildren().add(btnBox);
-
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Tạo sản phẩm mới");
-        ScrollPane scroll = new ScrollPane(vbox);
-        scroll.setFitToWidth(true);
-        scroll.setStyle("-fx-background-color:white;");
-        dialog.setScene(new Scene(scroll, 500, 640));
-
         btnCancel.setOnAction(e -> dialog.close());
         btnCreate.setOnAction(e -> {
-            String name     = tfName.getText().trim();
-            String desc     = taDesc.getText().trim();
-            String priceStr = tfStartPrice.getText().trim().replaceAll("[^\\d.]", "");
-            String type     = cmbType.getValue();
-            String extra1   = tfExtra1.getText().trim();
-            String extra2   = tfExtra2.getText().trim();
+            String type = cmbType.getValue();
 
-            if (name.isEmpty()) { lblErr.setText("Vui lòng nhập tên sản phẩm."); return; }
+            // Delegate validation sang ItemFormValidator
+            ItemFormValidator.ValidationResult result = itemValidator.validate(
+                    tfName.getText().trim(),
+                    tfStartPrice.getText().trim(),
+                    type,
+                    tfExtra2.getText().trim()
+            );
 
-            double startPrice;
-            try {
-                startPrice = Double.parseDouble(priceStr);
-                if (startPrice <= 0) throw new NumberFormatException();
-            } catch (NumberFormatException ex) {
-                lblErr.setText("Giá khởi điểm không hợp lệ (phải > 0)."); return;
+            if (!result.isValid()) {
+                lblErr.setText(result.getError().orElse("Dữ liệu không hợp lệ."));
+                return;
             }
 
-            int sellerId = SessionManager.getUserId();
-            Item item;
-            try {
-                item = switch (type) {
-                    case "ELECTRONICS" -> {
-                        int warranty = extra2.isEmpty() ? 0 : Integer.parseInt(extra2.replaceAll("[^\\d]", ""));
-                        yield new com.code.models.Electronics(0, sellerId, name, desc, startPrice,
-                                extra1.isEmpty() ? "Unknown" : extra1, warranty);
-                    }
-                    case "ART" -> new com.code.models.Art(0, sellerId, name, desc, startPrice,
-                            extra1.isEmpty() ? "Khuyết danh" : extra1, extra2);
-                    case "VEHICLE" -> {
-                        int year = extra2.isEmpty() ? 0 : Integer.parseInt(extra2.replaceAll("[^\\d]", ""));
-                        yield new com.code.models.Vehicle(0, sellerId, name, desc, startPrice, extra1, year);
-                    }
-                    default -> throw new IllegalStateException("Loại không hợp lệ");
-                };
-            } catch (NumberFormatException ex) {
-                lblErr.setText("Bảo hành/Năm SX phải là số nguyên."); return;
-            } catch (Exception ex) {
-                lblErr.setText("Lỗi: " + ex.getMessage()); return;
-            }
+            lblErr.setText("");
 
-            item.setImageUrl(chosenBase64[0]);
-            final Item finalItem = item;
+            // Delegate item creation sang ItemFormValidator — không còn switch trong controller
+            Item item = itemValidator.buildItem(
+                    type, SessionManager.getUserId(),
+                    tfName.getText().trim(),
+                    taDesc.getText().trim(),
+                    tfStartPrice.getText().trim(),
+                    tfExtra1.getText().trim(),
+                    tfExtra2.getText().trim(),
+                    chosenBase64[0]
+            );
 
             new Thread(() -> {
                 try {
-                    Response res = SocketClient.getInstance()
-                            .sendRequest(Request.of(RequestType.CREATE_ITEM, finalItem));
+                    Response res = api.createItem(item);
                     Platform.runLater(() -> {
                         if (res.isSuccess()) {
                             showAlert(Alert.AlertType.INFORMATION, "Thành công", "Tạo sản phẩm thành công.");
                             dialog.close();
-                            activities.add(0, "Tạo sản phẩm mới: " + name);
+                            activities.add(0, "Tạo sản phẩm mới: " + item.getName());
                             renderActivities();
                         } else {
                             lblErr.setText("Lỗi: " + res.getMessage());
@@ -818,27 +491,143 @@ public class SellerDashboardController implements Initializable {
             }, "create-item").start();
         });
 
+        HBox btnBox = new HBox(10, btnCreate, btnCancel);
+        btnBox.setAlignment(Pos.CENTER);
+        vbox.getChildren().add(btnBox);
         dialog.showAndWait();
     }
 
-    // ── Row Model ─────────────────────────────────────────────────────────────
+    // ── Notification dialog ────────────────────────────────────────────────────
 
-    public static class LotRow {
-        private final String id;
-        private final String project;
-        private final String price;
-        private final String status;
-        private final String timeInfo;
+    private void showNotificationHistoryDialog() {
+        ListView<String> listView = new ListView<>();
+        listView.setItems(FXCollections.observableArrayList(
+                notificationHistory.isEmpty()
+                        ? List.of("Chưa có thông báo nào.")
+                        : notificationHistory));
+        listView.setPrefHeight(300);
 
-        public LotRow(String id, String project, String price, String status, String timeInfo) {
-            this.id = id; this.project = project; this.price = price;
-            this.status = status; this.timeInfo = timeInfo;
+        BorderPane root = new BorderPane(listView);
+        root.setPadding(new Insets(10));
+        Label title = new Label("🔔 Lịch sử thông báo");
+        title.setStyle("-fx-font-size:14; -fx-font-weight:bold; -fx-padding:0 0 8 0;");
+        root.setTop(title);
+
+        Stage dialog = buildDialog("Thông báo hệ thống", new Scene(root, 500, 360));
+        dialog.showAndWait();
+    }
+
+    // ── Private UI helpers ────────────────────────────────────────────────────
+
+    private void bindBackgroundImage() {
+        if (backgroundImage != null && rootPane != null) {
+            backgroundImage.fitWidthProperty().bind(rootPane.widthProperty());
+            backgroundImage.fitHeightProperty().bind(rootPane.heightProperty());
         }
+    }
 
-        public String getId()       { return id; }
-        public String getProject()  { return project; }
-        public String getPrice()    { return price; }
-        public String getStatus()   { return status; }
-        public String getTimeInfo() { return timeInfo; }
+    private void hideActivitiesPanel() {
+        if (panelActivities != null) {
+            panelActivities.setVisible(false);
+            panelActivities.setManaged(false);
+        }
+    }
+
+    private void setSellerToggleActive() {
+        if (modeBuyerButton == null || modeSellerButton == null) return;
+        modeBuyerButton.setStyle(
+                "-fx-background-color:transparent; -fx-text-fill:rgba(255,255,255,0.8);" +
+                        "-fx-font-size:12; -fx-background-radius:16; -fx-padding:4 12; -fx-cursor:hand;");
+        modeSellerButton.setStyle(
+                "-fx-background-color:white; -fx-text-fill:#065f3b; -fx-font-weight:bold;" +
+                        "-fx-font-size:12; -fx-background-radius:16; -fx-padding:4 12; -fx-cursor:hand;");
+    }
+
+    private void setActiveMenu(Button activeBtn) {
+        for (Button btn : new Button[]{ btnMenuLots, btnMenuNotif, btnMenuActivity }) {
+            if (btn != null)
+                btn.setStyle(btn == activeBtn ? MENU_ACTIVE : MENU_INACTIVE);
+        }
+    }
+
+    private void updateStats() {
+        SellerTableManager.Stats s = tableManager.getStats();
+        lblTotalLots.setText(String.valueOf(s.total()));
+        lblActiveLots.setText(String.valueOf(s.active()));
+        lblSoldLots.setText(String.valueOf(s.sold()));
+    }
+
+    private void renderActivities() {
+        vboxActivities.getChildren().clear();
+        if (activities.isEmpty()) {
+            Label empty = new Label("Chưa có hoạt động.");
+            empty.setWrapText(true);
+            empty.setStyle("-fx-text-fill:white;");
+            vboxActivities.getChildren().add(empty);
+            return;
+        }
+        for (String act : activities) {
+            Label lbl = new Label("• " + act);
+            lbl.setWrapText(true);
+            lbl.setStyle("-fx-text-fill:white;");
+            vboxActivities.getChildren().add(lbl);
+        }
+    }
+
+    private String buildActivityLabel(Auction a) {
+        return "Phiên #" + a.getAuctionId()
+                + " — " + a.getItem().getName()
+                + " — " + tableManager.toRow(a).getStatus();
+    }
+
+    // ── Static UI factory helpers ─────────────────────────────────────────────
+
+    private static Label label(String text) {
+        return new Label(text);
+    }
+
+    private static Label errorLabel() {
+        Label lbl = new Label();
+        lbl.setStyle("-fx-text-fill:#c62828; -fx-font-size:11;");
+        return lbl;
+    }
+
+    private static Spinner<Integer> intSpinner(int min, int max, int initial) {
+        Spinner<Integer> sp = new Spinner<>(min, max, initial);
+        sp.setEditable(true);
+        sp.setPrefWidth(70);
+        return sp;
+    }
+
+    private static Stage buildDialog(String title, Scene scene) {
+        Stage d = new Stage();
+        d.initModality(Modality.APPLICATION_MODAL);
+        d.setTitle(title);
+        d.setScene(scene);
+        return d;
+    }
+
+    private static void commitSpinners(Spinner<?>... spinners) {
+        for (Spinner<?> sp : spinners) sp.commitValue();
+    }
+
+    private static void pickImage(Button anchor, String[] base64Out,
+                                  ImageView preview, Label pathLabel) {
+        javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
+        fc.setTitle("Chọn ảnh sản phẩm");
+        fc.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter(
+                "Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp"));
+        java.io.File file = fc.showOpenDialog(anchor.getScene().getWindow());
+        if (file == null) return;
+        try {
+            byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+            base64Out[0] = Base64.getEncoder().encodeToString(bytes);
+            pathLabel.setText(file.getName());
+            preview.setImage(new javafx.scene.image.Image(
+                    file.toURI().toString(), 180, 110, true, true));
+        } catch (Exception ex) {
+            pathLabel.setText("Lỗi đọc file: " + ex.getMessage());
+            base64Out[0] = null;
+        }
     }
 }
