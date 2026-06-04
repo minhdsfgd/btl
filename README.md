@@ -2,7 +2,7 @@
 
 ## 📋 Mô tả hệ thống
 
-**UET Auction System** là một hệ thống đấu giá trực tuyến được xây dựng theo kiến trúc **Client-Server** sử dụng **Java Socket**. Hệ thống cho phép người dùng đấu giá, quản lý sản phẩm, và theo dõi các giao dịch trong thời gian thực.
+**UET Auction System** là một hệ thống đấu giá trực tuyến được xây dựng theo kiến trúc **Client-Server** sử dụng **Java Socket**. Hệ thống cho phép người dùng đăng ký, đấu giá các mặt hàng, quản lý ví điện tử và theo dõi lịch sử giao dịch.
 
 ### Phạm vi hệ thống
 - **Người dùng bình thường**: Đăng ký, đăng nhập, theo dõi đấu giá, đấu giá, xem lịch sử giao dịch
@@ -18,7 +18,7 @@
 | **Ngôn ngữ** | Java 21+ |
 | **Frontend** | JavaFX 25 (GUI Desktop) |
 | **Backend** | Java Socket (Server TCP) |
-| **Database** | MySQL 8.3+ |
+| **Database** | MySQL 8.0+ |
 | **Build Tool** | Maven 3.9+ |
 | **Testing** | JUnit 5, Mockito |
 | **Bảo mật** | BCrypt (Hash password) |
@@ -53,7 +53,7 @@ BaiTapLon/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/code/
-│   │   │   ├── models/              # Entity: User, Item, Auction, Bid, Transaction, Role, AuditLog
+│   │   │   ├── models/              # Entity: User, Item, Auction, Bid, Transaction, AuditLog
 │   │   │   ├── dao/                 # Data Access Object: UserDAO, ItemDAO, AuctionDAO, BidDAO, TransactionDAO, AuditLogDAO
 │   │   │   ├── service/             # Business Logic: UserService, ItemService, AuctionService, BidService, TransactionService
 │   │   │   ├── server/              # Server: AuctionServer, ClientHandler, RequestProcessor, DataSeeder
@@ -69,6 +69,7 @@ BaiTapLon/
 │   │   ├── resources/
 │   │   │   ├── db.properties        # Cấu hình database
 │   │   │   ├── config.properties    # Cấu hình server (IP, port)
+│   │   │   ├── schema.sql           # Script khởi tạo database
 │   │   │   └── com/code/views/      # FXML files (UI definition)
 │   └── test/
 │       └── java/com/code/           # Unit tests
@@ -115,15 +116,32 @@ cd btl/BaiTapLon
 
 ### Bước 2: Cấu hình Database
 
-#### 2.1 Tạo database (MySQL)
+#### 2.1 Tạo database bằng script SQL
 
-Mở MySQL shell hoặc MySQL Workbench, chạy script SQL:
+**Cách 1: Dùng MySQL command line**
 
-```sql
-CREATE DATABASE auction_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE auction_db;
--- Các table sẽ được tạo tự động khi chạy server lần đầu
+```bash
+# Windows
+mysql -u root -p < src\main\resources\schema.sql
+
+# macOS / Linux
+mysql -u root -p < src/main/resources/schema.sql
 ```
+
+**Cách 2: Dùng MySQL Workbench**
+
+1. Mở MySQL Workbench
+2. Chọn **File** → **Open SQL Script**
+3. Chọn file `src/main/resources/schema.sql`
+4. Click **Execute** (hoặc Ctrl+Shift+Enter)
+
+**Cách 3: Dùng lệnh MySQL trực tiếp**
+
+```bash
+mysql -u root -p
+```
+
+Sau đó copy-paste toàn bộ nội dung file `src/main/resources/schema.sql` vào MySQL shell.
 
 #### 2.2 Cập nhật file cấu hình database
 
@@ -133,12 +151,17 @@ USE auction_db;
 db.url=jdbc:mysql://localhost:3306/auction_db?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
 db.username=root
 db.password=MAT_KHAU_CUA_BAN
-db.pool66.size=10
+db.pool.size=10
 ```
 
 **Thay thế**:
 - `MAT_KHAU_CUA_BAN` → mật khẩu MySQL của bạn
 - `localhost:3306` → nếu MySQL chạy trên máy khác
+
+**Lưu ý**: Nếu bạn không đặt mật khẩu cho root, hãy để trống:
+```properties
+db.password=
+```
 
 ### Bước 3: Cập nhật file cấu hình Client (tuỳ chọn)
 
@@ -153,12 +176,6 @@ server.port=8888
 
 ### Bước 4: Biên dịch dự án
 
-#### **Windows**:
-```bash
-mvn clean install
-```
-
-#### **macOS / Linux**:
 ```bash
 mvn clean install
 ```
@@ -179,20 +196,8 @@ Lệnh này sẽ:
 
 **Cách 2: Chạy từ command line**
 
-**Windows**:
 ```bash
 mvn clean compile exec:java@run-server
-```
-
-**macOS / Linux**:
-```bash
-mvn clean compile exec:java@run-server
-```
-
-Hoặc:
-```bash
-mvn compile
-java -cp target/classes:target/dependency/* com.code.server.AuctionServer
 ```
 
 **Output mong đợi**:
@@ -205,8 +210,8 @@ java -cp target/classes:target/dependency/* com.code.server.AuctionServer
 [Server] Lắng nghe trên port 8888...
 [Seeder] Tạo dữ liệu mặc định...
 [Seeder] ✓ Admin: admin / admin123
-[Seeder] ✓ Regular User 1: user1 / user123 (10 triệu VNĐ)
-[Seeder] ✓ Regular User 2: user2 / user123 (10 triệu VNĐ)
+[Seeder] ✓ Regular User 1: user1 / user123 (10.000.000 VNĐ)
+[Seeder] ✓ Regular User 2: user2 / user123 (10.000.000 VNĐ)
 [Seeder] ✓ Đã tạo 3 sản phẩm mẫu
 [Seeder] ✓ Phiên đấu giá RUNNING: iPhone 15 Pro Max
 [Seeder] ✓ Seed hoàn tất!
@@ -220,20 +225,8 @@ java -cp target/classes:target/dependency/* com.code.server.AuctionServer
 
 **Cách 2: Chạy từ command line**
 
-**Windows**:
 ```bash
 mvn clean javafx:run
-```
-
-**macOS / Linux**:
-```bash
-mvn clean javafx:run
-```
-
-Hoặc:
-```bash
-mvn compile
-mvn javafx:run
 ```
 
 **Output mong đợi**:
@@ -246,14 +239,13 @@ mvn javafx:run
 - Username: `admin`
 - Password: `admin123`
 
-**Tạo tài khoản người dùng thông thường**:
-- Click "Register"
-- Điền thông tin
-- Click "Sign Up"
+**Tài khoản Người dùng mặc định**:
+- Username: `user1` / `user2`
+- Password: `user123`
 
 ---
 
-## 🌱 Test Data Seeder - Dữ liệu mẫu cho giảng viên
+## 🌱 Test Data Seeder - Dữ liệu mẫu
 
 Khi server chạy lần **đầu tiên**, hệ thống tự động khởi tạo dữ liệu mẫu thông qua **DataSeeder** để bạn có thể test ngay mà không cần tạo dữ liệu thủ công.
 
@@ -275,35 +267,19 @@ Khi server chạy lần **đầu tiên**, hệ thống tự động khởi tạo
 | **Tranh Sơn Dầu Hoa Sen** | Art | 5.000.000 VNĐ | Tác phẩm gốc, kích thước 60x80cm, Sơn dầu | user1 |
 | **Toyota Camry 2022** | Vehicle | 850.000.000 VNĐ | Xe ít đi, còn mới 98%, 51G-12345, đầy đủ giấy tờ | user1 |
 
-#### 🎯 Phiên đấu giá mẫu (RUNNING - Đang diễn ra):
-
-| Chi tiết | Giá trị |
-|---------|--------|
-| **Sản phẩm** | iPhone 15 Pro Max |
-| **Trạng thái** | RUNNING (đang diễn ra) |
-| **Giá khởi điểm** | 20.000.000 VNĐ |
-| **Bước giá tối thiểu** | 500.000 VNĐ |
-| **Thời gian bắt đầu** | 5 phút trước |
-| **Thời gian kết thúc** | 2 giờ từ bây giờ |
-| **Người tạo phiên** | user1 |
-
-
-
-### 🔄 Cách reset dữ liệu Seeder
+### 🔄 Cách reset dữ liệu
 
 Nếu muốn chạy lại DataSeeder từ đầu:
 
 ```bash
-# 1. Drop database
-mysql -u root -p
-DROP DATABASE auction_db;
-CREATE DATABASE auction_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+# 1. Xóa và tạo lại database
+mysql -u root -p < src/main/resources/schema.sql
 
 # 2. Chạy server lại
 mvn clean compile exec:java@run-server
 ```
 
-Server sẽ tự động tạo bảng và khởi tạo dữ liệu Seeder.
+Server sẽ tự động khởi tạo dữ liệu Seeder.
 
 ---
 
@@ -451,6 +427,7 @@ mvn test jacoco:report
 - **Request-Response**: Giao thức đơn giản, có thể nâng cấp thêm SSL/TLS
 - **Session Management**: Lưu currentUser trên ClientHandler
 - **Access Control**: Kiểm tra role trước mỗi hành động
+- **Audit Log**: Ghi nhận mọi thay đổi người dùng (balance, role, banned status)
 
 ---
 
@@ -467,9 +444,9 @@ mvn test jacoco:report
 
 ### Debug
 
-- **Server**: Xem console output, log lệnh SQL
+- **Server**: Xem console output, kiểm tra log
 - **Client**: Xem dialog error, check config.properties
-- **Database**: Dùng MySQL Workbench để query
+- **Database**: Dùng MySQL Workbench để query trực tiếp
 
 ---
 
@@ -478,27 +455,35 @@ mvn test jacoco:report
 ### 1. "Không thể kết nối MySQL"
 - ✅ Kiểm tra MySQL đang chạy: `mysql -u root -p`
 - ✅ Kiểm tra user/password trong `db.properties`
-- ✅ Kiểm tra database `auction_db` tồn tại
+- ✅ Kiểm tra database `auction_db` tồn tại: `mysql -u root -p -e "SHOW DATABASES;"`
+- ✅ Nếu chưa có database, chạy: `mysql -u root -p < src/main/resources/schema.sql`
 
 ### 2. "Không thể kết nối Server"
 - ✅ Kiểm tra Server đang chạy (tìm port 8888 lắng nghe)
 - ✅ Kiểm tra IP/port trong `config.properties` đúng
 - ✅ Firewall cho phép port 8888
+- ✅ Trên Windows: `netstat -ano | findstr :8888`
+- ✅ Trên macOS/Linux: `lsof -i :8888`
 
-### 3. "Login.fxml không tìm thấy"
-- ✅ Chạy `mvn clean package` để copy resources
-- ✅ Kiểm tra file tồn tại: `src/main/resources/com/code/views/Login.fxml`
+### 3. "Lỗi 'Table doesn't exist'"
+- ✅ Kiểm tra các bảng đã được tạo: `mysql -u root -p auction_db -e "SHOW TABLES;"`
+- ✅ Nếu không có bảng, chạy lại script: `mysql -u root -p < src/main/resources/schema.sql`
 
 ### 4. "Java version mismatch"
 - ✅ Kiểm tra: `java -version`
 - ✅ Phải là Java 21+
 - ✅ Cập nhật JAVA_HOME nếu cần
 
+### 5. "BCrypt error hoặc password không khớp"
+- ✅ Kiểm tra user tồn tại trong database
+- ✅ Xóa user cũ và đăng ký lại
+- ✅ Nếu vẫn có vấn đề, reset database toàn bộ
+
 ---
 
 ## 📚 Tài liệu bổ sung
 
-- [Báo cáo PDF](link-to-pdf): https://drive.google.com/file/d/1kgTWDk5arXzoSjXyHlPGD0A5SvJsCkpH/view?usp=sharing
+- [Báo cáo PDF](https://drive.google.com/file/d/1kgTWDk5arXzoSjXyHlPGD0A5SvJsCkpH/view?usp=sharing)
 - [Video Demo](link-to-video) *(Cần cập nhật)*
 
 ---
