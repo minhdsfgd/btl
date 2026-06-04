@@ -522,6 +522,6 @@ mvn test jacoco:report
 ## 📚 Tài liệu bổ sung
 
 - [Báo cáo PDF](https://drive.google.com/file/d/1kgTWDk5arXzoSjXyHlPGD0A5SvJsCkpH/view?usp=sharing)
-- [Video Demo](link-to-video) *(Cần cập nhật)*
+- [Video Demo](https://drive.google.com/file/d/12K2hPTwqzE-HUh0dJP3JwnDBohotT8SH/view?usp=sharing)
 
 ---
