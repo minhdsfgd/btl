@@ -2,7 +2,7 @@
 
 ## 📋 Mô tả hệ thống
 
-**UET Auction System** là một hệ thống đấu giá trực tuyến được xây dựng theo kiến trúc **Client-Server** sử dụng **Java Socket**. Hệ thống cho phép người dùng đăng ký, đấu giá các mặt hàng, quản lý ví điện tử và theo dõi lịch sử giao dịch.
+**UET Auction System** là một hệ thống đấu giá trực tuyến được xây dựng theo kiến trúc **Client-Server** sử dụng **Java Socket**. Hệ thống cho phép người dùng đấu giá, bán hàng, quản lý tài khoản và ghi nhận toàn bộ hoạt động.
 
 ### Phạm vi hệ thống
 - **Người dùng bình thường**: Đăng ký, đăng nhập, theo dõi đấu giá, đấu giá, xem lịch sử giao dịch
@@ -116,32 +116,53 @@ cd btl/BaiTapLon
 
 ### Bước 2: Cấu hình Database
 
-#### 2.1 Tạo database bằng script SQL
+#### 2.1 Tạo database bằng script SQL (Khuyến nghị - Hoạt động trên CMD & PowerShell)
 
-**Cách 1: Dùng MySQL command line**
+**Cách 1: Sử dụng piping (Tốt nhất - Cross-platform)**
 
-```bash
-# Windows
-mysql -u root -p < src\main\resources\schema.sql
-
-# macOS / Linux
-mysql -u root -p < src/main/resources/schema.sql
+**Trên Windows PowerShell:**
+```powershell
+Get-Content src\main\resources\schema.sql | mysql -u root -p
 ```
 
-**Cách 2: Dùng MySQL Workbench**
+**Trên Windows Command Prompt (CMD):**
+```cmd
+type src\main\resources\schema.sql | mysql -u root -p
+```
 
-1. Mở MySQL Workbench
-2. Chọn **File** → **Open SQL Script**
-3. Chọn file `src/main/resources/schema.sql`
-4. Click **Execute** (hoặc Ctrl+Shift+Enter)
+**Trên macOS / Linux:**
+```bash
+cat src/main/resources/schema.sql | mysql -u root -p
+```
 
-**Cách 3: Dùng lệnh MySQL trực tiếp**
+Sau khi chạy, nhập mật khẩu MySQL khi được yêu cầu.
+
+---
+
+**Cách 2: Dùng MySQL interactive mode**
 
 ```bash
 mysql -u root -p
 ```
 
-Sau đó copy-paste toàn bộ nội dung file `src/main/resources/schema.sql` vào MySQL shell.
+Sau đó gõ trong MySQL shell:
+```sql
+source src/main/resources/schema.sql;
+```
+
+**Hoặc trên Windows:**
+```sql
+source src\main\resources\schema.sql;
+```
+
+---
+
+**Cách 3: Dùng MySQL Workbench (GUI - Không cần command line)**
+
+1. Mở MySQL Workbench
+2. Chọn **File** → **Open SQL Script**
+3. Chọn file `src/main/resources/schema.sql`
+4. Click **Execute** (hoặc Ctrl+Shift+Enter)
 
 #### 2.2 Cập nhật file cấu hình database
 
@@ -271,9 +292,28 @@ Khi server chạy lần **đầu tiên**, hệ thống tự động khởi tạo
 
 Nếu muốn chạy lại DataSeeder từ đầu:
 
+**Windows PowerShell:**
+```powershell
+# 1. Xóa và tạo lại database
+Get-Content src\main\resources\schema.sql | mysql -u root -p
+
+# 2. Chạy server lại
+mvn clean compile exec:java@run-server
+```
+
+**Windows CMD:**
+```cmd
+# 1. Xóa và tạo lại database
+type src\main\resources\schema.sql | mysql -u root -p
+
+# 2. Chạy server lại
+mvn clean compile exec:java@run-server
+```
+
+**macOS / Linux:**
 ```bash
 # 1. Xóa và tạo lại database
-mysql -u root -p < src/main/resources/schema.sql
+cat src/main/resources/schema.sql | mysql -u root -p
 
 # 2. Chạy server lại
 mvn clean compile exec:java@run-server
@@ -456,7 +496,7 @@ mvn test jacoco:report
 - ✅ Kiểm tra MySQL đang chạy: `mysql -u root -p`
 - ✅ Kiểm tra user/password trong `db.properties`
 - ✅ Kiểm tra database `auction_db` tồn tại: `mysql -u root -p -e "SHOW DATABASES;"`
-- ✅ Nếu chưa có database, chạy: `mysql -u root -p < src/main/resources/schema.sql`
+- ✅ Nếu chưa có database, chạy script theo hướng dẫn ở Bước 2.1
 
 ### 2. "Không thể kết nối Server"
 - ✅ Kiểm tra Server đang chạy (tìm port 8888 lắng nghe)
@@ -467,7 +507,7 @@ mvn test jacoco:report
 
 ### 3. "Lỗi 'Table doesn't exist'"
 - ✅ Kiểm tra các bảng đã được tạo: `mysql -u root -p auction_db -e "SHOW TABLES;"`
-- ✅ Nếu không có bảng, chạy lại script: `mysql -u root -p < src/main/resources/schema.sql`
+- ✅ Nếu không có bảng, chạy lại script theo hướng dẫn ở Bước 2.1
 
 ### 4. "Java version mismatch"
 - ✅ Kiểm tra: `java -version`
