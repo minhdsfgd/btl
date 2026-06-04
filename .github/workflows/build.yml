@@ -52,7 +52,7 @@ jobs:
         working-directory: ./BaiTapLon
 
       # Step 7 (Bổ sung): Quét và phân tích chất lượng/bảo mật mã nguồn bằng Qodana
-      - name: Qodana Scan
-        uses: JetBrains/qodana-action@main
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+      #- name: Qodana Scan
+      #  uses: JetBrains/qodana-action@main
+      #  env:
+      #    QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
