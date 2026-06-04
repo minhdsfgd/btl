@@ -120,6 +120,30 @@
                 </configuration>
             </plugin>
 
+            <!-- Exec Maven Plugin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <executable>java</executable>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>run-server</id>
+                        <configuration>
+                            <mainClass>com.code.server.AuctionServer</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>run-client</id>
+                        <configuration>
+                            <mainClass>com.code.ClientApp</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- JavaFX -->
             <plugin>
                 <groupId>org.openjfx</groupId>
@@ -130,9 +154,8 @@
                     <mainClass>${javafx.mainClass}</mainClass>
                     <options>
                         <option>--enable-native-access=javafx.graphics</option>
-                            <option>--enable-preview</option>  <!-- ← Thêm -->
-                            <option>--add-opens=java.base/sun.misc=ALL-UNNAMED</option>
-
+                        <option>--enable-preview</option>
+                        <option>--add-opens=java.base/sun.misc=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>
