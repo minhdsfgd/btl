@@ -498,7 +498,7 @@ mvn test jacoco:report
 
 ## 📚 Tài liệu bổ sung
 
-- [Báo cáo PDF](link-to-pdf) *(Cần cập nhật)*
+- [Báo cáo PDF](link-to-pdf): https://drive.google.com/file/d/1kgTWDk5arXzoSjXyHlPGD0A5SvJsCkpH/view?usp=sharing
 - [Video Demo](link-to-video) *(Cần cập nhật)*
 
 ---
